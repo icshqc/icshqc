@@ -13,6 +13,13 @@ char* straddch(char* str, char c) { //FIXME: Not buffer safe
   str[i+1] = '\0';
   return str;
 }
+char* strdelch(char* str) {
+  int i = strlen(str);
+  if (i > 0) {
+    str[i] = '\0';
+  }
+  return str;
+}
 
 void msg(const char* str) {
   int y, x;
@@ -20,6 +27,7 @@ void msg(const char* str) {
   move(LINES-1, 0); // COLS pour x
   addstr(str);
   move(y, x);
+  refresh();
 }
 
 void run()
@@ -33,20 +41,23 @@ void run()
     if (ch == 'q')
       return;
     else if (ch == KEY_BACKSPACE) {
-      //if (i > 0) {
-      //  getyx(curscr, y, x);
-      //  mvdelch(y, x-1);
-        //str[i] = '\0';
-      //  i--;
-      //}
+      if (strlen(args[argc]) > 0) {
+        getyx(curscr, y, x);
+        mvdelch(y, x-1);
+        strdelch(args[argc]);
+        refresh();
+      } else if (argc > 0) {
+        argc--;
+      }
     } else if (ch == '\n' || ch == '\r') {
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
     } else {
       addch(ch);
-      //str[i++] = ch;
+      straddch(args[argc], ch);
       refresh();
     }
+    msg(args[argc]);
   }
 }
 
