@@ -4,6 +4,14 @@
 
 static void finish(int sig);
 
+void msg(const char* str) {
+  int y, x;
+  getyx(curscr, y, x);
+  move(LINES-1, 0); // COLS pour x
+  addstr(str);
+  move(y, x);
+}
+
 void run()
 {
   char str[512]; //FIXME
@@ -13,6 +21,7 @@ void run()
   addch('>');
   addch('>');
   addch(' ');
+  msg("Hello world!");
   while (true) {
     int ch = getch();
     if (ch == 'q')
@@ -25,10 +34,10 @@ void run()
         i--;
       }
     } else if (ch == '\n' || ch == '\r') {
-        getyx(curscr, y, x);
-        mvaddch(y+1, 0, '>');
-        addch('>');
-        addch(' ');
+      getyx(curscr, y, x);
+      mvaddch(y+1, 0, '>');
+      addch('>');
+      addch(' ');
     } else {
       addch(ch);
       str[i++] = ch;
