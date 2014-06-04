@@ -3,8 +3,6 @@
 #include <signal.h>
 #include <string.h>
 
-// HELPER: C strings: http://en.wikipedia.org/wiki/C_string_handling
-
 static void finish(int sig);
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
@@ -16,15 +14,18 @@ char* straddch(char* str, char c) { //FIXME: Not buffer safe
 char* strdelch(char* str) {
   int i = strlen(str);
   if (i > 0) {
-    str[i] = '\0';
+    str[i-1] = '\0';
   }
   return str;
 }
 
 void msg(const char* str) {
-  int y, x;
+  int y, x, i;
+  for (i=0; i<COLS; i++) {
+    mvdelch(LINES-1,i);
+  }
   getyx(curscr, y, x);
-  move(LINES-1, 0); // COLS pour x
+  move(LINES-1, 0);
   addstr(str);
   move(y, x);
   refresh();
@@ -33,6 +34,11 @@ void msg(const char* str) {
 void run()
 {
   char args[12][64];
+  args[0][0] = '\0';
+  args[1][0] = '\0';
+  args[2][0] = '\0';
+  args[3][0] = '\0';
+  args[4][0] = '\0';
   int argc = 0;
   int y, x;
   addstr(">> ");
@@ -47,11 +53,23 @@ void run()
         strdelch(args[argc]);
         refresh();
       } else if (argc > 0) {
+        getyx(curscr, y, x);
+        mvdelch(y, x-1);
         argc--;
+        refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
+      if (strstr(args[0], "def ") == args[0]) {
+        //args[0] = args[0] + 4;
+      }
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
+      refresh();
+    } else if (ch == ',') {
+      addch(','); 
+      argc++;
+      refresh();
+    //} else if (ch == ':') {
     } else {
       addch(ch);
       straddch(args[argc], ch);

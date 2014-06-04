@@ -26,3 +26,5 @@ Pour finir l'intérieur (}), faire ctrl+enter.
 
 main.o
 main.c
+
+Etre capable de debugger. Inspect var.
