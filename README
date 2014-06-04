@@ -1,0 +1,28 @@
+C'est plus rapide pour développer parce que c'est real time.
+C'est plus facile débugger parce que tu peux caller des fonctions.
+Tu fais moins d'erreur: Le ; est mis automatiquement ex. (Tu peux pas mettre de ; a la fin d'un if par ex par erreur.)
+
+
+Quand tu fais enter, le ; est rajouter.
+Pour commencer l'intérieur ({), faire shift+enter.
+Pour finir l'intérieur (}), faire ctrl+enter.
+
+>> def main, int argc, char* argv[], int
+=> cat "int main(int argc, char* argv[])" > def.h // TODO: Vérifier si main est déjà définie.
+
+>> def run, void
+
+>> edit main
+.. run()
+
+>> list
+=> main, int argc, char* argv[], int
+=> run, void
+
+>> show main
+.. run()
+
+>> run main
+
+main.o
+main.c
