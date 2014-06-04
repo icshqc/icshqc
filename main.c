@@ -33,13 +33,7 @@ void msg(const char* str) {
 
 void run()
 {
-  char args[12][64];
-  args[0][0] = '\0';
-  args[1][0] = '\0';
-  args[2][0] = '\0';
-  args[3][0] = '\0';
-  args[4][0] = '\0';
-  int argc = 0;
+  char cmd[256] = "";
   int y, x;
   addstr(">> ");
   while (true) {
@@ -47,35 +41,26 @@ void run()
     if (ch == 'q')
       return;
     else if (ch == KEY_BACKSPACE) {
-      if (strlen(args[argc]) > 0) {
+      if (strlen(cmd) > 0) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
-        strdelch(args[argc]);
-        refresh();
-      } else if (argc > 0) {
-        getyx(curscr, y, x);
-        mvdelch(y, x-1);
-        argc--;
+        strdelch(cmd);
         refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
-      if (strstr(args[0], "def ") == args[0]) {
+      if (strstr(cmd, "def ") == cmd) {
         //args[0] = args[0] + 4;
       }
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
       refresh();
-    } else if (ch == ',') {
-      addch(','); 
-      argc++;
-      refresh();
     //} else if (ch == ':') {
     } else {
       addch(ch);
-      straddch(args[argc], ch);
+      straddch(cmd, ch);
       refresh();
     }
-    msg(args[argc]);
+    msg(cmd);
   }
 }
 
