@@ -1,8 +1,18 @@
 #include <stdlib.h>
 #include <ncurses.h>
 #include <signal.h>
+#include <string.h>
+
+// HELPER: C strings: http://en.wikipedia.org/wiki/C_string_handling
 
 static void finish(int sig);
+
+char* straddch(char* str, char c) { //FIXME: Not buffer safe
+  int i = strlen(str);
+  str[i] = c;
+  str[i+1] = '\0';
+  return str;
+}
 
 void msg(const char* str) {
   int y, x;
@@ -14,33 +24,27 @@ void msg(const char* str) {
 
 void run()
 {
-  char str[512]; //FIXME
-  str[0] = '\0';
-  int i = 0;
+  char args[12][64];
+  int argc = 0;
   int y, x;
-  addch('>');
-  addch('>');
-  addch(' ');
-  msg("Hello world!");
+  addstr(">> ");
   while (true) {
     int ch = getch();
     if (ch == 'q')
       return;
     else if (ch == KEY_BACKSPACE) {
-      if (i > 0) {
-        getyx(curscr, y, x);
-        mvdelch(y, x-1);
-        str[i] = '\0';
-        i--;
-      }
+      //if (i > 0) {
+      //  getyx(curscr, y, x);
+      //  mvdelch(y, x-1);
+        //str[i] = '\0';
+      //  i--;
+      //}
     } else if (ch == '\n' || ch == '\r') {
       getyx(curscr, y, x);
-      mvaddch(y+1, 0, '>');
-      addch('>');
-      addch(' ');
+      mvaddstr(y+1, 0, ">> ");
     } else {
       addch(ch);
-      str[i++] = ch;
+      //str[i++] = ch;
       refresh();
     }
   }
