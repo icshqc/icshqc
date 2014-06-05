@@ -170,9 +170,7 @@ void run()
   addstr(">> ");
   while (true) {
     int ch = getch();
-    if (ch == 'q')
-      return;
-    else if (ch == KEY_BACKSPACE) {
+    if (ch == KEY_BACKSPACE) {
       if (strlen(cmd) > 0) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
@@ -182,9 +180,11 @@ void run()
     } else if (ch == '\n' || ch == '\r') {
       if (strstr(cmd, "def ") == cmd) {
         def(((char *)cmd) + 4);
-      }
-      if (strstr(cmd, "list") == cmd) {
+      } else if (strstr(cmd, "list") == cmd) {
         list(defs);
+      } else if (strstr(cmd, "exit") == cmd ||
+                 strstr(cmd, "quit") == cmd) {
+        return;
       }
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
