@@ -19,16 +19,23 @@ char* strdelch(char* str) {
   return str;
 }
 
+static int msgLine = 0;
 void msg(const char* str) {
   int y, x, i;
+  int line = LINES - 5 + msgLine;
+  msgLine = (msgLine + 1) % 5;
   for (i=0; i<COLS; i++) {
-    mvdelch(LINES-1,i);
+    mvdelch(line,i);
   }
   getyx(curscr, y, x);
-  move(LINES-1, 0);
+  move(line, 0);
   addstr(str);
   move(y, x);
   refresh();
+}
+
+void def(char* d) {
+  msg(d);
 }
 
 void run()
@@ -49,7 +56,7 @@ void run()
       }
     } else if (ch == '\n' || ch == '\r') {
       if (strstr(cmd, "def ") == cmd) {
-        //args[0] = args[0] + 4;
+        def(((char *)cmd) + 4);
       }
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
@@ -60,7 +67,6 @@ void run()
       straddch(cmd, ch);
       refresh();
     }
-    msg(cmd);
   }
 }
 
