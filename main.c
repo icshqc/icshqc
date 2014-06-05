@@ -102,7 +102,14 @@ Arg* parseCmd(const char* cmd) {
     }
     c++;
   }
-  return NULL;
+  if (i+1 != c) {
+    Arg* arg = malloc(sizeof (struct Arg));
+    strcpy(arg->val, i);
+    arg->nxt = parseCmd(c);
+    return arg;
+  } else {
+    return NULL;
+  }
 }
 
 void edit(const char* cmd) {
@@ -136,18 +143,15 @@ void list(Func* d) {
   }
 }
 
-void def(char* d) {
-  char* c = d;
-  char* i = d;
-  Arg* arg = NULL;
-  FILE *f = fopen(DEF_FILE_PATH, "a");
+void def(Arg* args) {
   Func* def = defs;
+  Arg* arg = NULL;
+  /*FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
     abort(); // FIXME: "Can't open definition file."
   }
-
   fputs(d, f);
-  fclose(f);
+  fclose(f);*/
 
   if (def == NULL) {
     defs = malloc (sizeof (struct Func));
@@ -162,27 +166,9 @@ void def(char* d) {
   if (def == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  while (*c != '\0') {
-    if (*c == ',') {
-      if (strlen(def->name) == 0) {
-        strncpy(def->name, i, c - i);
-      } else {
-        if (def->args == NULL) {
-          def->args = malloc(sizeof (struct Arg));
-          arg = def->args;
-        } else {
-          def->args->nxt = malloc(sizeof (struct Arg));
-          arg = def->args->nxt;
-        }
-        strncpy(arg->val, i, c - i);
-      }
-      i = c;
-    }
-    c++;
-  }
-  if (i+1 != c) {
+  while (args != NULL) {
     if (strlen(def->name) == 0) {
-      strncpy(def->name, i, c - i);
+      strcpy(def->name, args->val);
     } else {
       if (def->args == NULL) {
         def->args = malloc(sizeof (struct Arg));
@@ -191,7 +177,7 @@ void def(char* d) {
         def->args->nxt = malloc(sizeof (struct Arg));
         arg = def->args->nxt;
       }
-      strncpy(arg->val, i, c - i);
+      strcpy(arg->val, args->val);
     }
   }
 }
@@ -212,7 +198,9 @@ void run()
       }
     } else if (ch == '\n' || ch == '\r') {
       if (strstr(cmd, "def ") == cmd) {
-        def(((char *)cmd) + 4);
+        Arg* args = parseCmd(((char *)cmd) + 4);
+        def(args);
+        free(args);
       } else if (strstr(cmd, "list") == cmd) {
         list(defs);
       } else if (strstr(cmd, "edit ") == cmd) {

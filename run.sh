@@ -1,1 +1,1 @@
-./compile.sh && ./icsh
+./compile.sh && ./build/icsh
