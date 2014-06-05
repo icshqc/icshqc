@@ -72,6 +72,16 @@ void msg(const char* str) {
   refresh();
 }
 
+void output(const char* str) {
+  int y, x;
+  getyx(curscr, y, x);
+  move(y+1, 0);
+  addstr("=> ");
+  addstr(str);
+  //move(y+2, x);
+  refresh();
+}
+
 void list(Func* d) {
   char m[80] = "";
   Arg* arg;
@@ -88,7 +98,7 @@ void list(Func* d) {
       strcat(m, ", ");
       arg = arg->nxt;
     }
-    msg(m);
+    output(m);
     list(d->nxt);
   }
 }
