@@ -48,8 +48,9 @@ void list() {
 }
 
 void def(Func* defs, char* d) {
-  int ndef, j = 0, n = 0, i = 0;
+  int ndef, j = 0;
   char* c = d;
+  char* i = d;
   FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
     abort(); // FIXME: "Can't open definition file."
@@ -59,16 +60,17 @@ void def(Func* defs, char* d) {
   fclose(f);
 
   for (ndef = 0; strlen(defs[ndef].name); i++) {}
-  while (c != '\0') {
-    if (c == ',') {
+  while (*c != '\0') {
+    if (*c == ',') {
       if (j == 0) {
-        strncpy(defs[ndef].name, d, n * sizeof(char));
+        strncpy(defs[ndef].name, i, c - i);
+        i = c;
       } else {
-        strncpy(defs[ndef].args[i], c - n, n * sizeof(char));
+        strncpy(defs[ndef].args[j-1], i, c - i);
+        i = c;
       }
       j++;
     }
-    n++;
     c++;
   }
 

@@ -1,3 +1,6 @@
+Creer une librarie SDL-ncurses. Implementer ncurses en SDL. P-e utiliser les memes
+noms de fonctions, ainsi juste changer l'include et le linkage pour que ca marche.
+
 C'est plus rapide pour développer parce que c'est real time.
 C'est plus facile débugger parce que tu peux caller des fonctions.
 Tu fais moins d'erreur: Le ; est mis automatiquement ex. (Tu peux pas mettre de ; a la fin d'un if par ex par erreur.)
