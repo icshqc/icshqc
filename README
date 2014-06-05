@@ -5,6 +5,10 @@ C'est plus rapide pour développer parce que c'est real time.
 C'est plus facile débugger parce que tu peux caller des fonctions.
 Tu fais moins d'erreur: Le ; est mis automatiquement ex. (Tu peux pas mettre de ; a la fin d'un if par ex par erreur.)
 
+Plus tard, pour eviter de reloader l'application au complet,
+pour que ce soit real time, avoir une application dans une autre.
+L'application parent gererait tout ce qui est statique et ne change pas,
+l'application enfant reloaderait tout ce qui peut changer comme les fonctions.
 
 Quand tu fais enter, le ; est rajouter.
 Pour commencer l'intérieur ({), faire shift+enter.
@@ -16,6 +20,7 @@ Version 0.1
 int add(int x, int y) {
   return x + y;
 } //(ctrl+enter) => ;}
+>> restart
 >> add 1, 3  // Tu peux
 => 4
 

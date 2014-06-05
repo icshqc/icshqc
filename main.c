@@ -4,6 +4,8 @@
 #include <signal.h>
 #include <string.h>
 
+#include "app.h"
+
 // MODEL
 
 static const int MSG_CONSOLE_SIZE = 10;

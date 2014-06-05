@@ -1,1 +1,1 @@
-gcc -o build/icsh main.c -lncurses
+gcc -o build/icsh add.c main.c -lncurses
