@@ -12,8 +12,7 @@ static const char DEF_FILE_PATH[] = "defs";
 static void finish(int sig);
 
 struct Arg {
-  char name[52];
-  char type[32];
+  char val[52];
   struct Arg* nxt;
 };
 typedef struct Arg Arg;
@@ -88,30 +87,50 @@ void output(const char* str) {
 
 // APP
 
-// A command is a fonction.
-Func parseCmd(const char* cmd) {
+// Splits the cmd at commas.
+Arg* parseCmd(const char* cmd) {
+  const char* c = cmd;
+  const char* i = cmd;
+  while (*c != '\0') {
+    if (*c == ' ') {
+      i++;
+    } else if (*c == ',') {
+      Arg* arg = malloc(sizeof (struct Arg));
+      strncpy(arg->val, i, c - i);
+      arg->nxt = parseCmd(c);
+      return arg;
+    }
+    c++;
+  }
+  return NULL;
 }
 
 void edit(const char* cmd) {
 
 }
 
+char* catArg(char* m, Arg* arg) {
+  if (arg != NULL) {
+    Arg* n = arg->nxt;
+    strcat(m, "Arg[\"");
+    strcat(m, arg->val);
+    while (n != NULL) {
+      strcat(m, "\", \"");
+      strcat(m, n->val);
+      n = n->nxt;
+    }
+    strcat(m, "\"]");
+  }
+  return m;
+}
+
 void list(Func* d) {
-  char m[80] = "";
-  Arg* arg;
+  char m[256] = "";
   if (d != NULL) {
     strcat(m, "Name: ");
     strcat(m, d->name);
-    strcat(m, ", Args: ");
-    arg = d->args;
-    while (arg != NULL) {
-      strcat(m, "name: ");
-      strcat(m, arg->name);
-      strcat(m, "type: ");
-      strcat(m, arg->type);
-      strcat(m, ", ");
-      arg = arg->nxt;
-    }
+    strcat(m, ", ");
+    catArg(m, d->args); 
     output(m);
     list(d->nxt);
   }
@@ -155,7 +174,7 @@ void def(char* d) {
           def->args->nxt = malloc(sizeof (struct Arg));
           arg = def->args->nxt;
         }
-        strncpy(arg->type, i, c - i);
+        strncpy(arg->val, i, c - i);
       }
       i = c;
     }
@@ -172,7 +191,7 @@ void def(char* d) {
         def->args->nxt = malloc(sizeof (struct Arg));
         arg = def->args->nxt;
       }
-      strncpy(arg->type, i, c - i);
+      strncpy(arg->val, i, c - i);
     }
   }
 }
