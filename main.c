@@ -15,7 +15,7 @@ static void finish(int sig);
 
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
-static OldFonc* defs = NULL;
+static Func* defs = NULL;
 
 void freeArg(Arg* arg) {
   if (arg != NULL) {
@@ -24,9 +24,9 @@ void freeArg(Arg* arg) {
   }
 }
 
-void freeOldFonc(OldFonc* f) {
+void freeFunc(Func* f) {
   if (f != NULL) {
-    freeOldFonc(f->nxt);
+    freeFunc(f->nxt);
     freeArg(f->args);
     free(f);
   }
@@ -100,6 +100,9 @@ Arg* parseCmd(const char* cmd) {
   }
 }
 
+void genApp() {
+}
+
 void edit(const char* cmd) {
 
 }
@@ -119,7 +122,7 @@ char* catArg(char* m, Arg* arg) {
   return m;
 }
 
-void list(OldFonc* d) {
+void list(Func* d) {
   char m[256] = "";
   if (d != NULL) {
     strcat(m, d->name);
@@ -131,7 +134,7 @@ void list(OldFonc* d) {
 }
 
 void def(Arg* args) {
-  OldFonc* def = defs;
+  Func* def = defs;
   Arg *arg, *n;
   /*FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
@@ -141,13 +144,13 @@ void def(Arg* args) {
   fclose(f);*/
 
   if (def == NULL) {
-    defs = malloc (sizeof (struct OldFonc));
+    defs = malloc (sizeof (struct Func));
     def = defs;
   } else {
     while (def->nxt != NULL) {
       def = def->nxt;
     }
-    def->nxt = malloc (sizeof (struct OldFonc));
+    def->nxt = malloc (sizeof (struct Func));
     def = def->nxt;
   }
   if (def == NULL) {
@@ -233,7 +236,7 @@ static void finish(int sig)
 {
   endwin();
 
-  freeOldFonc(defs);
+  freeFunc(defs);
 
   exit(0);
 }

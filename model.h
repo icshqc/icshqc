@@ -7,11 +7,11 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
-struct OldFonc {
+struct Func {
   char name[52];
   Arg* args;
-  struct OldFonc* nxt;
+  struct Func* nxt;
 };
-typedef struct OldFonc OldFonc;
+typedef struct Func Func;
 
 #endif // MODEL.h
