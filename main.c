@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include "app.h"
+#include "model.h"
 
 // MODEL
 
@@ -13,22 +13,9 @@ static const char DEF_FILE_PATH[] = "defs";
 
 static void finish(int sig);
 
-struct Arg {
-  char val[52];
-  struct Arg* nxt;
-};
-typedef struct Arg Arg;
-
-struct Func {
-  char name[52];
-  Arg* args;
-  struct Func* nxt;
-};
-typedef struct Func Func;
-
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
-static Func* defs = NULL;
+static OldFonc* defs = NULL;
 
 void freeArg(Arg* arg) {
   if (arg != NULL) {
@@ -37,9 +24,9 @@ void freeArg(Arg* arg) {
   }
 }
 
-void freeFunc(Func* f) {
+void freeOldFonc(OldFonc* f) {
   if (f != NULL) {
-    freeFunc(f->nxt);
+    freeOldFonc(f->nxt);
     freeArg(f->args);
     free(f);
   }
@@ -132,7 +119,7 @@ char* catArg(char* m, Arg* arg) {
   return m;
 }
 
-void list(Func* d) {
+void list(OldFonc* d) {
   char m[256] = "";
   if (d != NULL) {
     strcat(m, d->name);
@@ -144,7 +131,7 @@ void list(Func* d) {
 }
 
 void def(Arg* args) {
-  Func* def = defs;
+  OldFonc* def = defs;
   Arg *arg, *n;
   /*FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
@@ -154,13 +141,13 @@ void def(Arg* args) {
   fclose(f);*/
 
   if (def == NULL) {
-    defs = malloc (sizeof (struct Func));
+    defs = malloc (sizeof (struct OldFonc));
     def = defs;
   } else {
     while (def->nxt != NULL) {
       def = def->nxt;
     }
-    def->nxt = malloc (sizeof (struct Func));
+    def->nxt = malloc (sizeof (struct OldFonc));
     def = def->nxt;
   }
   if (def == NULL) {
@@ -246,7 +233,7 @@ static void finish(int sig)
 {
   endwin();
 
-  freeFunc(defs);
+  freeOldFonc(defs);
 
   exit(0);
 }
