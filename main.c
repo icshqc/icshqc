@@ -4,16 +4,43 @@
 #include <signal.h>
 #include <string.h>
 
-static const int MSG_CONSOLE_SIZE = 5;
+static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
 
 static void finish(int sig);
 
+struct Arg {
+  char name[52];
+  char type[32];
+  struct Arg* nxt;
+};
+typedef struct Arg Arg;
+
 struct Func {
   char name[52];
-  char args[5][52];
+  Arg* args;
+  struct Func* nxt;
 };
 typedef struct Func Func;
+
+// FIXME: Made static so I can free in finalize. Should not be static.
+// Or fuck conventions and let it be static...
+static Func* defs = NULL;
+
+void freeArg(Arg* arg) {
+  if (arg != NULL) {
+    freeArg(arg->nxt);
+    free(arg);
+  }
+}
+
+void freeFunc(Func* f) {
+  if (f != NULL) {
+    freeFunc(f->nxt);
+    freeArg(f->args);
+    free(f);
+  }
+}
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
   int i = strlen(str);
@@ -30,6 +57,7 @@ char* strdelch(char* str) {
 }
 
 static int msgLine = 0;
+// TODO: debug(), fatal(), error(), warn(), log()
 void msg(const char* str) {
   int y, x, i;
   int line = LINES - MSG_CONSOLE_SIZE + msgLine;
@@ -44,14 +72,33 @@ void msg(const char* str) {
   refresh();
 }
 
-void list() {
+void list(Func* d) {
+  char m[80] = "";
+  Arg* arg;
+  if (d != NULL) {
+    strcat(m, "Name: ");
+    strcat(m, d->name);
+    strcat(m, ", Args: ");
+    arg = d->args;
+    while (arg != NULL) {
+      strcat(m, "name: ");
+      strcat(m, arg->name);
+      strcat(m, "type: ");
+      strcat(m, arg->type);
+      strcat(m, ", ");
+      arg = arg->nxt;
+    }
+    msg(m);
+    list(d->nxt);
+  }
 }
 
-void def(Func* defs, char* d) {
-  int ndef, j = 0;
+void def(char* d) {
   char* c = d;
   char* i = d;
+  Arg* arg = NULL;
   FILE *f = fopen(DEF_FILE_PATH, "a");
+  Func* def = defs;
   if (f == NULL) {
     abort(); // FIXME: "Can't open definition file."
   }
@@ -59,27 +106,55 @@ void def(Func* defs, char* d) {
   fputs(d, f);
   fclose(f);
 
-  for (ndef = 0; strlen(defs[ndef].name); i++) {}
+  if (def == NULL) {
+    defs = malloc (sizeof (struct Func));
+    def = defs;
+  } else {
+    while (def->nxt != NULL) {
+      def = def->nxt;
+    }
+    def->nxt = malloc (sizeof (struct Func));
+    def = def->nxt;
+  }
+  if (def == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
   while (*c != '\0') {
     if (*c == ',') {
-      if (j == 0) {
-        strncpy(defs[ndef].name, i, c - i);
-        i = c;
+      if (strlen(def->name) == 0) {
+        strncpy(def->name, i, c - i);
       } else {
-        strncpy(defs[ndef].args[j-1], i, c - i);
-        i = c;
+        if (def->args == NULL) {
+          def->args = malloc(sizeof (struct Arg));
+          arg = def->args;
+        } else {
+          def->args->nxt = malloc(sizeof (struct Arg));
+          arg = def->args->nxt;
+        }
+        strncpy(arg->type, i, c - i);
       }
-      j++;
+      i = c;
     }
     c++;
   }
-
-  msg(defs[ndef].name);
+  if (i+1 != c) {
+    if (strlen(def->name) == 0) {
+      strncpy(def->name, i, c - i);
+    } else {
+      if (def->args == NULL) {
+        def->args = malloc(sizeof (struct Arg));
+        arg = def->args;
+      } else {
+        def->args->nxt = malloc(sizeof (struct Arg));
+        arg = def->args->nxt;
+      }
+      strncpy(arg->type, i, c - i);
+    }
+  }
 }
 
 void run()
 {
-  Func defs[52] = { { "", {"","","","",""} } };
   char cmd[256] = "";
   int y, x;
   addstr(">> ");
@@ -96,11 +171,15 @@ void run()
       }
     } else if (ch == '\n' || ch == '\r') {
       if (strstr(cmd, "def ") == cmd) {
-        def(defs, ((char *)cmd) + 4);
+        def(((char *)cmd) + 4);
+      }
+      if (strstr(cmd, "list") == cmd) {
+        list(defs);
       }
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
       refresh();
+      cmd[0] = '\0';
     //} else if (ch == ':') {
     } else {
       addch(ch);
@@ -131,7 +210,7 @@ static void finish(int sig)
 {
   endwin();
 
-  /* do your non-curses wrapup here */
+  freeFunc(defs);
 
   exit(0);
 }
