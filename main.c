@@ -97,7 +97,7 @@ Arg* parseCmd(const char* cmd) {
     } else if (*c == ',') {
       Arg* arg = malloc(sizeof (struct Arg));
       strncpy(arg->val, i, c - i);
-      arg->nxt = parseCmd(c);
+      arg->nxt = parseCmd(c+1);
       return arg;
     }
     c++;
@@ -105,7 +105,6 @@ Arg* parseCmd(const char* cmd) {
   if (i+1 != c) {
     Arg* arg = malloc(sizeof (struct Arg));
     strcpy(arg->val, i);
-    arg->nxt = parseCmd(c);
     return arg;
   } else {
     return NULL;
@@ -134,9 +133,8 @@ char* catArg(char* m, Arg* arg) {
 void list(Func* d) {
   char m[256] = "";
   if (d != NULL) {
-    strcat(m, "Name: ");
     strcat(m, d->name);
-    strcat(m, ", ");
+    strcat(m, " :: ");
     catArg(m, d->args); 
     output(m);
     list(d->nxt);
@@ -145,7 +143,7 @@ void list(Func* d) {
 
 void def(Arg* args) {
   Func* def = defs;
-  Arg* arg = NULL;
+  Arg *arg, *n;
   /*FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
     abort(); // FIXME: "Can't open definition file."
@@ -166,19 +164,22 @@ void def(Arg* args) {
   if (def == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  while (args != NULL) {
+  arg = def->args;
+  n = args;
+  while (n != NULL) {
     if (strlen(def->name) == 0) {
       strcpy(def->name, args->val);
     } else {
-      if (def->args == NULL) {
+      if (arg == NULL) {
         def->args = malloc(sizeof (struct Arg));
         arg = def->args;
       } else {
-        def->args->nxt = malloc(sizeof (struct Arg));
-        arg = def->args->nxt;
+        arg->nxt = malloc(sizeof (struct Arg));
+        arg = arg->nxt;
       }
       strcpy(arg->val, args->val);
     }
+    n = n->nxt;
   }
 }
 
