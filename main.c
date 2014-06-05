@@ -4,6 +4,8 @@
 #include <signal.h>
 #include <string.h>
 
+// MODEL
+
 static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
 
@@ -41,6 +43,8 @@ void freeFunc(Func* f) {
     free(f);
   }
 }
+
+// HELPER
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
   int i = strlen(str);
@@ -80,6 +84,16 @@ void output(const char* str) {
   addstr(str);
   //move(y+2, x);
   refresh();
+}
+
+// APP
+
+// A command is a fonction.
+Func parseCmd(const char* cmd) {
+}
+
+void edit(const char* cmd) {
+
 }
 
 void list(Func* d) {
@@ -182,6 +196,8 @@ void run()
         def(((char *)cmd) + 4);
       } else if (strstr(cmd, "list") == cmd) {
         list(defs);
+      } else if (strstr(cmd, "edit ") == cmd) {
+        edit(((char *)cmd) + 5);
       } else if (strstr(cmd, "exit") == cmd ||
                  strstr(cmd, "quit") == cmd) {
         return;
