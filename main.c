@@ -1,9 +1,19 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <string.h>
 
+static const int MSG_CONSOLE_SIZE = 5;
+static const char DEF_FILE_PATH[] = "defs";
+
 static void finish(int sig);
+
+struct Func {
+  char name[52];
+  char args[5][52];
+};
+typedef struct Func Func;
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
   int i = strlen(str);
@@ -22,8 +32,8 @@ char* strdelch(char* str) {
 static int msgLine = 0;
 void msg(const char* str) {
   int y, x, i;
-  int line = LINES - 5 + msgLine;
-  msgLine = (msgLine + 1) % 5;
+  int line = LINES - MSG_CONSOLE_SIZE + msgLine;
+  msgLine = (msgLine + 1) % MSG_CONSOLE_SIZE;
   for (i=0; i<COLS; i++) {
     mvdelch(line,i);
   }
@@ -34,12 +44,40 @@ void msg(const char* str) {
   refresh();
 }
 
-void def(char* d) {
-  msg(d);
+void list() {
+}
+
+void def(Func* defs, char* d) {
+  int ndef, j = 0, n = 0, i = 0;
+  char* c = d;
+  FILE *f = fopen(DEF_FILE_PATH, "a");
+  if (f == NULL) {
+    abort(); // FIXME: "Can't open definition file."
+  }
+
+  fputs(d, f);
+  fclose(f);
+
+  for (ndef = 0; strlen(defs[ndef].name); i++) {}
+  while (c != '\0') {
+    if (c == ',') {
+      if (j == 0) {
+        strncpy(defs[ndef].name, d, n * sizeof(char));
+      } else {
+        strncpy(defs[ndef].args[i], c - n, n * sizeof(char));
+      }
+      j++;
+    }
+    n++;
+    c++;
+  }
+
+  msg(defs[ndef].name);
 }
 
 void run()
 {
+  Func defs[52] = { { "", {"","","","",""} } };
   char cmd[256] = "";
   int y, x;
   addstr(">> ");
@@ -56,7 +94,7 @@ void run()
       }
     } else if (ch == '\n' || ch == '\r') {
       if (strstr(cmd, "def ") == cmd) {
-        def(((char *)cmd) + 4);
+        def(defs, ((char *)cmd) + 4);
       }
       getyx(curscr, y, x);
       mvaddstr(y+1, 0, ">> ");
