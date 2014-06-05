@@ -10,6 +10,7 @@ typedef struct Arg Arg;
 struct Func {
   char name[52];
   Arg* args;
+  Arg ret;
   struct Func* nxt;
 };
 typedef struct Func Func;

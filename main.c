@@ -100,7 +100,34 @@ Arg* parseCmd(const char* cmd) {
   }
 }
 
-void genApp() {
+void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
+  if (f != NULL) {
+    Arg* arg = f->args;
+    int n;
+
+    FILE* s = fopen("app.c", "w");
+    fprintf(s, "#include <stdlib.h>\n");
+    fprintf(s, "#include <stdio.h>\n\n");
+    fprintf(s, "int main(int argc, char* argv[])\n");
+    fprintf(s, "int main(int argc, char* argv[])\n");
+
+    while (arg != NULL) {
+      fprintf(s, "%s arg%d;\n", arg->val, n);
+      n++;
+      arg = arg->nxt;
+    }
+
+    fprintf(s, "if (argc != %d) {\n", n + 1);
+    fprintf(s, "  fprintf(stderr, \"Invalid amout of parameters.\n\");\n");
+    fprintf(s, "  return -1;\n");
+    fprintf(s, "}\n\n");
+    fprintf(s, "sscanf(argv[1],\"%%d\",&arg1);");
+    fprintf(s, "sscanf(argv[1],\"%%d\",&arg1);");
+    fprintf(s, "%s r = add(arg1, arg2);", f->ret.val);
+    fprintf(s, "printf(\"%%d\", r);"); // FIXME: Not always interger.
+    fprintf(s, "return 0;");
+    fprintf(s, "}");
+  }
 }
 
 void edit(const char* cmd) {
