@@ -20,13 +20,6 @@ static Func* defs = NULL;
 
 static Alias* aliases = NULL;
 
-void freeArg(Arg* arg) {
-  if (arg != NULL) {
-    freeArg(arg->nxt);
-    free(arg);
-  }
-}
-
 void freeFunc(Func* f) {
   if (f != NULL) {
     freeFunc(f->nxt);
@@ -56,16 +49,6 @@ Func* newFunc() {
   return func;
 }
 
-Arg* newArg() {
-  Arg* arg0 = malloc(sizeof(Arg));
-  if (arg0 == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(arg0->val, '\0', sizeof(arg0->val));
-  arg0->nxt = NULL;
-  return arg0;
-}
-
 Alias* newAlias() {
   Alias* a = malloc(sizeof(Alias));
   if (a == NULL) {
@@ -74,21 +57,6 @@ Alias* newAlias() {
   memset(a->name, '\0', sizeof(a->name));
   a->func = NULL;
   return a;
-}
-
-char* catArg(char* m, Arg* arg) {
-  if (arg != NULL) {
-    Arg* n = arg->nxt;
-    strcat(m, "Arg[\"");
-    strcat(m, arg->val);
-    while (n != NULL) {
-      strcat(m, "\", \"");
-      strcat(m, n->val);
-      n = n->nxt;
-    }
-    strcat(m, "\"]");
-  }
-  return m;
 }
 
 char* catDef(char* m, Func* f) {
