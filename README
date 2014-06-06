@@ -14,6 +14,12 @@ Quand tu fais enter, le ; est rajouter.
 Pour commencer l'intérieur ({), faire shift+enter.
 Pour finir l'intérieur (}), faire ctrl+enter.
 
+>> gen Arg val:char[52] nxt:Arg*
+=> model/Arg.h 
+=> model/Arg.c
+=> update app.h
+=> update compile.sh
+
 p-e que def est une macro, tout comme :: en serait une. if et else pourrait aussi.
 
 alias est typedef
