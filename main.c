@@ -196,7 +196,7 @@ void def(Arg* args) {
         arg->nxt = malloc(sizeof (struct Arg));
         arg = arg->nxt;
       }
-      strcpy(arg->val, args->val);
+      strcpy(arg->val, n->val);
     }
     n = n->nxt;
   }
