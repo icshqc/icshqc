@@ -32,6 +32,28 @@ void freeFunc(Func* f) {
   }
 }
 
+char* catArg(char* m, Arg* arg) {
+  if (arg != NULL) {
+    Arg* n = arg->nxt;
+    strcat(m, "Arg[\"");
+    strcat(m, arg->val);
+    while (n != NULL) {
+      strcat(m, "\", \"");
+      strcat(m, n->val);
+      n = n->nxt;
+    }
+    strcat(m, "\"]");
+  }
+  return m;
+}
+
+char* catFunc(char* m, Func* f) {
+  strcat(m, f->name);
+  strcat(m, " :: ");
+  catArg(m, f->args); 
+  return m;
+}
+
 // HELPER
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
@@ -71,6 +93,16 @@ void output(const char* str) {
   addstr("=> ");
   addstr(str);
   //move(y+2, x);
+  refresh();
+}
+
+void editFunc(Func* func) {
+  int y, x;
+  char m[256] = "";
+  getyx(curscr, y, x);
+  move(y+1, 0);
+  addstr(catFunc(m,func));
+  move(y+2, 0);
   refresh();
 }
 
@@ -130,32 +162,22 @@ void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
   }
 }
 
-void edit(const char* cmd) {
-
-}
-
-char* catArg(char* m, Arg* arg) {
+void edit(Arg* arg) {
   if (arg != NULL) {
-    Arg* n = arg->nxt;
-    strcat(m, "Arg[\"");
-    strcat(m, arg->val);
-    while (n != NULL) {
-      strcat(m, "\", \"");
-      strcat(m, n->val);
-      n = n->nxt;
+    Func* d = defs;
+    while (d != NULL) {
+      if (strcmp(d->name, arg->val) == 0) {
+        editFunc(d);
+      }
+      d = d->nxt;
     }
-    strcat(m, "\"]");
   }
-  return m;
 }
 
 void list(Func* d) {
   char m[256] = "";
   if (d != NULL) {
-    strcat(m, d->name);
-    strcat(m, " :: ");
-    catArg(m, d->args); 
-    output(m);
+    output(catFunc(m,d));
     list(d->nxt);
   }
 }
@@ -224,7 +246,9 @@ void run()
       } else if (strstr(cmd, "list") == cmd) {
         list(defs);
       } else if (strstr(cmd, "edit ") == cmd) {
-        edit(((char *)cmd) + 5);
+        Arg* args = parseCmd(((char *)cmd) + 4);
+        edit(args);
+        free(args);
       } else if (strstr(cmd, "exit") == cmd ||
                  strstr(cmd, "quit") == cmd) {
         return;
