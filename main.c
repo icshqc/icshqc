@@ -225,9 +225,9 @@ void gen(Arg* args) {
   fprintf(s, "#endif // %s_h", name);
   fclose(s);
   
-  sprintf(buf, "model/%s.c", name);
-  s = fopen(buf, "w");
-  fclose(s);
+  //sprintf(buf, "model/%s.c", name);
+  //s = fopen(buf, "w");
+  //fclose(s);
 }
 
 void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
@@ -362,6 +362,8 @@ void run()
         show(args->nxt);
       } else if (strcmp(args->val, "edit") == 0) {
         edit(args->nxt);
+      } else if (strcmp(args->val, "gen") == 0) {
+        gen(args->nxt);
       } else if (strcmp(args->val, "alias") == 0) {
         alias(args->nxt);
       } else if (strcmp(args->val, "exit") == 0 ||
