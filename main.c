@@ -35,7 +35,6 @@ void freeAlias(Alias* a) {
   }
 }
 
-// Create helper method to generate those functions. Create something like model.
 Func* newFunc() {
   Func* func = malloc(sizeof(Func));
   if (func == NULL) {
@@ -202,6 +201,31 @@ Arg* parseCmd(const char* cmd) {
 void gen(Arg* args) {
   if (args == NULL) return;
 
+  char attr[12][2][52];
+  memset(attr, '\0', sizeof(attr));
+  int nattr = 0;
+  int i;
+
+  Arg* arg = args->nxt;
+  while (arg != NULL) {
+    char* c = strchr(arg->val, ':');
+    if (c == NULL) {
+      msg("Error: Wrong syntax to generate. Missing ':' for attr.");
+      return;
+    }
+    strncpy(attr[nattr][0],arg->val,c-arg->val);
+    // FIXME: Ugly hack. Not decided yet what syntax should be anyway...
+    if (strcmp(c+1, "struct") == 0) {
+      strcpy(attr[nattr][1], "struct ");
+      strcpy(attr[nattr][1] + 7, arg->nxt->val);
+      arg = arg->nxt;
+    } else {
+      strcpy(attr[nattr][1], c+1);
+    }
+    nattr++;  
+    arg = arg->nxt;
+  }
+
   char* name = args->val;
 
   char buf[52];
@@ -214,13 +238,16 @@ void gen(Arg* args) {
   fprintf(s, "#define %s_H\n\n", name);
  
   fprintf(s, "struct %s {\n", name);
+  for (i = 0; i < nattr; i++) {
+    fprintf(s, "  %s %s;\n", attr[i][1], attr[i][0]);
+  }
   // TODO: Args
   fprintf(s, "};\n");
   fprintf(s, "typedef struct %s %s;\n\n", name, name);
  
   fprintf(s, "%s* new%s();\n", name, name);
   fprintf(s, "void free%s(%s* arg);\n", name, name);
-  fprintf(s, "char* cat%s(char* m, %s* arg);\n", name, name);
+  fprintf(s, "char* cat%s(char* m, %s* arg);\n\n", name, name);
  
   fprintf(s, "#endif // %s_h", name);
   fclose(s);
