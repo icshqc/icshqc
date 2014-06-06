@@ -161,18 +161,20 @@ void editFunc(Func* func) {
   }
 }
 
-// Splits the cmd at commas.
+// Splits the cmd at spaces, removing when many in a row.
 Arg* parseCmd(const char* cmd) {
   const char* c = cmd;
   const char* i = cmd;
   while (*c != '\0') {
     if (*c == ' ') {
-      i++;
-    } else if (*c == ',') {
-      Arg* arg = malloc(sizeof (struct Arg));
-      strncpy(arg->val, i, c - i);
-      arg->nxt = parseCmd(c+1);
-      return arg;
+      if (i == c) {
+        i++;
+      } else {
+        Arg* arg = malloc(sizeof (struct Arg));
+        strncpy(arg->val, i, c - i);
+        arg->nxt = parseCmd(c+1);
+        return arg;
+      }
     }
     c++;
   }
