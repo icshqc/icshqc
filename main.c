@@ -57,7 +57,11 @@ char* catDef(char* m, Func* f) {
 char* catFunc(char* m, Func* f) {
   catDef(m, f);
   strcat(m, "\n");
-  strcat(m, f->body);
+  if (strlen(f->body)) {
+    strcat(m, f->body);
+  } else {
+    strcat(m, "\"\"");
+  }
   return m;
 }
 
@@ -263,6 +267,16 @@ void def(Arg* args) {
   }
 }
 
+void show(Arg* arg) {
+  Func* f = funcByName(arg->val);
+  char m[600] = "";
+  if (f == NULL) {
+    output("Unkown function");
+  } else {
+    output(catFunc(m, f));
+  }
+}
+
 void run()
 {
   int y, x;
@@ -276,8 +290,12 @@ void run()
       free(args);
     } else if (strstr(cmd, "list") == cmd) {
       list(defs);
+    } else if (strstr(cmd, "show ") == cmd) {
+      Arg* args = parseCmd(((char *)cmd) + 5);
+      show(args);
+      free(args);
     } else if (strstr(cmd, "edit ") == cmd) {
-      Arg* args = parseCmd(((char *)cmd) + 4);
+      Arg* args = parseCmd(((char *)cmd) + 5);
       edit(args);
       free(args);
     } else if (strstr(cmd, "exit") == cmd ||
