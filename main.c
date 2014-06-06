@@ -81,17 +81,21 @@ char* strdelch(char* str) {
   return str;
 }
 
+// NCURSES HELPER
+
+static int indent = 0;
+
 static int msgLine = 0;
 // TODO: debug(), fatal(), error(), warn(), log()
 void msg(const char* str) {
   int y, x, i;
   int line = LINES - MSG_CONSOLE_SIZE + msgLine;
   msgLine = (msgLine + 1) % MSG_CONSOLE_SIZE;
-  for (i=0; i<COLS; i++) {
+  for (i=indent; i<COLS; i++) {
     mvdelch(line,i);
   }
   getyx(curscr, y, x);
-  move(line, 0);
+  move(line, indent);
   addstr(str);
   move(y, x);
   refresh();
@@ -100,7 +104,7 @@ void msg(const char* str) {
 void output(const char* str) {
   int y, x;
   getyx(curscr, y, x);
-  move(y+1, 0);
+  move(y+1, indent);
   addstr("=> ");
   addstr(str);
   //move(y+2, x);
