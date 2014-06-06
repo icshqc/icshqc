@@ -16,4 +16,11 @@ struct Func {
 };
 typedef struct Func Func;
 
+struct Alias {
+  char name[52];
+  Func* func;
+  struct Alias* nxt;
+};
+typedef struct Alias Alias;
+
 #endif // MODEL.h

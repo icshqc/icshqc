@@ -17,6 +17,8 @@ static void finish(int sig);
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
 
+static Alias* aliases = NULL;
+
 void freeArg(Arg* arg) {
   if (arg != NULL) {
     freeArg(arg->nxt);
@@ -32,6 +34,13 @@ void freeFunc(Func* f) {
   }
 }
 
+void freeAlias(Alias* a) {
+  if (a != NULL) {
+    freeAlias(a->nxt);
+    free(a);
+  }
+}
+
 // Create helper method to generate those functions. Create something like model.
 Func* newFunc() {
   Func* func = malloc(sizeof(Func));
@@ -43,6 +52,7 @@ Func* newFunc() {
   func->args = NULL;
   //func->ret = NULL;
   func->nxt = NULL;
+  return func;
 }
 
 Arg* newArg() {
@@ -53,6 +63,16 @@ Arg* newArg() {
   memset(arg0->val, '\0', sizeof(arg0->val));
   arg0->nxt = NULL;
   return arg0;
+}
+
+Alias* newAlias() {
+  Alias* a = malloc(sizeof(Alias));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(a->name, '\0', sizeof(a->name));
+  a->func = NULL;
+  return a;
 }
 
 char* catArg(char* m, Arg* arg) {
@@ -295,7 +315,7 @@ void def(Arg* args) {
   //  def->args = newArg();
   //  strdef->args
   //}
-  list(def);
+  list(def); // FIXME: just show one
 }
 
 void show(Arg* arg) {
@@ -305,6 +325,22 @@ void show(Arg* arg) {
     output("Unkown function");
   } else {
     output(catFunc(m, f));
+  }
+}
+
+void alias(Arg* arg) { // FIXME: Check arg count
+  Func* f = funcByName(arg->nxt->val);
+  Alias* a;
+  if (f != NULL) {
+    if (aliases == NULL) {
+      aliases = newAlias();
+      a = aliases;
+    } else {
+      aliases->nxt = newAlias();
+      a = aliases->nxt;
+    }
+    strcpy(a->name, arg->val);
+    a->func = f;
   }
 }
 
@@ -325,6 +361,8 @@ void run()
         show(args->nxt);
       } else if (strcmp(args->val, "edit") == 0) {
         edit(args->nxt);
+      } else if (strcmp(args->val, "alias") == 0) {
+        alias(args->nxt);
       } else if (strcmp(args->val, "exit") == 0 ||
                  strcmp(args->val, "quit") == 0) {
         freeArg(args);
@@ -363,6 +401,7 @@ static void finish(int sig)
   endwin();
 
   freeFunc(defs);
+  freeAlias(aliases);
 
   exit(0);
 }

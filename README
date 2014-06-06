@@ -14,6 +14,10 @@ Quand tu fais enter, le ; est rajouter.
 Pour commencer l'intérieur ({), faire shift+enter.
 Pour finir l'intérieur (}), faire ctrl+enter.
 
+p-e que def est une macro, tout comme :: en serait une. if et else pourrait aussi.
+
+alias est typedef
+
 Quand je liste, mettre un chiffre comme ca je peux referencer par le chiffre au lieu de tout recrire. Ou $+lettre
 
 Version 0.1
