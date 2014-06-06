@@ -47,10 +47,17 @@ char* catArg(char* m, Arg* arg) {
   return m;
 }
 
-char* catFunc(char* m, Func* f) {
+char* catDef(char* m, Func* f) {
   strcat(m, f->name);
   strcat(m, " :: ");
   catArg(m, f->args); 
+  return m;
+}
+
+char* catFunc(char* m, Func* f) {
+  catDef(m, f);
+  strcat(m, "\n");
+  strcat(m, f->body);
   return m;
 }
 
@@ -96,17 +103,55 @@ void output(const char* str) {
   refresh();
 }
 
-void editFunc(Func* func) {
-  int y, x;
-  char m[256] = "";
-  getyx(curscr, y, x);
-  move(y+1, 0);
-  addstr(catFunc(m,func));
-  move(y+2, 0);
-  refresh();
+// APP
+
+Func* funcByName(char* name) {
+  Func* d = defs;
+  while (d != NULL) {
+    if (strcmp(d->name, name) == 0) {
+      return d;
+    }
+    d = d->nxt;
+  }
+  return NULL;
 }
 
-// APP
+char* getInput(char* i) {
+  int y, x;
+  while (true) {
+    int ch = getch();
+    if (ch == KEY_BACKSPACE) {
+      if (strlen(i) > 0) {
+        getyx(curscr, y, x);
+        mvdelch(y, x-1);
+        strdelch(i);
+        refresh();
+      }
+    } else if (ch == '\n' || ch == '\r') {
+      return i;
+    //} else if (ch == ':') {
+    } else {
+      addch(ch);
+      straddch(i, ch);
+      refresh();
+    }
+  }
+}
+
+void editFunc(Func* func) {
+  if (func != NULL) {
+    int y, x;
+    char m[256] = "";
+    char i[256] = "";
+    getyx(curscr, y, x);
+    move(y+1, 0);
+    addstr(catDef(m,func));
+    refresh();
+    move(y+2, 0);
+    getInput(i);
+    strcpy(func->body, i);
+  }
+}
 
 // Splits the cmd at commas.
 Arg* parseCmd(const char* cmd) {
@@ -164,20 +209,14 @@ void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
 
 void edit(Arg* arg) {
   if (arg != NULL) {
-    Func* d = defs;
-    while (d != NULL) {
-      if (strcmp(d->name, arg->val) == 0) {
-        editFunc(d);
-      }
-      d = d->nxt;
-    }
+    editFunc(funcByName(arg->val));
   }
 }
 
 void list(Func* d) {
   char m[256] = "";
   if (d != NULL) {
-    output(catFunc(m,d));
+    output(catDef(m,d));
     list(d->nxt);
   }
 }
@@ -226,43 +265,29 @@ void def(Arg* args) {
 
 void run()
 {
-  char cmd[256] = "";
   int y, x;
+  char cmd[256] = "";
   addstr(">> ");
   while (true) {
-    int ch = getch();
-    if (ch == KEY_BACKSPACE) {
-      if (strlen(cmd) > 0) {
-        getyx(curscr, y, x);
-        mvdelch(y, x-1);
-        strdelch(cmd);
-        refresh();
-      }
-    } else if (ch == '\n' || ch == '\r') {
-      if (strstr(cmd, "def ") == cmd) {
-        Arg* args = parseCmd(((char *)cmd) + 4);
-        def(args);
-        free(args);
-      } else if (strstr(cmd, "list") == cmd) {
-        list(defs);
-      } else if (strstr(cmd, "edit ") == cmd) {
-        Arg* args = parseCmd(((char *)cmd) + 4);
-        edit(args);
-        free(args);
-      } else if (strstr(cmd, "exit") == cmd ||
-                 strstr(cmd, "quit") == cmd) {
-        return;
-      }
-      getyx(curscr, y, x);
-      mvaddstr(y+1, 0, ">> ");
-      refresh();
-      cmd[0] = '\0';
-    //} else if (ch == ':') {
-    } else {
-      addch(ch);
-      straddch(cmd, ch);
-      refresh();
+    getInput(cmd);
+    if (strstr(cmd, "def ") == cmd) {
+      Arg* args = parseCmd(((char *)cmd) + 4);
+      def(args);
+      free(args);
+    } else if (strstr(cmd, "list") == cmd) {
+      list(defs);
+    } else if (strstr(cmd, "edit ") == cmd) {
+      Arg* args = parseCmd(((char *)cmd) + 4);
+      edit(args);
+      free(args);
+    } else if (strstr(cmd, "exit") == cmd ||
+               strstr(cmd, "quit") == cmd) {
+      return;
     }
+    getyx(curscr, y, x);
+    mvaddstr(y+1, 0, ">> ");
+    refresh();
+    cmd[0] = '\0';
   }
 }
 

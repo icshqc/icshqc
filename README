@@ -14,6 +14,8 @@ Quand tu fais enter, le ; est rajouter.
 Pour commencer l'intérieur ({), faire shift+enter.
 Pour finir l'intérieur (}), faire ctrl+enter.
 
+Quand je liste, mettre un chiffre comme ca je peux referencer par le chiffre au lieu de tout recrire. Ou $+lettre
+
 Version 0.1
 >> def add, int x, int y, int  // Plus tard: add :: int x -> int y -> int
 >> edit add
