@@ -223,6 +223,11 @@ void gen(Arg* args) {
   fprintf(s, "char* cat%s(char* m, %s* arg);\n", name, name);
  
   fprintf(s, "#endif // %s_h", name);
+  fclose(s);
+  
+  sprintf(buf, "model/%s.c", name);
+  s = fopen(buf, "w");
+  fclose(s);
 }
 
 void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
@@ -253,6 +258,7 @@ void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
   fprintf(s, "printf(\"%%d\", r);"); // FIXME: Not always interger.
   fprintf(s, "return 0;");
   fprintf(s, "}");
+  fclose(s);
 }
 
 void edit(Arg* arg) {
