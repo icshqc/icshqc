@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <string.h>
 
+#include "app.h"
 #include "model.h"
 
 // MODEL

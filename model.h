@@ -1,12 +1,6 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-struct Arg {
-  char val[52];
-  struct Arg* nxt;
-};
-typedef struct Arg Arg;
-
 struct Func {
   char name[52];
   char body[512];
