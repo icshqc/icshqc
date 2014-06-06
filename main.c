@@ -32,6 +32,29 @@ void freeFunc(Func* f) {
   }
 }
 
+// Create helper method to generate those functions. Create something like model.
+Func* newFunc() {
+  Func* func = malloc(sizeof(Func));
+  if (func == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(func->name, '\0', sizeof(func->name));
+  memset(func->body, '\0', sizeof(func->body));
+  func->args = NULL;
+  //func->ret = NULL;
+  func->nxt = NULL;
+}
+
+Arg* newArg() {
+  Arg* arg0 = malloc(sizeof(Arg));
+  if (arg0 == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(arg0->val, '\0', sizeof(arg0->val));
+  arg0->nxt = NULL;
+  return arg0;
+}
+
 char* catArg(char* m, Arg* arg) {
   if (arg != NULL) {
     Arg* n = arg->nxt;
@@ -170,7 +193,7 @@ Arg* parseCmd(const char* cmd) {
       if (i == c) {
         i++;
       } else {
-        Arg* arg = malloc(sizeof (struct Arg));
+        Arg* arg = newArg();
         strncpy(arg->val, i, c - i);
         arg->nxt = parseCmd(c+1);
         return arg;
@@ -178,8 +201,8 @@ Arg* parseCmd(const char* cmd) {
     }
     c++;
   }
-  if (i+1 != c) {
-    Arg* arg = malloc(sizeof (struct Arg));
+  if (c - i > 0) {
+    Arg* arg = newArg();
     strcpy(arg->val, i);
     return arg;
   } else {
@@ -210,7 +233,7 @@ void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
     fprintf(s, "}\n\n");
     fprintf(s, "sscanf(argv[1],\"%%d\",&arg1);");
     fprintf(s, "sscanf(argv[1],\"%%d\",&arg1);");
-    fprintf(s, "%s r = add(arg1, arg2);", f->ret.val);
+    //fprintf(s, "%s r = add(arg1, arg2);", f->ret.val);
     fprintf(s, "printf(\"%%d\", r);"); // FIXME: Not always interger.
     fprintf(s, "return 0;");
     fprintf(s, "}");
@@ -242,35 +265,37 @@ void def(Arg* args) {
   fclose(f);*/
 
   if (def == NULL) {
-    defs = malloc (sizeof (struct Func));
+    defs = newFunc();
     def = defs;
   } else {
     while (def->nxt != NULL) {
       def = def->nxt;
     }
-    def->nxt = malloc (sizeof (struct Func));
+    def->nxt = newFunc();
     def = def->nxt;
   }
-  if (def == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  arg = def->args;
   n = args;
+  arg = def->args;
   while (n != NULL) {
     if (strlen(def->name) == 0) {
       strcpy(def->name, args->val);
     } else {
       if (arg == NULL) {
-        def->args = malloc(sizeof (struct Arg));
+        def->args = newArg();
         arg = def->args;
       } else {
-        arg->nxt = malloc(sizeof (struct Arg));
+        arg->nxt = newArg();
         arg = arg->nxt;
       }
       strcpy(arg->val, n->val);
     }
     n = n->nxt;
   }
+  //if (arg == NULL) {
+  //  def->args = newArg();
+  //  strdef->args
+  //}
+  list(def);
 }
 
 void show(Arg* arg) {
@@ -290,24 +315,25 @@ void run()
   addstr(">> ");
   while (true) {
     getInput(cmd);
-    if (strstr(cmd, "def ") == cmd) {
-      Arg* args = parseCmd(((char *)cmd) + 4);
-      def(args);
-      free(args);
-    } else if (strstr(cmd, "list") == cmd) {
-      list(defs);
-    } else if (strstr(cmd, "show ") == cmd) {
-      Arg* args = parseCmd(((char *)cmd) + 5);
-      show(args);
-      free(args);
-    } else if (strstr(cmd, "edit ") == cmd) {
-      Arg* args = parseCmd(((char *)cmd) + 5);
-      edit(args);
-      free(args);
-    } else if (strstr(cmd, "exit") == cmd ||
-               strstr(cmd, "quit") == cmd) {
-      return;
+    Arg* args = parseCmd(cmd);
+    if (args != NULL) {
+      if (strcmp(args->val, "def") == 0) {
+        def(args->nxt);
+      } else if (strcmp(args->val, "list") == 0) {
+        list(defs);
+      } else if (strcmp(args->val, "show") == 0) {
+        show(args->nxt);
+      } else if (strcmp(args->val, "edit") == 0) {
+        edit(args->nxt);
+      } else if (strcmp(args->val, "exit") == 0 ||
+                 strcmp(args->val, "quit") == 0) {
+        freeArg(args);
+        return;
+      } else {
+        output("Unkown function.");
+      }
     }
+    freeArg(args);
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
     refresh();

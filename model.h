@@ -11,7 +11,7 @@ struct Func {
   char name[52];
   char body[512];
   Arg* args;
-  Arg ret;
+  //Arg ret;
   struct Func* nxt;
 };
 typedef struct Func Func;
