@@ -332,35 +332,69 @@ Arg* parseCmd(const char* cmd) {
   fclose(s);
 }*/
 
-void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
+void run(Func* f) { // FIXME: Fonction dependencies must be added too.
   if (f == NULL) return;
+  if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
 
-  Arg* arg = f->args;
+  Arg* arg;
+  Arg* ret;
   int n;
+  int i;
 
-  FILE* s = fopen("app.c", "w");
+  FILE* s = fopen("tmp/app.c", "w");
   fprintf(s, "#include <stdlib.h>\n");
   fprintf(s, "#include <stdio.h>\n\n");
-  fprintf(s, "int main(int argc, char* argv[])\n");
-  fprintf(s, "int main(int argc, char* argv[])\n");
 
-  while (arg != NULL) {
-    fprintf(s, "%s arg%d;\n", arg->val, n);
-    n++;
-    arg = arg->nxt;
+  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
+  }
+  ret = arg;
+
+  fprintf(s, "%s %s(", ret->val, f->name);
+ 
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "%s arg%d", arg->val, n);
+    if (arg->nxt->nxt != NULL) {
+      fprintf(s, ", ");
+    }
   }
 
-  fprintf(s, "if (argc != %d) {\n", n + 1);
-  fprintf(s, "  fprintf(stderr, \"Invalid amout of parameters.\n\");\n");
-  fprintf(s, "  return -1;\n");
-  fprintf(s, "}\n\n");
-  fprintf(s, "sscanf(argv[1],\"%%d\",&arg1);");
-  fprintf(s, "sscanf(argv[1],\"%%d\",&arg1);");
-  //fprintf(s, "%s r = add(arg1, arg2);", f->ret.val);
-  fprintf(s, "printf(\"%%d\", r);"); // FIXME: Not always interger.
-  fprintf(s, "return 0;");
-  fprintf(s, "}");
+  fprintf(s, ") {\n");
+  fprintf(s, "%s", f->body);
+  fprintf(s, "\n}\n\n");
+
+  fprintf(s, "int main(int argc, char* argv[]) {\n");
+
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "  %s arg%d;\n", arg->val, n);
+  }
+
+  fprintf(s, "  if (argc != %d) {\n", n + 1);
+  fprintf(s, "    fprintf(stderr, \"Invalid amout of parameters.\\n\");\n");
+  fprintf(s, "    return -1;\n");
+  fprintf(s, "  }\n\n");
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
+  }
+  if (strcmp(ret->val, "void") == 0) {
+    fprintf(s, "  %s(", f->name);
+  } else {
+    fprintf(s, "  %s r = %s(", ret->val, f->name);
+  }
+  for (i = 0; i < n; i++) {
+    fprintf(s, "arg%d", i);
+    if (i < n-1) {
+      fprintf(s, ", ");
+    }
+  }
+  fprintf(s, ");\n");
+  if (strcmp(ret->val, "void") != 0) {
+    fprintf(s, "  printf(\"%%d\", r);\n"); // FIXME: Not always interger.
+  }
+  fprintf(s, "  return 0;\n");
+  fprintf(s, "}\n");
   fclose(s);
+
+  msg("Fonction runned.");
 }
 
 void edit(Arg* arg) {
@@ -418,6 +452,10 @@ void def(Arg* args) {
   //  def->args = newArg();
   //  strdef->args
   //}
+  if (def->args == NULL) {
+    def->args = newArg();
+    strcpy(def->args->val, "void");
+  }
   list(def); // FIXME: just show one
 }
 
@@ -447,7 +485,7 @@ void alias(Arg* arg) { // FIXME: Check arg count
   }
 }
 
-void run()
+void loop()
 {
   int y, x;
   char cmd[256] = "";
@@ -464,6 +502,8 @@ void run()
         show(args->nxt);
       } else if (strcmp(args->val, "edit") == 0) {
         edit(args->nxt);
+      } else if (strcmp(args->val, "run") == 0) {
+        run(funcByName(args->nxt->val));
       //} else if (strcmp(args->val, "gen") == 0) {
       //  gen(args->nxt);
       } else if (strcmp(args->val, "alias") == 0) {
@@ -496,7 +536,7 @@ void main()
   cbreak();       /* take input chars one at a time, no wait for \n */
   noecho();       /* dont echo the input char */
 
-  run();
+  loop();
 
   finish(0);
 }
