@@ -7,40 +7,6 @@
 #include "app.h"
 #include "model.h"
 
-/*// TYPE
-
-struct Type {
-  enum { STRUCT, POINTER, INT } type;
-  struct Type* subtype; // Some types have subtype. e.g. Pointer, Array
-  char* (*catType)(char*, struct Type*);
-  // freeType
-  // initType set to zero
-};
-typedef struct Type Type;
-
-struct TypeVal {
-  Type type;
-  char* val;
-};
-typedef struct TypeVal TypeVal;
-
-TypeVal typeVal(Type type, char* val) {
-  TypeVal v;
-  v.type = type;
-  v.val = val;
-  return v;
-}
-
-char* intCatType(char* buf, Type* type) {
-  return buf;
-}
-
-Type types[] = {
-  {INT, NULL, intCatType},
-  {POINTER, NULL, intCatType},
-  {STRUCT, NULL, intCatType}
-}; */
-
 // MODEL
 
 static const int MSG_CONSOLE_SIZE = 10;
@@ -53,6 +19,12 @@ static void finish(int sig);
 static Func* defs = NULL;
 
 static Alias* aliases = NULL;
+
+struct Lambda {
+  Arg* args;
+  char* body;
+};
+typedef struct Lambda Lambda;
 
 void freeFunc(Func* f) {
   if (f != NULL) {
@@ -206,10 +178,46 @@ void editFunc(Func* func) {
   }
 }
 
+// Return a pointer to the first non whitespace char of the string.
+char* trim(char* s) {
+  char* c = s;
+  while (*c != '\0' && *c == ' ') {
+    c++;
+  }
+  return c;
+}
+
+Lambda* parseLambda(char* s) {
+  Lambda* l = malloc(sizeof(Lambda)); // newLambda...
+  if (l == NULL) {
+    abort();
+  }
+  l->args = NULL;
+  l->body = "";
+  char* c = trim(s);
+  if (*c != '\\') {
+    msg("Unable to parse lambda");
+    return NULL;
+  }
+  c = trim(c++);
+  char* i = c;
+  while (!(*c == '-' && *(c+1) == '>')) {
+    if (*c == '\\') {
+    } else if (*c == ' ') {
+      if (i == c) {
+        i++;
+      } else {
+      }
+    }
+    c++;
+  }
+
+}
+
 // Splits the cmd at spaces, removing when many in a row.
-Arg* parseCmd(const char* cmd) {
-  const char* c = cmd;
-  const char* i = cmd;
+Arg* parseCmd(char* cmd) {
+  char* c = cmd;
+  char* i = cmd;
   while (*c != '\0') {
     if (*c == ' ') {
       if (i == c) {
@@ -232,6 +240,7 @@ Arg* parseCmd(const char* cmd) {
   }
 }
 
+// Fuck gen. A la place, creer des types dans le nouveau language de prog et ca rajoute des fonctions automatique.
 /*void gen(Arg* args) {
   if (args == NULL) return;
 
@@ -550,3 +559,39 @@ static void finish(int sig)
 
   exit(0);
 }
+
+
+/*// TYPE
+
+struct Type {
+  enum { STRUCT, POINTER, INT } type;
+  struct Type* subtype; // Some types have subtype. e.g. Pointer, Array
+  char* (*catType)(char*, struct Type*);
+  // freeType
+  // initType set to zero
+};
+typedef struct Type Type;
+
+struct TypeVal {
+  Type type;
+  char* val;
+};
+typedef struct TypeVal TypeVal;
+
+TypeVal typeVal(Type type, char* val) {
+  TypeVal v;
+  v.type = type;
+  v.val = val;
+  return v;
+}
+
+char* intCatType(char* buf, Type* type) {
+  return buf;
+}
+
+Type types[] = {
+  {INT, NULL, intCatType},
+  {POINTER, NULL, intCatType},
+  {STRUCT, NULL, intCatType}
+}; */
+
