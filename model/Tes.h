@@ -4,12 +4,11 @@
 #define Tes_H
 
 struct Tes {
-  char* val;
-  struct Tes* nxt;
 };
 typedef struct Tes Tes;
 
 Tes* newTes();
-void freeTes(Tes* arg);
-char* catTes(char* m, Tes* arg);
+void freeTes(Tes* a);
+char* catTes(char* m, Tes* a);
+
 #endif // Tes_h

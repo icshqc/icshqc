@@ -7,6 +7,40 @@
 #include "app.h"
 #include "model.h"
 
+// TYPE
+
+struct Type {
+  enum { STRUCT, POINTER, INT } type;
+  struct Type* subtype; // Some types have subtype. e.g. Pointer, Array
+  char* (*catType)(char*, struct Type*);
+  // freeType
+  // initType set to zero
+};
+typedef struct Type Type;
+
+struct TypeVal {
+  Type type;
+  char* val;
+};
+typedef struct TypeVal TypeVal;
+
+TypeVal typeVal(Type type, char* val) {
+  TypeVal v;
+  v.type = type;
+  v.val = val;
+  return v;
+}
+
+char* intCatType(char* buf, Type* type) {
+  return buf;
+}
+
+Type types[] = {
+  {INT, NULL, intCatType},
+  {POINTER, NULL, intCatType},
+  {STRUCT, NULL, intCatType}
+};
+
 // MODEL
 
 static const int MSG_CONSOLE_SIZE = 10;
@@ -206,6 +240,7 @@ void gen(Arg* args) {
   int nattr = 0;
   int i;
 
+  // FIXME: Array does not work. Need to add char name[24]; !!! Need to add [24] after name.
   Arg* arg = args->nxt;
   while (arg != NULL) {
     char* c = strchr(arg->val, ':');
@@ -246,15 +281,55 @@ void gen(Arg* args) {
   fprintf(s, "typedef struct %s %s;\n\n", name, name);
  
   fprintf(s, "%s* new%s();\n", name, name);
-  fprintf(s, "void free%s(%s* arg);\n", name, name);
-  fprintf(s, "char* cat%s(char* m, %s* arg);\n\n", name, name);
+  fprintf(s, "void free%s(%s* a);\n", name, name);
+  fprintf(s, "char* cat%s(char* m, %s* a);\n\n", name, name);
  
   fprintf(s, "#endif // %s_h", name);
   fclose(s);
   
-  //sprintf(buf, "model/%s.c", name);
-  //s = fopen(buf, "w");
-  //fclose(s);
+  sprintf(buf, "model/%s.c", name);
+  s = fopen(buf, "w");
+  fprintf(s, "#include <stdlib.h>\n");
+  fprintf(s, "#include <stdio.h>\n");
+  fprintf(s, "#include <string.h>\n\n");
+ 
+  fprintf(s, "#include \"%s.h\"\n\n", name);
+ 
+  fprintf(s, "void free%s(%s* a) {\n", name, name);
+  fprintf(s, "  if (a != NULL) {\n");
+  // FIXME: Check for pointers and free those. Yet should you always free?
+  // fprintf(s, "    freeArg(arg->nxt);");
+  fprintf(s, "    free(a);\n");
+  fprintf(s, "  }\n");
+  fprintf(s, "}\n\n");
+ 
+  fprintf(s, "%s* new%s() {\n", name, name);
+  fprintf(s, "  %s* a = malloc(sizeof(%s));\n", name, name);
+  fprintf(s, "  if (a == NULL) {\n");
+  fprintf(s, "    abort(); // FIXME msg: Can't allocate memory\n");
+  fprintf(s, "  }\n");
+  // FIXME: Init args
+  //fprintf(s, "  memset(arg0->val, '\0', sizeof(arg0->val));");
+  //fprintf(s, "  arg0->nxt = NULL;");
+  fprintf(s, "  return a;\n");
+  fprintf(s, "}\n\n");
+ 
+//  fprintf(s, "char* cat%s(char* m, %s* a) {\n", name, name);
+//  fprintf(s, "  if (a != NULL) {\n");
+  //fprintf(s, "    Arg* n = arg->nxt;"); // FIXME
+//  fprintf(s, "    strcat(m, \"%s[\\\"\");\n", name);
+  //fprintf(s, "    strcat(m, arg->val);"); // FIXME
+  //fprintf(s, "    while (n != NULL) {");
+  //fprintf(s, "      strcat(m, \"\\\", \\\"\");");
+  //fprintf(s, "      strcat(m, n->val);");
+  //fprintf(s, "      n = n->nxt;");
+  //fprintf(s, "    }");
+//  fprintf(s, "    strcat(m, \"\\\"]\");\n");
+//  fprintf(s, "  }\n");
+//  fprintf(s, "  return m;\n");
+//  fprintf(s, "}\n");
+
+  fclose(s);
 }
 
 void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
