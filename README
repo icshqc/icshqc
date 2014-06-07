@@ -14,6 +14,18 @@ Quand tu fais enter, le ; est rajouter.
 Pour commencer l'intérieur ({), faire shift+enter.
 Pour finir l'intérieur (}), faire ctrl+enter.
 
+>> def add int int int
+Plus tard:
+>> def add :: int -> int -> int
+--
+>> edit add
+\x y -> return x + y;
+
+Toutes les fonctions sont ecrites sous formes de lambda.
+Pour l'instant, meme les fonctions sans args...
+
+main = \ ->
+
 >> gen Arg val:char[52] nxt:Arg*
 => model/Arg.h 
 => model/Arg.c

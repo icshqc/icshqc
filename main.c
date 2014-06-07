@@ -7,7 +7,7 @@
 #include "app.h"
 #include "model.h"
 
-// TYPE
+/*// TYPE
 
 struct Type {
   enum { STRUCT, POINTER, INT } type;
@@ -39,7 +39,7 @@ Type types[] = {
   {INT, NULL, intCatType},
   {POINTER, NULL, intCatType},
   {STRUCT, NULL, intCatType}
-};
+}; */
 
 // MODEL
 
@@ -232,11 +232,11 @@ Arg* parseCmd(const char* cmd) {
   }
 }
 
-void gen(Arg* args) {
+/*void gen(Arg* args) {
   if (args == NULL) return;
 
-  char attr[12][2][52];
-  memset(attr, '\0', sizeof(attr));
+  TypeVal attr[12];
+  memset(attr, 0, sizeof(attr));
   int nattr = 0;
   int i;
 
@@ -248,11 +248,11 @@ void gen(Arg* args) {
       msg("Error: Wrong syntax to generate. Missing ':' for attr.");
       return;
     }
-    strncpy(attr[nattr][0],arg->val,c-arg->val);
+    strncpy(attr[nattr].val,arg->val,c-arg->val);
     // FIXME: Ugly hack. Not decided yet what syntax should be anyway...
     if (strcmp(c+1, "struct") == 0) {
-      strcpy(attr[nattr][1], "struct ");
-      strcpy(attr[nattr][1] + 7, arg->nxt->val);
+      strcpy(attr[nattr].val, "struct ");
+      strcpy(attr[nattr].val + 7, arg->nxt->val);
       arg = arg->nxt;
     } else {
       strcpy(attr[nattr][1], c+1);
@@ -330,7 +330,7 @@ void gen(Arg* args) {
 //  fprintf(s, "}\n");
 
   fclose(s);
-}
+}*/
 
 void genApp(Func* f) { // FIXME: Fonction dependencies must be added too.
   if (f == NULL) return;
@@ -464,8 +464,8 @@ void run()
         show(args->nxt);
       } else if (strcmp(args->val, "edit") == 0) {
         edit(args->nxt);
-      } else if (strcmp(args->val, "gen") == 0) {
-        gen(args->nxt);
+      //} else if (strcmp(args->val, "gen") == 0) {
+      //  gen(args->nxt);
       } else if (strcmp(args->val, "alias") == 0) {
         alias(args->nxt);
       } else if (strcmp(args->val, "exit") == 0 ||
