@@ -9,6 +9,7 @@ Plus tard, pour eviter de reloader l'application au complet,
 pour que ce soit real time, avoir une application dans une autre.
 L'application parent gererait tout ce qui est statique et ne change pas,
 l'application enfant reloaderait tout ce qui peut changer comme les fonctions.
+La premiere app est l'editeur. La seconde est le proglang.
 
 Quand tu fais enter, le ; est rajouter.
 Pour commencer l'intérieur ({), faire shift+enter.
@@ -25,6 +26,8 @@ Toutes les fonctions sont ecrites sous formes de lambda.
 Pour l'instant, meme les fonctions sans args...
 
 main = \ ->
+
+Ajouter une petite db interne pour pouvoir rechercher les fonctions par noms et par types.
 
 >> gen Arg val:char[52] nxt:Arg*
 => model/Arg.h 
