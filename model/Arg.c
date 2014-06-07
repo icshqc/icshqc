@@ -4,6 +4,16 @@
 
 #include "Arg.h"
 
+// Functions that should be gen for linked list.
+Arg* appendNewArg(Arg* arg) {
+  if (arg == NULL) {
+    return newArg();
+  } else {
+    arg->nxt = newArg();
+    return arg->nxt;
+  }
+}
+
 void freeArg(Arg* arg) {
   if (arg != NULL) {
     freeArg(arg->nxt);

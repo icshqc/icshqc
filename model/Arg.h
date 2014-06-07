@@ -9,6 +9,7 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
+Arg* appendNewArg(Arg* arg);
 void freeArg(Arg* arg);
 Arg* newArg();
 char* catArg(char* m, Arg* arg);

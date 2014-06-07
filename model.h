@@ -1,9 +1,15 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+struct Lambda {
+  Arg* args;
+  char body[256];
+};
+typedef struct Lambda Lambda;
+
 struct Func {
   char name[52];
-  char body[512];
+  Lambda* lambda;
   Arg* args;
   //Arg ret;
   struct Func* nxt;

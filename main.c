@@ -20,16 +20,13 @@ static Func* defs = NULL;
 
 static Alias* aliases = NULL;
 
-struct Lambda {
-  Arg* args;
-  char* body;
-};
-typedef struct Lambda Lambda;
-
 void freeFunc(Func* f) {
   if (f != NULL) {
     freeFunc(f->nxt);
     freeArg(f->args);
+    if (f->lambda != NULL) {
+      free(f->lambda);
+    }
     free(f);
   }
 }
@@ -47,7 +44,7 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(func->name, '\0', sizeof(func->name));
-  memset(func->body, '\0', sizeof(func->body));
+  func->lambda = NULL;
   func->args = NULL;
   //func->ret = NULL;
   func->nxt = NULL;
@@ -72,10 +69,17 @@ char* catDef(char* m, Func* f) {
 }
 
 char* catFunc(char* m, Func* f) {
+  Arg* arg;
   catDef(m, f);
   strcat(m, "\n");
-  if (strlen(f->body)) {
-    strcat(m, f->body);
+  if (f->lambda != NULL) {
+    strcat(m, "\\");
+    for (arg = f->lambda->args; arg != NULL; arg = arg->nxt) {
+      strcat(m, arg->val);
+      strcat(m, " ");
+    }
+    strcat(m, "-> ");
+    strcat(m, f->lambda->body);
   } else {
     strcat(m, "\"\"");
   }
@@ -163,21 +167,6 @@ char* getInput(char* i) {
   }
 }
 
-void editFunc(Func* func) {
-  if (func != NULL) {
-    int y, x;
-    char m[256] = "";
-    char i[256] = "";
-    getyx(curscr, y, x);
-    move(y+1, 0);
-    addstr(catDef(m,func));
-    refresh();
-    move(y+2, 0);
-    getInput(i);
-    strcpy(func->body, i);
-  }
-}
-
 // Return a pointer to the first non whitespace char of the string.
 char* trim(char* s) {
   char* c = s;
@@ -193,25 +182,31 @@ Lambda* parseLambda(char* s) {
     abort();
   }
   l->args = NULL;
-  l->body = "";
+  memset(l->body, '\0', (sizeof l->body));
   char* c = trim(s);
-  if (*c != '\\') {
+  if (*c != '\\' || strlen(c) < 3) {
     msg("Unable to parse lambda");
     return NULL;
   }
-  c = trim(c++);
+  c = trim(c+1);
   char* i = c;
+  Arg* arg = NULL;
   while (!(*c == '-' && *(c+1) == '>')) {
-    if (*c == '\\') {
+    if (*(c+1) == '\0') {
+      msg("Unable to parse lambda. Missing value.");
     } else if (*c == ' ') {
-      if (i == c) {
-        i++;
-      } else {
+      arg = appendNewArg(arg);
+      if (l->args == NULL) {
+        l->args = arg;
       }
+      strncpy(arg->val, i, c - i);
+    } else if (*c < 'a' || *c > 'z') {
+      msg("Unable to parse lambda. Invalid arg name.");
     }
     c++;
   }
-
+  strcpy(l->body, trim(c+2));
+  return l;
 }
 
 // Splits the cmd at spaces, removing when many in a row.
@@ -239,6 +234,275 @@ Arg* parseCmd(char* cmd) {
     return NULL;
   }
 }
+
+void editFunc(Func* func) {
+  if (func != NULL) {
+    int y, x;
+    char m[256] = "";
+    char i[256] = "";
+    getyx(curscr, y, x);
+    move(y+1, 0);
+    addstr(catDef(m,func));
+    refresh();
+    move(y+2, 0);
+    getInput(i);
+    func->lambda = parseLambda(i);
+  }
+}
+
+void run(Func* f) { // FIXME: Fonction dependencies must be added too.
+  if (f == NULL) return;
+  if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
+
+  Arg* arg;
+  Arg* ret;
+  int n;
+  int i;
+
+  FILE* s = fopen("tmp/app.c", "w");
+  fprintf(s, "#include <stdlib.h>\n");
+  fprintf(s, "#include <stdio.h>\n\n");
+
+  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
+  }
+  ret = arg;
+
+  fprintf(s, "%s %s(", ret->val, f->name);
+ 
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "%s arg%d", arg->val, n);
+    if (arg->nxt->nxt != NULL) {
+      fprintf(s, ", ");
+    }
+  }
+
+  fprintf(s, ") {\n");
+  //fprintf(s, "%s", f->body);
+  fprintf(s, "\n}\n\n");
+
+  fprintf(s, "int main(int argc, char* argv[]) {\n");
+
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "  %s arg%d;\n", arg->val, n);
+  }
+
+  fprintf(s, "  if (argc != %d) {\n", n + 1);
+  fprintf(s, "    fprintf(stderr, \"Invalid amout of parameters.\\n\");\n");
+  fprintf(s, "    return -1;\n");
+  fprintf(s, "  }\n\n");
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
+  }
+  if (strcmp(ret->val, "void") == 0) {
+    fprintf(s, "  %s(", f->name);
+  } else {
+    fprintf(s, "  %s r = %s(", ret->val, f->name);
+  }
+  for (i = 0; i < n; i++) {
+    fprintf(s, "arg%d", i);
+    if (i < n-1) {
+      fprintf(s, ", ");
+    }
+  }
+  fprintf(s, ");\n");
+  if (strcmp(ret->val, "void") != 0) {
+    fprintf(s, "  printf(\"%%d\", r);\n"); // FIXME: Not always interger.
+  }
+  fprintf(s, "  return 0;\n");
+  fprintf(s, "}\n");
+  fclose(s);
+
+  msg("Fonction runned.");
+}
+
+void edit(Arg* arg) {
+  if (arg != NULL) {
+    editFunc(funcByName(arg->val));
+  }
+}
+
+void list(Func* d) {
+  char m[256] = "";
+  if (d != NULL) {
+    output(catDef(m,d));
+    list(d->nxt);
+  }
+}
+
+void def(Arg* args) {
+  Func* def = defs;
+  Arg* arg = NULL;
+  Arg* n = args;
+  /*FILE *f = fopen(DEF_FILE_PATH, "a");
+  if (f == NULL) {
+    abort(); // FIXME: "Can't open definition file."
+  }
+  fputs(d, f);
+  fclose(f);*/
+
+  if (def == NULL) {
+    defs = newFunc();
+    def = defs;
+  } else {
+    while (def->nxt != NULL) {
+      def = def->nxt;
+    }
+    def->nxt = newFunc();
+    def = def->nxt;
+  }
+  while (n != NULL) {
+    if (strlen(def->name) == 0) {
+      strcpy(def->name, args->val);
+    } else {
+      arg = appendNewArg(arg);
+      if (def->args == NULL) {
+        def->args = arg;
+      }
+      strcpy(arg->val, n->val);
+    }
+    n = n->nxt;
+  }
+  //if (arg == NULL) {
+  //  def->args = newArg();
+  //  strdef->args
+  //}
+  if (def->args == NULL) {
+    def->args = newArg();
+    strcpy(def->args->val, "void");
+  }
+  list(def); // FIXME: just show one
+}
+
+void show(Arg* arg) {
+  Func* f = funcByName(arg->val);
+  char m[600] = "";
+  if (f == NULL) {
+    output("Unkown function");
+  } else {
+    output(catFunc(m, f));
+  }
+}
+
+void alias(Arg* arg) { // FIXME: Check arg count
+  Func* f = funcByName(arg->nxt->val);
+  Alias* a;
+  if (f != NULL) {
+    if (aliases == NULL) {
+      aliases = newAlias();
+      a = aliases;
+    } else {
+      aliases->nxt = newAlias();
+      a = aliases->nxt;
+    }
+    strcpy(a->name, arg->val);
+    a->func = f;
+  }
+}
+
+void loop()
+{
+  int y, x;
+  char cmd[256] = "";
+  addstr(">> ");
+  while (true) {
+    getInput(cmd);
+    Arg* args = parseCmd(cmd);
+    if (args != NULL) {
+      if (strcmp(args->val, "def") == 0) {
+        def(args->nxt);
+      } else if (strcmp(args->val, "list") == 0) {
+        list(defs);
+      } else if (strcmp(args->val, "show") == 0) {
+        show(args->nxt);
+      } else if (strcmp(args->val, "edit") == 0) {
+        edit(args->nxt);
+      } else if (strcmp(args->val, "run") == 0) {
+        run(funcByName(args->nxt->val));
+      //} else if (strcmp(args->val, "gen") == 0) {
+      //  gen(args->nxt);
+      } else if (strcmp(args->val, "alias") == 0) {
+        alias(args->nxt);
+      } else if (strcmp(args->val, "exit") == 0 ||
+                 strcmp(args->val, "quit") == 0) {
+        freeArg(args);
+        args = NULL;
+        return;
+      } else {
+        output("Unkown function.");
+      }
+    }
+    freeArg(args);
+    args = NULL;
+    getyx(curscr, y, x);
+    mvaddstr(y+1, 0, ">> ");
+    refresh();
+    cmd[0] = '\0';
+  }
+}
+
+void main()
+{
+  signal(SIGINT, finish);      /* arrange interrupts to terminate */
+
+  /* initialize your non-curses data structures here */
+
+  initscr();
+  keypad(stdscr, TRUE);
+  nonl();         /* tell curses not to do NL->CR/NL on output */
+  cbreak();       /* take input chars one at a time, no wait for \n */
+  noecho();       /* dont echo the input char */
+
+  loop();
+
+  finish(0);
+}
+
+static void finish(int sig)
+{
+  endwin();
+
+  freeFunc(defs);
+  defs = NULL;
+  freeAlias(aliases);
+  aliases = NULL;
+
+  exit(0);
+}
+
+
+/*// TYPE
+
+struct Type {
+  enum { STRUCT, POINTER, INT } type;
+  struct Type* subtype; // Some types have subtype. e.g. Pointer, Array
+  char* (*catType)(char*, struct Type*);
+  // freeType
+  // initType set to zero
+};
+typedef struct Type Type;
+
+struct TypeVal {
+  Type type;
+  char* val;
+};
+typedef struct TypeVal TypeVal;
+
+TypeVal typeVal(Type type, char* val) {
+  TypeVal v;
+  v.type = type;
+  v.val = val;
+  return v;
+}
+
+char* intCatType(char* buf, Type* type) {
+  return buf;
+}
+
+Type types[] = {
+  {INT, NULL, intCatType},
+  {POINTER, NULL, intCatType},
+  {STRUCT, NULL, intCatType}
+}; */
 
 // Fuck gen. A la place, creer des types dans le nouveau language de prog et ca rajoute des fonctions automatique.
 /*void gen(Arg* args) {
@@ -340,258 +604,4 @@ Arg* parseCmd(char* cmd) {
 
   fclose(s);
 }*/
-
-void run(Func* f) { // FIXME: Fonction dependencies must be added too.
-  if (f == NULL) return;
-  if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
-
-  Arg* arg;
-  Arg* ret;
-  int n;
-  int i;
-
-  FILE* s = fopen("tmp/app.c", "w");
-  fprintf(s, "#include <stdlib.h>\n");
-  fprintf(s, "#include <stdio.h>\n\n");
-
-  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
-  }
-  ret = arg;
-
-  fprintf(s, "%s %s(", ret->val, f->name);
- 
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "%s arg%d", arg->val, n);
-    if (arg->nxt->nxt != NULL) {
-      fprintf(s, ", ");
-    }
-  }
-
-  fprintf(s, ") {\n");
-  fprintf(s, "%s", f->body);
-  fprintf(s, "\n}\n\n");
-
-  fprintf(s, "int main(int argc, char* argv[]) {\n");
-
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "  %s arg%d;\n", arg->val, n);
-  }
-
-  fprintf(s, "  if (argc != %d) {\n", n + 1);
-  fprintf(s, "    fprintf(stderr, \"Invalid amout of parameters.\\n\");\n");
-  fprintf(s, "    return -1;\n");
-  fprintf(s, "  }\n\n");
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
-  }
-  if (strcmp(ret->val, "void") == 0) {
-    fprintf(s, "  %s(", f->name);
-  } else {
-    fprintf(s, "  %s r = %s(", ret->val, f->name);
-  }
-  for (i = 0; i < n; i++) {
-    fprintf(s, "arg%d", i);
-    if (i < n-1) {
-      fprintf(s, ", ");
-    }
-  }
-  fprintf(s, ");\n");
-  if (strcmp(ret->val, "void") != 0) {
-    fprintf(s, "  printf(\"%%d\", r);\n"); // FIXME: Not always interger.
-  }
-  fprintf(s, "  return 0;\n");
-  fprintf(s, "}\n");
-  fclose(s);
-
-  msg("Fonction runned.");
-}
-
-void edit(Arg* arg) {
-  if (arg != NULL) {
-    editFunc(funcByName(arg->val));
-  }
-}
-
-void list(Func* d) {
-  char m[256] = "";
-  if (d != NULL) {
-    output(catDef(m,d));
-    list(d->nxt);
-  }
-}
-
-void def(Arg* args) {
-  Func* def = defs;
-  Arg *arg, *n;
-  /*FILE *f = fopen(DEF_FILE_PATH, "a");
-  if (f == NULL) {
-    abort(); // FIXME: "Can't open definition file."
-  }
-  fputs(d, f);
-  fclose(f);*/
-
-  if (def == NULL) {
-    defs = newFunc();
-    def = defs;
-  } else {
-    while (def->nxt != NULL) {
-      def = def->nxt;
-    }
-    def->nxt = newFunc();
-    def = def->nxt;
-  }
-  n = args;
-  arg = def->args;
-  while (n != NULL) {
-    if (strlen(def->name) == 0) {
-      strcpy(def->name, args->val);
-    } else {
-      if (arg == NULL) {
-        def->args = newArg();
-        arg = def->args;
-      } else {
-        arg->nxt = newArg();
-        arg = arg->nxt;
-      }
-      strcpy(arg->val, n->val);
-    }
-    n = n->nxt;
-  }
-  //if (arg == NULL) {
-  //  def->args = newArg();
-  //  strdef->args
-  //}
-  if (def->args == NULL) {
-    def->args = newArg();
-    strcpy(def->args->val, "void");
-  }
-  list(def); // FIXME: just show one
-}
-
-void show(Arg* arg) {
-  Func* f = funcByName(arg->val);
-  char m[600] = "";
-  if (f == NULL) {
-    output("Unkown function");
-  } else {
-    output(catFunc(m, f));
-  }
-}
-
-void alias(Arg* arg) { // FIXME: Check arg count
-  Func* f = funcByName(arg->nxt->val);
-  Alias* a;
-  if (f != NULL) {
-    if (aliases == NULL) {
-      aliases = newAlias();
-      a = aliases;
-    } else {
-      aliases->nxt = newAlias();
-      a = aliases->nxt;
-    }
-    strcpy(a->name, arg->val);
-    a->func = f;
-  }
-}
-
-void loop()
-{
-  int y, x;
-  char cmd[256] = "";
-  addstr(">> ");
-  while (true) {
-    getInput(cmd);
-    Arg* args = parseCmd(cmd);
-    if (args != NULL) {
-      if (strcmp(args->val, "def") == 0) {
-        def(args->nxt);
-      } else if (strcmp(args->val, "list") == 0) {
-        list(defs);
-      } else if (strcmp(args->val, "show") == 0) {
-        show(args->nxt);
-      } else if (strcmp(args->val, "edit") == 0) {
-        edit(args->nxt);
-      } else if (strcmp(args->val, "run") == 0) {
-        run(funcByName(args->nxt->val));
-      //} else if (strcmp(args->val, "gen") == 0) {
-      //  gen(args->nxt);
-      } else if (strcmp(args->val, "alias") == 0) {
-        alias(args->nxt);
-      } else if (strcmp(args->val, "exit") == 0 ||
-                 strcmp(args->val, "quit") == 0) {
-        freeArg(args);
-        return;
-      } else {
-        output("Unkown function.");
-      }
-    }
-    freeArg(args);
-    getyx(curscr, y, x);
-    mvaddstr(y+1, 0, ">> ");
-    refresh();
-    cmd[0] = '\0';
-  }
-}
-
-void main()
-{
-  signal(SIGINT, finish);      /* arrange interrupts to terminate */
-
-  /* initialize your non-curses data structures here */
-
-  initscr();
-  keypad(stdscr, TRUE);
-  nonl();         /* tell curses not to do NL->CR/NL on output */
-  cbreak();       /* take input chars one at a time, no wait for \n */
-  noecho();       /* dont echo the input char */
-
-  loop();
-
-  finish(0);
-}
-
-static void finish(int sig)
-{
-  endwin();
-
-  freeFunc(defs);
-  freeAlias(aliases);
-
-  exit(0);
-}
-
-
-/*// TYPE
-
-struct Type {
-  enum { STRUCT, POINTER, INT } type;
-  struct Type* subtype; // Some types have subtype. e.g. Pointer, Array
-  char* (*catType)(char*, struct Type*);
-  // freeType
-  // initType set to zero
-};
-typedef struct Type Type;
-
-struct TypeVal {
-  Type type;
-  char* val;
-};
-typedef struct TypeVal TypeVal;
-
-TypeVal typeVal(Type type, char* val) {
-  TypeVal v;
-  v.type = type;
-  v.val = val;
-  return v;
-}
-
-char* intCatType(char* buf, Type* type) {
-  return buf;
-}
-
-Type types[] = {
-  {INT, NULL, intCatType},
-  {POINTER, NULL, intCatType},
-  {STRUCT, NULL, intCatType}
-}; */
 
