@@ -281,7 +281,8 @@ void compile(Func* f) {
   }
 }
 
-void run(Func* f) { // FIXME: Fonction dependencies must be added too.
+void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
+  Func* f = funcByName(args->val);
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
 
@@ -337,7 +338,13 @@ void run(Func* f) { // FIXME: Fonction dependencies must be added too.
   msg("Fonction compiled.");
 
   char retVal[1024] = "";
-  FILE *fp = popen("gcc -o tmp/app tmp/app.c && ./tmp/app", "r"); // TODO: Args
+  char cmd[256] = "";
+  strcat(cmd, "gcc -o tmp/app tmp/app.c && ./tmp/app");
+  for (arg = args->nxt; arg != NULL; arg = arg->nxt) {
+    strcat(cmd, " "); 
+    strcat(cmd, arg->val); 
+  }
+  FILE *fp = popen(cmd, "r"); // TODO: Args
 
   fscanf(fp, "%s", retVal);
   pclose(fp);
@@ -474,7 +481,7 @@ void loop()
       } else if (strcmp(args->val, "c") == 0) {
         compile(funcByName(args->nxt->val));
       } else if (strcmp(args->val, "r") == 0) {
-        run(funcByName(args->nxt->val));
+        run(args->nxt);
       } else if (strcmp(args->val, "=") == 0) {
         assign(args->nxt);
       //} else if (strcmp(args->val, "gen") == 0) {
