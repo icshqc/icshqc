@@ -200,6 +200,7 @@ Lambda* parseLambda(char* s) {
         l->args = arg;
       }
       strncpy(arg->val, i, c - i);
+      i = c;
     } else if (*c < 'a' || *c > 'z') {
       msg("Unable to parse lambda. Invalid arg name.");
     }
@@ -250,6 +251,48 @@ void editFunc(Func* func) {
   }
 }
 
+void compileFunc(char* s, Func* f) {
+  char tmp[1024] = "";
+  Arg* ret;
+  Arg* arg;
+  Arg* arg2 = NULL;
+  int n;
+
+  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
+  }
+  ret = arg;
+
+  sprintf(tmp, "%s %s(", ret->val, f->name);
+  strcat(s, tmp);
+ 
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    if (f->lambda) {
+      arg2 = (arg2 == NULL) ? f->lambda->args : arg2->nxt;
+      sprintf(tmp, "%s %s", arg->val, arg2->val);
+    } else {
+      sprintf(tmp, "%s arg%d", arg->val, n);
+    }
+    strcat(s, tmp);
+    if (arg->nxt->nxt != NULL) {
+      strcat(s, ", ");
+    }
+  }
+
+  strcat(s, ") {\n");
+  if (f->lambda) {
+    strcat(s, f->lambda->body);
+  }
+  strcat(s, "\n}");
+}
+
+void compile(Func* f) {
+  if (f != NULL) {
+    char fs[2056] = "";
+    compileFunc(fs, f);
+    output(fs);
+  }
+}
+
 void run(Func* f) { // FIXME: Fonction dependencies must be added too.
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
@@ -266,21 +309,12 @@ void run(Func* f) { // FIXME: Fonction dependencies must be added too.
   for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
   }
   ret = arg;
+  
+  char fs[2056] = "";
+  compileFunc(fs, f);
+  fprintf(s, "%s", fs);
 
-  fprintf(s, "%s %s(", ret->val, f->name);
- 
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "%s arg%d", arg->val, n);
-    if (arg->nxt->nxt != NULL) {
-      fprintf(s, ", ");
-    }
-  }
-
-  fprintf(s, ") {\n");
-  //fprintf(s, "%s", f->body);
-  fprintf(s, "\n}\n\n");
-
-  fprintf(s, "int main(int argc, char* argv[]) {\n");
+  fprintf(s, "\n\nint main(int argc, char* argv[]) {\n");
 
   for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
     fprintf(s, "  %s arg%d;\n", arg->val, n);
@@ -408,22 +442,25 @@ void loop()
     getInput(cmd);
     Arg* args = parseCmd(cmd);
     if (args != NULL) {
-      if (strcmp(args->val, "def") == 0) {
+      if (strcmp(args->val, "d") == 0) {
         def(args->nxt);
-      } else if (strcmp(args->val, "list") == 0) {
+      } else if (strcmp(args->val, "l") == 0) {
         list(defs);
-      } else if (strcmp(args->val, "show") == 0) {
+      } else if (strcmp(args->val, "s") == 0) {
         show(args->nxt);
-      } else if (strcmp(args->val, "edit") == 0) {
+      } else if (strcmp(args->val, "e") == 0) {
         edit(args->nxt);
-      } else if (strcmp(args->val, "run") == 0) {
+      } else if (strcmp(args->val, "c") == 0) {
+        compile(funcByName(args->nxt->val));
+      } else if (strcmp(args->val, "r") == 0) {
         run(funcByName(args->nxt->val));
       //} else if (strcmp(args->val, "gen") == 0) {
       //  gen(args->nxt);
-      } else if (strcmp(args->val, "alias") == 0) {
+      } else if (strcmp(args->val, "a") == 0) {
         alias(args->nxt);
       } else if (strcmp(args->val, "exit") == 0 ||
-                 strcmp(args->val, "quit") == 0) {
+                 strcmp(args->val, "quit") == 0 ||
+                 strcmp(args->val, "q") == 0) {
         freeArg(args);
         args = NULL;
         return;
