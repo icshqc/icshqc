@@ -237,18 +237,6 @@ Arg* parseCmd(char* cmd) {
 }
 
 void editFunc(Func* func) {
-  if (func != NULL) {
-    int y, x;
-    char m[256] = "";
-    char i[256] = "";
-    getyx(curscr, y, x);
-    move(y+1, 0);
-    addstr(catDef(m,func));
-    refresh();
-    move(y+2, 0);
-    getInput(i);
-    func->lambda = parseLambda(i);
-  }
 }
 
 void compileFunc(char* s, Func* f) {
@@ -349,9 +337,33 @@ void run(Func* f) { // FIXME: Fonction dependencies must be added too.
   msg("Fonction runned.");
 }
 
-void edit(Arg* arg) {
-  if (arg != NULL) {
-    editFunc(funcByName(arg->val));
+void assign(Arg* args) {
+  Func* f = funcByName(args->val);
+  if (f == NULL) return;
+
+  char i[512] = "";
+  Arg* arg;
+  for (arg = args->nxt; arg != NULL; arg = arg->nxt) {
+    strcat(i, arg->val);
+    if (arg->nxt != NULL) {
+      strcat(i, " ");
+    }
+  }
+  f->lambda = parseLambda(i);
+}
+
+void edit(Func* func) {
+  if (func != NULL) {
+    int y, x;
+    char m[256] = "";
+    char i[256] = "";
+    getyx(curscr, y, x);
+    move(y+1, 0);
+    addstr(catDef(m,func));
+    refresh();
+    move(y+2, 0);
+    getInput(i);
+    func->lambda = parseLambda(i);
   }
 }
 
@@ -442,18 +454,20 @@ void loop()
     getInput(cmd);
     Arg* args = parseCmd(cmd);
     if (args != NULL) {
-      if (strcmp(args->val, "d") == 0) {
+      if (strcmp(args->val, "::") == 0) {
         def(args->nxt);
       } else if (strcmp(args->val, "l") == 0) {
         list(defs);
       } else if (strcmp(args->val, "s") == 0) {
         show(args->nxt);
       } else if (strcmp(args->val, "e") == 0) {
-        edit(args->nxt);
+        edit(funcByName(args->nxt->val));
       } else if (strcmp(args->val, "c") == 0) {
         compile(funcByName(args->nxt->val));
       } else if (strcmp(args->val, "r") == 0) {
         run(funcByName(args->nxt->val));
+      } else if (strcmp(args->val, "=") == 0) {
+        assign(args->nxt);
       //} else if (strcmp(args->val, "gen") == 0) {
       //  gen(args->nxt);
       } else if (strcmp(args->val, "a") == 0) {
