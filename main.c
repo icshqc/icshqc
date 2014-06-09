@@ -334,7 +334,16 @@ void run(Func* f) { // FIXME: Fonction dependencies must be added too.
   fprintf(s, "}\n");
   fclose(s);
 
+  msg("Fonction compiled.");
+
+  char retVal[1024] = "";
+  FILE *fp = popen("gcc -o tmp/app tmp/app.c && ./tmp/app", "r"); // TODO: Args
+
+  fscanf(fp, "%s", retVal);
+  pclose(fp);
+  
   msg("Fonction runned.");
+  output(retVal);
 }
 
 void assign(Arg* args) {
