@@ -335,8 +335,6 @@ void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
   fprintf(s, "}\n");
   fclose(s);
 
-  msg("Fonction compiled.");
-
   char retVal[1024] = "";
   char cmd[256] = "";
   strcat(cmd, "gcc -o tmp/app tmp/app.c && ./tmp/app");
@@ -349,7 +347,6 @@ void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
   fscanf(fp, "%s", retVal);
   pclose(fp);
   
-  msg("Fonction runned.");
   output(retVal);
 }
 
@@ -495,7 +492,15 @@ void loop()
         args = NULL;
         return;
       } else {
-        output("Unkown function.");
+        if (funcByName(args->val) != NULL) {
+          if (args->nxt == NULL) {
+            show(args);
+          } else {
+            run(args);
+          }
+        } else {
+          output("Unkown function.");
+        }
       }
     }
     freeArg(args);
