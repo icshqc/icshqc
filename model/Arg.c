@@ -34,14 +34,12 @@ Arg* newArg() {
 char* catArg(char* m, Arg* arg) {
   if (arg != NULL) {
     Arg* n = arg->nxt;
-    strcat(m, "Arg[\"");
     strcat(m, arg->val);
     while (n != NULL) {
-      strcat(m, "\", \"");
+      strcat(m, " -> ");
       strcat(m, n->val);
       n = n->nxt;
     }
-    strcat(m, "\"]");
   }
   return m;
 }

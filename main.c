@@ -72,6 +72,8 @@ char* catFunc(char* m, Func* f) {
   Arg* arg;
   catDef(m, f);
   strcat(m, "\n");
+  strcat(m, f->name);
+  strcat(m, " = ");
   if (f->lambda != NULL) {
     strcat(m, "\\");
     for (arg = f->lambda->args; arg != NULL; arg = arg->nxt) {
@@ -281,6 +283,16 @@ void compile(Func* f) {
   }
 }
 
+void save() { // .qc extension. Quick C, Quebec!!!
+  Func* f;
+  FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
+  char m[1024] = "";
+  for (f = defs; f != NULL; f = f->nxt) {
+    m[0] = '\0';
+    fprintf(s, "\n%s", catFunc(m, f));
+  }
+}
+
 void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
   Func* f = funcByName(args->val);
   if (f == NULL) return;
@@ -291,7 +303,7 @@ void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
   int n;
   int i;
 
-  FILE* s = fopen("tmp/app.c", "w");
+  FILE* s = fopen("tmp/app.c", "w"); // FIXME: Check if valid file. Not NULL.
   fprintf(s, "#include <stdlib.h>\n");
   fprintf(s, "#include <stdio.h>\n\n");
 
@@ -471,6 +483,8 @@ void loop()
         def(args->nxt);
       } else if (strcmp(args->val, "l") == 0) {
         list(defs);
+      } else if (strcmp(args->val, "save") == 0) {
+        save(); // TODO: tmp, should always save automatically.
       } else if (strcmp(args->val, "s") == 0) {
         show(args->nxt);
       } else if (strcmp(args->val, "e") == 0) {
