@@ -195,12 +195,11 @@ Func* funcByName(char* name) {
 // This function should do everything at once. Because it needs to know
 // about operators so it keeps getting input. You should also be able to
 // pass a starting string for editing (and copy pasting) and when loading.
-Arg* getInput() {  
+ArgTree* getInput() {  
   char c[512] = "";
   char* s = c;
-  Arg* args = NULL;
-  Arg* arg = NULL;
-  Arg* previous = NULL;
+  ArgTree* args = NULL;
+  ArgTree* arg = NULL;
   char* i = s;
   int y, x;
   while (true) {
@@ -212,10 +211,6 @@ Arg* getInput() {
         mvdelch(y, x-1);
         --s;
         refresh();
-        if (arg != args) {
-          for (previous = args; previous->nxt != arg; previous = previous->nxt) {}
-          arg = previous;
-        }
       }
     } else if (ch == '\n' || ch == '\r') {
       if (s > c && *(s-1) == ';') {
@@ -234,10 +229,10 @@ Arg* getInput() {
           // Ignore trailing spaces and many in a row.
         } else {
           if (args == NULL) {
-            args = newArg();
+            args = newArgTree();
             arg = args;
           } else {
-            arg->nxt = newArg();
+            arg->nxt = newArgTree();
             arg = arg->nxt;
           }
           strncpy(arg->val, i, s - i);
@@ -251,10 +246,10 @@ Arg* getInput() {
   }
   if (s > i) {
     if (args == NULL) {
-      args = newArg();
+      args = newArgTree();
       arg = args;
     } else {
-      arg->nxt = newArg();
+      arg->nxt = newArgTree();
       arg = arg->nxt;
     }
     strcpy(arg->val, i);
@@ -405,11 +400,12 @@ void load() {
   }
 }
 
-void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
+void run(ArgTree* args) { // FIXME: Fonction dependencies must be added too.
   Func* f = funcByName(args->val);
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
 
+  ArgTree* argT;
   Arg* arg;
   Arg* ret;
   int n;
@@ -462,9 +458,9 @@ void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
   char retVal[1024] = "";
   char cmd[256] = "";
   strcat(cmd, "gcc -o tmp/app tmp/app.c && ./tmp/app");
-  for (arg = args->nxt; arg != NULL; arg = arg->nxt) {
+  for (argT = args->nxt; argT != NULL; argT = argT->nxt) {
     strcat(cmd, " "); 
-    strcat(cmd, arg->val); 
+    strcat(cmd, argT->val); 
   }
   FILE *fp = popen(cmd, "r"); // TODO: Args
 
@@ -474,12 +470,12 @@ void run(Arg* args) { // FIXME: Fonction dependencies must be added too.
   output(retVal);
 }
 
-void assign(Arg* args) {
+void assign(ArgTree* args) {
   Func* f = funcByName(args->val);
   if (f == NULL) return;
 
   char i[512] = "";
-  Arg* arg;
+  ArgTree* arg;
   for (arg = args->nxt; arg != NULL; arg = arg->nxt) {
     strcat(i, arg->val);
     if (arg->nxt != NULL) {
@@ -512,10 +508,10 @@ void list(Func* d) {
   }
 }
 
-void def(Arg* args) {
+void def(ArgTree* args) {
   Func* def = defs;
   Arg* arg = NULL;
-  Arg* n = args;
+  ArgTree* n = args;
   /*FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
     abort(); // FIXME: "Can't open definition file."
@@ -556,7 +552,7 @@ void def(Arg* args) {
   list(def); // FIXME: just show one
 }
 
-void show(Arg* arg) {
+void show(ArgTree* arg) {
   Func* f = funcByName(arg->val);
   char m[600] = "";
   if (f == NULL) {
@@ -583,7 +579,7 @@ void alias(Arg* arg) { // FIXME: Check arg count
 }
 
 bool eval() {
-  Arg* args = getInput();
+  ArgTree* args = getInput();
   if (args != NULL) {
     if (strcmp(args->val, "::") == 0) {
       def(args->nxt);
@@ -601,12 +597,12 @@ bool eval() {
       assign(args->nxt);
     //} else if (strcmp(args->val, "gen") == 0) {
     //  gen(args->nxt);
-    } else if (strcmp(args->val, "a") == 0) {
-      alias(args->nxt);
+    //} else if (strcmp(args->val, "a") == 0) {
+    //  alias(args->nxt);
     } else if (strcmp(args->val, "exit") == 0 ||
                strcmp(args->val, "quit") == 0 ||
                strcmp(args->val, "q") == 0) {
-      freeArg(args);
+      freeArgTree(args);
       return false;
     } else {
       if (funcByName(args->val) != NULL) {
@@ -620,7 +616,7 @@ bool eval() {
       }
     }
   }
-  freeArg(args);
+  freeArgTree(args);
   return true;
 }
 
