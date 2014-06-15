@@ -7,6 +7,12 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
+struct ArgTree { // x (y z) (a (b c d))
+  Arg* arg;
+  Arg* child;
+};
+typedef struct ArgTree ArgTree;
+
 struct Lambda {
   Arg* args;      // x y z
   char body[256];

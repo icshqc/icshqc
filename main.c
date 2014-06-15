@@ -21,6 +21,16 @@ static Func* operators = NULL; // Operators are function with the form arg1 op a
 
 static Alias* aliases = NULL;
 
+ArgTree* newArgTree() {
+  ArgTree* arg0 = malloc(sizeof(ArgTree));
+  if (arg0 == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  arg0->arg = NULL;
+  arg0->child = NULL;
+  return arg0;
+}
+
 Arg* newArg() {
   Arg* arg0 = malloc(sizeof(Arg));
   if (arg0 == NULL) {
@@ -44,6 +54,17 @@ void freeArg(Arg* arg) {
   if (arg != NULL) {
     freeArg(arg->nxt);
     free(arg);
+  }
+}
+
+void freeArgTree(ArgTree* arg) {
+  if (arg != NULL) {
+    if (arg->arg != NULL) {
+      freeArg(arg->arg);
+    }
+    if (arg->child != NULL) {
+      freeArg(arg->child);
+    }
   }
 }
 
@@ -252,8 +273,19 @@ Lambda* parseLambda(char* s) {
   return l;
 }
 
+bool isOperator(char* opName) {
+  if (strcmp(opName, "::") == 0 ||
+      strcmp(opName, "=") == 0) {
+    return true; 
+  }
+  return false;
+}
+
 // Splits the cmd at spaces, removing when many in a row.
+// The children of functions are their arguments.
+// TODO: Parse parentheses.
 Arg* parseCmd(char* cmd) {
+  Arg* arg = NULL;
   char* c = cmd;
   char* i = cmd;
   while (*c != '\0') {
@@ -261,7 +293,7 @@ Arg* parseCmd(char* cmd) {
       if (i == c) {
         i++;
       } else {
-        Arg* arg = newArg();
+        arg = newArg();
         strncpy(arg->val, i, c - i);
         arg->nxt = parseCmd(c+1);
         return arg;
