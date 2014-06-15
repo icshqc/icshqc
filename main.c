@@ -17,6 +17,7 @@ static void finish(int sig);
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
+static Func* operators = NULL; // Operators are function with the form arg1 op arg2 ... argN
 
 static Alias* aliases = NULL;
 
@@ -284,12 +285,37 @@ void compile(Func* f) {
 }
 
 void save() { // .qc extension. Quick C, Quebec!!!
-  Func* f;
+  Func* f = NULL;
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   char m[1024] = "";
   for (f = defs; f != NULL; f = f->nxt) {
     m[0] = '\0';
     fprintf(s, "\n%s", catFunc(m, f));
+  }
+  fclose(s);
+}
+
+bool eval(char *cmd);
+
+void load() {
+  int c;
+  char cmd[1000] = "";
+  size_t n = 0;
+  FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
+  if (s != NULL) {
+    while ((c = fgetc(s)) != EOF) {
+      if (c == '\n' || c == '\r') {
+        if (!eval(cmd)) {
+          // FIXME
+        }
+        n = 0;
+        cmd[0] = '\0';
+      } else {
+        cmd[n] = (char) c; 
+        cmd[++n] = '\0';
+      }
+    }
+    fclose(s);
   }
 }
 
@@ -470,55 +496,61 @@ void alias(Arg* arg) { // FIXME: Check arg count
   }
 }
 
+bool eval(char* cmd) {
+  Arg* args = parseCmd(cmd);
+  if (args != NULL) {
+    if (strcmp(args->val, "::") == 0) {
+      def(args->nxt);
+    } else if (strcmp(args->val, "l") == 0) {
+      list(defs);
+    } else if (strcmp(args->val, "save") == 0) {
+      save(); // TODO: tmp, should always save automatically.
+    } else if (strcmp(args->val, "s") == 0) {
+      show(args->nxt);
+    } else if (strcmp(args->val, "e") == 0) {
+      edit(funcByName(args->nxt->val));
+    } else if (strcmp(args->val, "c") == 0) {
+      compile(funcByName(args->nxt->val));
+    } else if (strcmp(args->val, "r") == 0) {
+      run(args->nxt);
+    } else if (strcmp(args->val, "load") == 0) {
+      load();
+    } else if (strcmp(args->val, "=") == 0) {
+      assign(args->nxt);
+    //} else if (strcmp(args->val, "gen") == 0) {
+    //  gen(args->nxt);
+    } else if (strcmp(args->val, "a") == 0) {
+      alias(args->nxt);
+    } else if (strcmp(args->val, "exit") == 0 ||
+               strcmp(args->val, "quit") == 0 ||
+               strcmp(args->val, "q") == 0) {
+      freeArg(args);
+      return false;
+    } else {
+      if (funcByName(args->val) != NULL) {
+        if (args->nxt == NULL) {
+          show(args);
+        } else {
+          run(args);
+        }
+      } else {
+        output("Unkown function.");
+      }
+    }
+  }
+  freeArg(args);
+  return true;
+}
+
 void loop()
 {
   int y, x;
+  bool continuer = true;
   char cmd[256] = "";
   addstr(">> ");
-  while (true) {
+  while (continuer) {
     getInput(cmd);
-    Arg* args = parseCmd(cmd);
-    if (args != NULL) {
-      if (strcmp(args->val, "::") == 0) {
-        def(args->nxt);
-      } else if (strcmp(args->val, "l") == 0) {
-        list(defs);
-      } else if (strcmp(args->val, "save") == 0) {
-        save(); // TODO: tmp, should always save automatically.
-      } else if (strcmp(args->val, "s") == 0) {
-        show(args->nxt);
-      } else if (strcmp(args->val, "e") == 0) {
-        edit(funcByName(args->nxt->val));
-      } else if (strcmp(args->val, "c") == 0) {
-        compile(funcByName(args->nxt->val));
-      } else if (strcmp(args->val, "r") == 0) {
-        run(args->nxt);
-      } else if (strcmp(args->val, "=") == 0) {
-        assign(args->nxt);
-      //} else if (strcmp(args->val, "gen") == 0) {
-      //  gen(args->nxt);
-      } else if (strcmp(args->val, "a") == 0) {
-        alias(args->nxt);
-      } else if (strcmp(args->val, "exit") == 0 ||
-                 strcmp(args->val, "quit") == 0 ||
-                 strcmp(args->val, "q") == 0) {
-        freeArg(args);
-        args = NULL;
-        return;
-      } else {
-        if (funcByName(args->val) != NULL) {
-          if (args->nxt == NULL) {
-            show(args);
-          } else {
-            run(args);
-          }
-        } else {
-          output("Unkown function.");
-        }
-      }
-    }
-    freeArg(args);
-    args = NULL;
+    continuer = eval(cmd);
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
     refresh();

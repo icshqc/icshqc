@@ -1,3 +1,13 @@
+Fonctions de base: Est-ce que c'est des fonctions comme les autres. PAS DE MOTS (ex: if)!!!
+::
+... ? ... !? ...
+x : []
+x == 1 ? true ?! false
+
+A source file is a script. The :: fonction defines functions, the assignment defines variables.
+The main function compiles the given function. Ex. T'as un application qui roule dans la fonction
+run. Tu fais: main run.
+
 Creer une librarie SDL-ncurses. Implementer ncurses en SDL. P-e utiliser les memes
 noms de fonctions, ainsi juste changer l'include et le linkage pour que ca marche.
 
