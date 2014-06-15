@@ -26,7 +26,9 @@ ArgTree* newArgTree() {
   if (arg0 == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  arg0->arg = NULL;
+  arg0->start = NULL;
+  arg0->end = NULL;
+  arg0->nxt = NULL;
   arg0->child = NULL;
   return arg0;
 }
@@ -57,15 +59,15 @@ void freeArg(Arg* arg) {
   }
 }
 
-void freeArgTree(ArgTree* arg) {
+void freeArgTreeSub(ArgTree* arg) {
   if (arg != NULL) {
-    if (arg->arg != NULL) {
-      freeArg(arg->arg);
-    }
-    if (arg->child != NULL) {
-      freeArg(arg->child);
-    }
+    freeArgTreeSub(arg->nxt);
+    freeArgTreeSub(arg->child);
   }
+}
+void freeArgTree(ArgTree* arg) {
+  free(arg->start); // FIXME: Does that work?
+  freeArgTreeSub(arg);
 }
 
 char* catArg(char* m, Arg* arg) {
@@ -149,22 +151,6 @@ char* catFunc(char* m, Func* f) {
   return m;
 }
 
-// HELPER
-
-char* straddch(char* str, char c) { //FIXME: Not buffer safe
-  int i = strlen(str);
-  str[i] = c;
-  str[i+1] = '\0';
-  return str;
-}
-char* strdelch(char* str) {
-  int i = strlen(str);
-  if (i > 0) {
-    str[i-1] = '\0';
-  }
-  return str;
-}
-
 // NCURSES HELPER
 
 static int indent = 0;
@@ -213,34 +199,72 @@ Func* funcByName(char* name) {
 
 // This function should do everything at once. Because it needs to know
 // about operators so it keeps getting input. You should also be able to
-// pass a starting string for editing (and copy pasting).
-char* getInput(char* s) {  
+// pass a starting string for editing (and copy pasting) and when loading.
+Arg* getInput() {  
+  char c[512] = "";
+  char* s = c;
+  Arg* args = NULL;
+  Arg* arg = NULL;
+  Arg* previous = NULL;
   char* i = s;
   int y, x;
   while (true) {
     int ch = getch();
-    if (ch == KEY_BACKSPACE) {
-      if (strlen(s) > 0) {
+    // FIXME: KEY_BACKSPACE and KEY_DC does not work.
+    if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
+      if (s > c) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
-        strdelch(s);
+        --s;
         refresh();
+        if (arg != args) {
+          for (previous = args; previous->nxt != arg; previous = previous->nxt) {}
+          arg = previous;
+        }
       }
     } else if (ch == '\n' || ch == '\r') {
-      if (strlen(s) > 1 && s[strlen(s)-1] == ';') {
+      if (s > c && *(s-1) == ';') {
         getyx(curscr, y, x);
         move(y+1, 0);
         refresh();
       } else {
-        return s;
+        break;
       }
     //} else if (ch == ':') {
     } else {
       addch(ch);
-      straddch(s, ch);
       refresh();
+      if (ch == ' ') {
+        if (i == s) {
+          // Ignore trailing spaces and many in a row.
+        } else {
+          if (args == NULL) {
+            args = newArg();
+            arg = args;
+          } else {
+            arg->nxt = newArg();
+            arg = arg->nxt;
+          }
+          strncpy(arg->val, i, s - i);
+          i = s;
+        }
+      } else {
+        *s = ch;
+        s++;
+      }
     }
   }
+  if (s > i) {
+    if (args == NULL) {
+      args = newArg();
+      arg = args;
+    } else {
+      arg->nxt = newArg();
+      arg = arg->nxt;
+    }
+    strcpy(arg->val, i);
+  }
+  return args;
 }
 
 // Return a pointer to the first non whitespace char of the string.
@@ -294,36 +318,7 @@ bool isOperator(char* opName) {
   return false;
 }
 
-// Splits the cmd at spaces, removing when many in a row.
-// The children of functions are their arguments.
-// TODO: Parse parentheses.
-Arg* parseCmd(char* cmd) {
-  Arg* arg = NULL;
-  char* c = cmd;
-  char* i = cmd;
-  while (*c != '\0') {
-    if (*c == ' ') {
-      if (i == c) {
-        i++;
-      } else {
-        arg = newArg();
-        strncpy(arg->val, i, c - i);
-        arg->nxt = parseCmd(c+1);
-        return arg;
-      }
-    }
-    c++;
-  }
-  if (c - i > 0) {
-    Arg* arg = newArg();
-    strcpy(arg->val, i);
-    return arg;
-  } else {
-    return NULL;
-  }
-}
-
-ArgTree* sortCmd(Arg* arg) {
+/*ArgTree* sortCmd(Arg* arg) {
   if (arg == NULL) return NULL;
   ArgTree* t = newArgTree();
   if (arg->nxt == NULL) {
@@ -336,7 +331,7 @@ ArgTree* sortCmd(Arg* arg) {
     t->arg = arg;
   }
   return t;
-}
+}*/
 
 void compileFunc(char* s, Func* f) {
   char tmp[1024] = "";
@@ -391,7 +386,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
   fclose(s);
 }
 
-bool eval(char *cmd);
+bool eval();
 
 void load() {
   int c;
@@ -401,9 +396,9 @@ void load() {
   if (s != NULL) {
     while ((c = fgetc(s)) != EOF) {
       if (c == '\n' || c == '\r') {
-        if (!eval(cmd)) {
+        //if (!eval(cmd)) {
           // FIXME
-        }
+        //}
         n = 0;
         cmd[0] = '\0';
       } else {
@@ -592,8 +587,8 @@ void alias(Arg* arg) { // FIXME: Check arg count
   }
 }
 
-bool eval(char* cmd) {
-  Arg* args = parseCmd(cmd);
+bool eval() {
+  Arg* args = getInput();
   if (args != NULL) {
     if (strcmp(args->val, "::") == 0) {
       def(args->nxt);
@@ -638,15 +633,12 @@ void loop()
 {
   int y, x;
   bool continuer = true;
-  char cmd[256] = "";
   addstr(">> ");
   while (continuer) {
-    getInput(cmd);
-    continuer = eval(cmd);
+    continuer = eval();
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
     refresh();
-    cmd[0] = '\0';
   }
 }
 
