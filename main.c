@@ -211,7 +211,7 @@ Func* funcByName(char* name) {
 ArgTree* parseChar(ArgTree* arg, int ch) {
   if (ch == ' ') {
     arg->nxt = newArgTree();
-    arg = arg->nxt;
+    return arg->nxt;
   } else {
     straddch(arg->val, ch);
   }
@@ -234,19 +234,22 @@ ArgTree* getInput() {
         strdelch(arg->val);
         refresh();
       }
-    } else if (ch == '\n' || ch == '\r') {
+    //} else if (ch == '\n' || ch == '\r') {
       /*if (s > c && *(s-1) == ';') {
         getyx(curscr, y, x);
         move(y+1, 0);
         refresh();
       } else {*/
-        break;
+    //    break;
       //}
     //} else if (ch == ':') {
     } else {
       addch(ch);
       refresh();
-      parseChar(arg, ch);
+      if (ch == '\n' || ch == '\r') {
+        break;
+      }
+      arg = parseChar(arg, ch);
     }
   }
   // FIXME: Remove last arg if empty
