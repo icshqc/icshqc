@@ -17,6 +17,7 @@ static void finish(int sig);
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
+// Only the :: and = operators are defined at the start maybe. Only them are hard coded.
 static Func* operators = NULL; // Operators are function with the form arg1 op arg2 ... argN
 
 static Alias* aliases = NULL;
