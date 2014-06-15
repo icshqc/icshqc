@@ -7,11 +7,10 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
-// An arg tree covers the same string.
 struct ArgTree { // x (y z) (a (b c d))
-  char* start;
-  char* end;
+  char val[52];
   struct ArgTree* nxt;
+  struct ArgTree* prev;
   struct ArgTree* child;
 };
 typedef struct ArgTree ArgTree;

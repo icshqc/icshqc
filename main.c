@@ -26,8 +26,7 @@ ArgTree* newArgTree() {
   if (arg0 == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  arg0->start = NULL;
-  arg0->end = NULL;
+  arg0->prev = NULL;
   arg0->nxt = NULL;
   arg0->child = NULL;
   return arg0;
@@ -59,15 +58,11 @@ void freeArg(Arg* arg) {
   }
 }
 
-void freeArgTreeSub(ArgTree* arg) {
-  if (arg != NULL) {
-    freeArgTreeSub(arg->nxt);
-    freeArgTreeSub(arg->child);
-  }
-}
 void freeArgTree(ArgTree* arg) {
-  free(arg->start); // FIXME: Does that work?
-  freeArgTreeSub(arg);
+  if (arg != NULL) {
+    freeArgTree(arg->nxt);
+    freeArgTree(arg->child);
+  }
 }
 
 char* catArg(char* m, Arg* arg) {
