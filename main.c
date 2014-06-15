@@ -208,23 +208,30 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-char* getInput(char* i) {
+char* getInput(char* s) {
+  char* i = s;
   int y, x;
   while (true) {
     int ch = getch();
     if (ch == KEY_BACKSPACE) {
-      if (strlen(i) > 0) {
+      if (strlen(s) > 0) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
-        strdelch(i);
+        strdelch(s);
         refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
-      return i;
+      if (strlen(s) > 1 && s[strlen(s)-1] == ';') {
+        getyx(curscr, y, x);
+        move(y+1, 0);
+        refresh();
+      } else {
+        return s;
+      }
     //} else if (ch == ':') {
     } else {
       addch(ch);
-      straddch(i, ch);
+      straddch(s, ch);
       refresh();
     }
   }
@@ -310,7 +317,19 @@ Arg* parseCmd(char* cmd) {
   }
 }
 
-void editFunc(Func* func) {
+ArgTree* sortCmd(Arg* arg) {
+  if (arg == NULL) return NULL;
+  ArgTree* t = newArgTree();
+  if (arg->nxt == NULL) {
+    t->arg = arg;
+  } else if (isOperator(arg->nxt->val)) {
+    t->arg = arg->nxt;
+    t->child = arg;
+    arg->nxt = arg->nxt->nxt;
+  } else {
+    t->arg = arg;
+  }
+  return t;
 }
 
 void compileFunc(char* s, Func* f) {
@@ -474,7 +493,7 @@ void assign(Arg* args) {
   f->lambda = parseLambda(i);
 }
 
-void edit(Func* func) {
+/*void edit(Func* func) {
   if (func != NULL) {
     int y, x;
     char m[256] = "";
@@ -487,7 +506,7 @@ void edit(Func* func) {
     getInput(i);
     func->lambda = parseLambda(i);
   }
-}
+}*/
 
 void list(Func* d) {
   char m[256] = "";
@@ -576,14 +595,10 @@ bool eval(char* cmd) {
       list(defs);
     } else if (strcmp(args->val, "save") == 0) {
       save(); // TODO: tmp, should always save automatically.
-    } else if (strcmp(args->val, "s") == 0) {
-      show(args->nxt);
-    } else if (strcmp(args->val, "e") == 0) {
-      edit(funcByName(args->nxt->val));
+    //} else if (strcmp(args->val, "e") == 0) {
+    //  edit(funcByName(args->nxt->val));
     } else if (strcmp(args->val, "c") == 0) {
       compile(funcByName(args->nxt->val));
-    } else if (strcmp(args->val, "r") == 0) {
-      run(args->nxt);
     } else if (strcmp(args->val, "load") == 0) {
       load();
     } else if (strcmp(args->val, "=") == 0) {
@@ -641,6 +656,7 @@ void main()
   cbreak();       /* take input chars one at a time, no wait for \n */
   noecho();       /* dont echo the input char */
 
+  load();
   loop();
 
   finish(0);
