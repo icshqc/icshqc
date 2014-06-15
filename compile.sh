@@ -1,1 +1,1 @@
-gcc -o build/icsh model/Arg.c main.c -lncurses
+gcc -o build/icsh main.c -lncurses
