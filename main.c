@@ -146,6 +146,22 @@ char* catFunc(char* m, Func* f) {
   return m;
 }
 
+// HELPER
+
+char* straddch(char* str, char c) { //FIXME: Not buffer safe
+  int i = strlen(str);
+  str[i] = c;
+  str[i+1] = '\0';
+  return str;
+}
+char* strdelch(char* str) {
+  int i = strlen(str);
+  if (i > 0) {
+    str[i-1] = '\0';
+  }
+  return str;
+}
+     
 // NCURSES HELPER
 
 static int indent = 0;
@@ -192,68 +208,48 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
+ArgTree* parseChar(ArgTree* arg, int ch) {
+  if (ch == ' ') {
+    arg->nxt = newArgTree();
+    arg = arg->nxt;
+  } else {
+    straddch(arg->val, ch);
+  }
+}
+
 // This function should do everything at once. Because it needs to know
 // about operators so it keeps getting input. You should also be able to
 // pass a starting string for editing (and copy pasting) and when loading.
 ArgTree* getInput() {  
-  char c[512] = "";
-  char* s = c;
-  ArgTree* args = NULL;
-  ArgTree* arg = NULL;
-  char* i = s;
+  ArgTree* args = newArgTree();
+  ArgTree* arg = args;
   int y, x;
   while (true) {
     int ch = getch();
     // FIXME: KEY_BACKSPACE and KEY_DC does not work.
     if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
-      if (s > c) {
+      if (strlen(arg->val) > 0) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
-        --s;
+        strdelch(arg->val);
         refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
-      if (s > c && *(s-1) == ';') {
+      /*if (s > c && *(s-1) == ';') {
         getyx(curscr, y, x);
         move(y+1, 0);
         refresh();
-      } else {
+      } else {*/
         break;
-      }
+      //}
     //} else if (ch == ':') {
     } else {
       addch(ch);
       refresh();
-      if (ch == ' ') {
-        if (i == s) {
-          // Ignore trailing spaces and many in a row.
-        } else {
-          if (args == NULL) {
-            args = newArgTree();
-            arg = args;
-          } else {
-            arg->nxt = newArgTree();
-            arg = arg->nxt;
-          }
-          strncpy(arg->val, i, s - i);
-          i = s;
-        }
-      } else {
-        *s = ch;
-        s++;
-      }
+      parseChar(arg, ch);
     }
   }
-  if (s > i) {
-    if (args == NULL) {
-      args = newArgTree();
-      arg = args;
-    } else {
-      arg->nxt = newArgTree();
-      arg = arg->nxt;
-    }
-    strcpy(arg->val, i);
-  }
+  // FIXME: Remove last arg if empty
   return args;
 }
 
