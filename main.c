@@ -210,10 +210,16 @@ Func* funcByName(char* name) {
 
 ArgTree* parseChar(ArgTree* arg, int ch) {
   if (ch == ' ') {
-    arg->nxt = newArgTree();
+    arg->nxt = newArgTree();  // FIXME: Should be the opposite. Inverse child and nxt.
+    arg->nxt->prev = arg;
     return arg->nxt;
+  } else if (ch == '\n' || ch == '\r') {
+    arg->child = newArgTree();
+    arg->child->prev = arg;
+    return arg->child;
   } else {
     straddch(arg->val, ch);
+    return arg;
   }
 }
 
@@ -246,10 +252,10 @@ ArgTree* getInput() {
     } else {
       addch(ch);
       refresh();
-      if (ch == '\n' || ch == '\r') {
+      arg = parseChar(arg, ch);
+      if (arg->prev && arg->prev->child == arg) {
         break;
       }
-      arg = parseChar(arg, ch);
     }
   }
   // FIXME: Remove last arg if empty
@@ -375,7 +381,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
   fclose(s);
 }
 
-bool eval();
+bool eval(ArgTree* args);
 
 void load() {
   int c;
@@ -577,8 +583,7 @@ void alias(Arg* arg) { // FIXME: Check arg count
   }
 }
 
-bool eval() {
-  ArgTree* args = getInput();
+bool eval(ArgTree* args) {
   if (args != NULL) {
     if (strcmp(args->val, "::") == 0) {
       def(args->nxt);
@@ -625,7 +630,7 @@ void loop()
   bool continuer = true;
   addstr(">> ");
   while (continuer) {
-    continuer = eval();
+    continuer = eval(getInput());
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
     refresh();
