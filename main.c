@@ -185,14 +185,17 @@ void msg(const char* str) {
   refresh();
 }
 
+static bool silent = false;
 void output(const char* str) {
-  int y, x;
-  getyx(curscr, y, x);
-  move(y+1, indent);
-  addstr("=> ");
-  addstr(str);
-  //move(y+2, x);
-  refresh();
+  if (!silent) {
+    int y, x;
+    getyx(curscr, y, x);
+    move(y+1, indent);
+    addstr("=> ");
+    addstr(str);
+    //move(y+2, x);
+    refresh();
+  }
 }
 
 // APP
@@ -208,7 +211,10 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-char* getInput(char* s) {
+// This function should do everything at once. Because it needs to know
+// about operators so it keeps getting input. You should also be able to
+// pass a starting string for editing (and copy pasting).
+char* getInput(char* s) {  
   char* i = s;
   int y, x;
   while (true) {
@@ -656,7 +662,9 @@ void main()
   cbreak();       /* take input chars one at a time, no wait for \n */
   noecho();       /* dont echo the input char */
 
+  silent = true;
   load();
+  silent = false;
   loop();
 
   finish(0);
