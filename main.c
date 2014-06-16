@@ -10,6 +10,7 @@
 
 static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
+static const char LAMBDA[] = "lambda";
 
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
@@ -205,13 +206,18 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-void parseChar(Cmd* cmd, int ch) {
+Cmd* currentCmd(Cmd* cmd) {
   Cmd* current;
   if (cmd->args != NULL) { // then you are parse it's args, not it's name.
     for (current = cmd->args; current->nxt != NULL; current = current->nxt) {}
   } else {
     current = cmd;
   }
+  return current;
+}
+
+void parseChar(Cmd* cmd, int ch) {
+  Cmd* current = currentCmd(cmd);
   if (ch == ' ') {
     if (current != cmd) { // then you are appending one, not creating the first arg.
       current->nxt = newCmd();
@@ -232,11 +238,24 @@ Cmd* getInput() {
     int ch = getch();
     // FIXME: KEY_BACKSPACE and KEY_DC does not work.
     if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
-      /*if (strlen(cmd->name) > 0) {
+      Cmd* current = currentCmd(cmd);
+      if (strlen(cmd->name) > 0 || cmd->args != NULL) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
-        strdelch(cmd->name);
-        refresh();*/
+        refresh();
+      }
+      if (strlen(current->name) > 0) {
+        strdelch(current->name);
+      } else if (cmd->args != NULL) {
+        if (cmd->args->nxt == NULL) {
+          freeCmd(cmd->args);
+          cmd->args = NULL;
+        } else {
+          for (current = cmd->args; current->nxt->nxt != NULL; current = current->nxt) {}
+          freeCmd(current->nxt);
+          current->nxt = NULL;
+        }
+      }
     //} else if (ch == '\n' || ch == '\r') {
       /*if (s > c && *(s-1) == ';') {
         getyx(curscr, y, x);
@@ -478,7 +497,7 @@ void assign(Cmd* cmd) {
       strcat(i, " ");
     }
   }
-  f->lambda = parseLambda(i);
+  //f->lambda = parseLambda(i);
 }
 
 /*void edit(Func* func) {
