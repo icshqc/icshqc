@@ -246,8 +246,6 @@ Cmd* parseCmd(char* command) {
       } else { 
         current->args = newCmd();
       }
-    } else if (*s == '\n' || *s == '\r') {
-      cmd->nxt = newCmd(); // FIXME: Dont create a new cmd unless you know its going to get used.
     } else {
       straddch(current->name, *s);
     }
