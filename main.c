@@ -235,25 +235,22 @@ Cmd* currentCmd(Cmd* cmd) {
   return current;
 }
 
-void parseChar(Cmd* cmd, int ch) {
-  Cmd* current = currentCmd(cmd);
-  if (ch == ' ') {
-    if (current != cmd) { // then you are appending one, not creating the first arg.
-      current->nxt = newCmd();
-    } else { 
-      current->args = newCmd();
-    }
-  } else if (ch == '\n' || ch == '\r') {
-    cmd->nxt = newCmd(); // FIXME: Dont create a new cmd unless you know its going to get used.
-  } else {
-    straddch(current->name, ch);
-  }
-}
 Cmd* parseCmd(char* command) {
   char* s = command;
   Cmd* cmd = newCmd();
   while (*s != '\0') {
-    parseChar(cmd, *s);
+    Cmd* current = currentCmd(cmd);
+    if (*s == ' ') {
+      if (current != cmd) { // then you are appending one, not creating the first arg.
+        current->nxt = newCmd();
+      } else { 
+        current->args = newCmd();
+      }
+    } else if (*s == '\n' || *s == '\r') {
+      cmd->nxt = newCmd(); // FIXME: Dont create a new cmd unless you know its going to get used.
+    } else {
+      straddch(current->name, *s);
+    }
     ++s;
   }
   return cmd;
