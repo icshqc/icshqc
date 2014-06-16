@@ -229,16 +229,18 @@ Cmd* parseCmd(char* command) {
   char* s = command;
   Cmd* cmd = newCmd();
   Cmd* current = cmd;
-  while (*s != '\0') {
-    if (*s == ' ') {
-      if (current != cmd) { // then you are appending one, not creating the first arg.
+  while (*s != '\0' && *s != ')') {
+    if (*s == ' ' || *s == '(') {
+      if (current != cmd) {
         current->nxt = newCmd();
         current = current->nxt;
       } else { 
         current->args = newCmd();
         current = current->args;
       }
-    //} else if (*s == '(') {
+      if (*s == '(') {
+        parseCmd(s+1);
+      }
     } else {
       straddch(current->name, *s);
     }
