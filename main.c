@@ -209,18 +209,21 @@ Func* funcByName(char* name) {
 }
 
 ArgTree* parseChar(ArgTree* arg, int ch) {
-  if (ch == ' ') {
-    arg->nxt = newArgTree();  // FIXME: Should be the opposite. Inverse child and nxt.
-    arg->nxt->prev = arg;
-    return arg->nxt;
-  } else if (ch == '\n' || ch == '\r') {
-    arg->child = newArgTree();
-    arg->child->prev = arg;
-    return arg->child;
+  ArgTree* current;
+  if (arg->nxt != NULL) {
+    for (current = arg->nxt; current->nxt != NULL; current = current->nxt) {}
   } else {
-    straddch(arg->val, ch);
-    return arg;
+    current = arg;
   }
+  if (ch == ' ') {
+    current->nxt = newArgTree();  // FIXME: Should be the opposite. Inverse child and nxt.
+    current->nxt->prev = current;
+  } else if (ch == '\n' || ch == '\r') {
+    return NULL;
+  } else {
+    straddch(current->val, ch);
+  }
+  return arg;
 }
 
 // This function should do everything at once. Because it needs to know
@@ -253,7 +256,7 @@ ArgTree* getInput() {
       addch(ch);
       refresh();
       arg = parseChar(arg, ch);
-      if (arg->prev && arg->prev->child == arg) {
+      if (arg == NULL) {
         break;
       }
     }
@@ -385,22 +388,16 @@ bool eval(ArgTree* args);
 
 void load() {
   int c;
-  char cmd[1000] = "";
   size_t n = 0;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
   if (s != NULL) {
-    while ((c = fgetc(s)) != EOF) {
-      if (c == '\n' || c == '\r') {
-        //if (!eval(cmd)) {
-          // FIXME
-        //}
-        n = 0;
-        cmd[0] = '\0';
-      } else {
-        cmd[n] = (char) c; 
-        cmd[++n] = '\0';
-      }
+    /*ArgTree* args = newArgTree();
+    ArgTree* arg = args;
+    while ((c = getc(s)) != EOF) {
+      arg = parseChar(arg, c);
     }
+    eval(args);
+    freeArgTree(args);*/
     fclose(s);
   }
 }

@@ -1,8 +1,33 @@
+---
+Pour parser:
+
+a b c d
+=> a(b, c, d)
+a (b c) d
+=> a(b(c), d)
+
+1. parseFuncName
+2. quand t'arrive a ' ', parseArg
+3. quand t'arrive a ' ', parseArg nxt
+4. quand t'arrive a '(', parse nxt
+
+---
+
 Fonctions de base: Est-ce que c'est des fonctions comme les autres. PAS DE MOTS (ex: if)!!!
 ::
 ... ? ... !? ...
 x : []
 x == 1 ? true ?! false
+
+P-e qu'au lieu de x:[], utiliser x,[]
+
+Les operateurs ont des priorites. :: est un operateur. -> aussi. p(->) > p(::)
+
+-> est un op qui donne un type
+
+a -> b -> c == a -> (b -> c)
+
+-> :: Type -> Type // Marche pas. Definit par lui meme
 
 A source file is a script. The :: fonction defines functions, the assignment defines variables.
 The main function compiles the given function. Ex. T'as un application qui roule dans la fonction
