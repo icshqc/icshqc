@@ -100,6 +100,7 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(func->name, '\0', sizeof(func->name));
+  func->opPriority = 0; // Not an operator by default.
   func->lambda = NULL;
   func->args = NULL;
   //func->ret = NULL;
@@ -326,7 +327,7 @@ Lambda* parseLambda(char* s) {
     if (*(c+1) == '\0') {
       msg("Unable to parse lambda. Missing value.");
     } else if (*c == ' ') {
-      if (i+1 == c) {
+      if (i == c) {
         i++;
       } else {
         arg = appendNewArg(arg);
@@ -334,7 +335,7 @@ Lambda* parseLambda(char* s) {
           l->args = arg;
         }
         strncpy(arg->val, i, c - i);
-        i = c;
+        i = c + 1;
       }
     } else if (*c < 'a' || *c > 'z') {
       msg("Unable to parse lambda. Invalid arg name.");
@@ -428,7 +429,7 @@ void load() {
   size_t n = 0;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
   if (s != NULL) {
-    /*Cmd* cmd = newCmd();
+    Cmd* cmd = newCmd();
     Cmd* cmd0 = cmd;
     while ((c = getc(s)) != EOF) {
       parseChar(cmd, c);
@@ -437,7 +438,7 @@ void load() {
       }
     }
     eval(cmd0);
-    freeCmd(cmd0);*/ //FIXME: There is a bug.
+    freeCmd(cmd0);
     fclose(s);
   }
 }
@@ -550,7 +551,7 @@ void list(Func* d) {
   }
 }
 
-void def(Cmd* cmd) {
+Func* def(Cmd* cmd) {
   Func* def = defs;
   Arg* arg = NULL;
   Cmd* n = cmd->args;
@@ -592,6 +593,7 @@ void def(Cmd* cmd) {
     strcpy(def->args->val, "void");
   }
   list(def); // FIXME: just show one
+  return def;
 }
 
 void show(Cmd* cmd) {
@@ -622,7 +624,10 @@ void alias(Arg* arg) { // FIXME: Check arg count
 
 bool eval(Cmd* cmd) {
   if (cmd != NULL && strlen(cmd->name) > 0) {
-    if (strcmp(cmd->name, "::") == 0) {
+    if (strcmp(cmd->name, ":::") == 0) {
+      Func* f = def(cmd);
+      f->opPriority = 1;
+    } else if (strcmp(cmd->name, "::") == 0) {
       def(cmd);
     } else if (strcmp(cmd->name, "d") == 0) { // debug
       printCmd(cmd);
@@ -677,6 +682,10 @@ void loop()
   }
 }
 
+void initRequiredDefs() {
+  Func* f = newFunc();
+}
+
 static void finish(int sig)
 {
   endwin();
@@ -693,7 +702,10 @@ void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
-  /* initialize your non-curses data structures here */
+  initRequiredDefs();
+  silent = true;
+  load();
+  silent = false;
 
   initscr();
   keypad(stdscr, TRUE);
@@ -701,9 +713,6 @@ void main()
   cbreak();       /* take input chars one at a time, no wait for \n */
   noecho();       /* dont echo the input char */
 
-  silent = true;
-  load();
-  silent = false;
   loop();
 
   finish(0);

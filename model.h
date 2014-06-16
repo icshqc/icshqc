@@ -22,6 +22,7 @@ typedef struct Lambda Lambda;
 
 struct Func {
   char name[52];
+  int opPriority;
   Lambda* lambda;
   Arg* args;      // int int int int
   //Arg ret;
