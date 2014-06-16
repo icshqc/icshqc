@@ -162,10 +162,9 @@ char* strdelch(char* str) {
      
 // NCURSES HELPER
 
-static int indent = 0;
-
-static int msgLine = 0;
 // TODO: debug(), fatal(), error(), warn(), log()
+static int indent = 0;
+static int msgLine = 0;
 void msg(const char* str) {
   int y, x, i;
   int line = LINES - MSG_CONSOLE_SIZE + msgLine;
@@ -194,6 +193,27 @@ void output(const char* str) {
 }
 
 // APP
+
+char* catCmd(char* b, Cmd* cmd) {
+  if (cmd-> args != NULL) {
+    strcat(b,"(");
+    strcat(b,cmd->name);
+    Cmd* a;
+    for (a = cmd->args; a != NULL; a = a->nxt) {
+      strcat(b," ");
+      catCmd(b, a);
+    }
+    strcat(b,")");
+  } else {
+    strcat(b,cmd->name);
+  }
+  return b;
+}
+void printCmd(Cmd* cmd) {
+  char b[1024] = "";
+  catCmd(b, cmd);
+  output(b);
+}
 
 Func* funcByName(char* name) {
   Func* d = defs;
@@ -408,7 +428,7 @@ void load() {
   size_t n = 0;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
   if (s != NULL) {
-    Cmd* cmd = newCmd();
+    /*Cmd* cmd = newCmd();
     Cmd* cmd0 = cmd;
     while ((c = getc(s)) != EOF) {
       parseChar(cmd, c);
@@ -417,7 +437,7 @@ void load() {
       }
     }
     eval(cmd0);
-    freeCmd(cmd0);
+    freeCmd(cmd0);*/ //FIXME: There is a bug.
     fclose(s);
   }
 }
@@ -604,6 +624,8 @@ bool eval(Cmd* cmd) {
   if (cmd != NULL && strlen(cmd->name) > 0) {
     if (strcmp(cmd->name, "::") == 0) {
       def(cmd);
+    } else if (strcmp(cmd->name, "d") == 0) { // debug
+      printCmd(cmd);
     } else if (strcmp(cmd->name, "l") == 0) {
       list(defs);
     } else if (strcmp(cmd->name, "save") == 0) {
