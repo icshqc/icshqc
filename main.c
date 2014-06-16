@@ -249,52 +249,46 @@ void parseChar(Cmd* cmd, int ch) {
     straddch(current->name, ch);
   }
 }
+Cmd* parseCmd(char* command) {
+  char* s = command;
+  Cmd* cmd = newCmd();
+  while (*s != '\0') {
+    parseChar(cmd, *s);
+    ++s;
+  }
+  return cmd;
+}
 
 Cmd* getInput() {  
-  Cmd* cmd = newCmd();
+  char input[256] = "";
   int y, x;
   while (true) {
     int ch = getch();
     // FIXME: KEY_BACKSPACE and KEY_DC does not work.
     if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
-      Cmd* current = currentCmd(cmd);
-      if (strlen(cmd->name) > 0 || cmd->args != NULL) {
+      if (strlen(input) > 0) {
+        strdelch(input);
         getyx(curscr, y, x);
         mvdelch(y, x-1);
         refresh();
       }
-      if (strlen(current->name) > 0) {
-        strdelch(current->name);
-      } else if (cmd->args != NULL) {
-        if (cmd->args->nxt == NULL) {
-          freeCmd(cmd->args);
-          cmd->args = NULL;
-        } else {
-          for (current = cmd->args; current->nxt->nxt != NULL; current = current->nxt) {}
-          freeCmd(current->nxt);
-          current->nxt = NULL;
-        }
-      }
-    //} else if (ch == '\n' || ch == '\r') {
+    } else if (ch == '\n' || ch == '\r') {
       /*if (s > c && *(s-1) == ';') {
         getyx(curscr, y, x);
         move(y+1, 0);
         refresh();
       } else {*/
-    //    break;
+        break;
       //}
     //} else if (ch == ':') {
     } else {
       addch(ch);
       refresh();
-      parseChar(cmd, ch);
-      if (cmd->nxt != NULL) { // Only get one command.
-        break;
-      }
+      straddch(input, ch);
     }
   }
   // FIXME: Remove last arg if empty
-  return cmd;
+  return parseCmd(input);
 }
 
 // Return a pointer to the first non whitespace char of the string.
@@ -427,16 +421,17 @@ void load() {
   size_t n = 0;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
   if (s != NULL) {
-    Cmd* cmd = newCmd();
-    Cmd* cmd0 = cmd;
+    char input[512] = "";
     while ((c = getc(s)) != EOF) {
-      parseChar(cmd, c);
-      if (cmd->nxt != NULL) {
-        cmd = cmd->nxt;
+      if (c == '\r' || c == '\n') {
+        Cmd* cmd = parseCmd(input);
+        eval(cmd);
+        freeCmd(cmd);
+        input[0] = '\0';
+      } else {
+        straddch(input, c);
       }
     }
-    eval(cmd0);
-    freeCmd(cmd0);
     fclose(s);
   }
 }
