@@ -10,7 +10,6 @@
 
 static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
-static const char LAMBDA[] = "lambda";
 
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
@@ -25,6 +24,7 @@ Cmd* newCmd() {
   if (arg0 == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
+  memset(arg0->name, '\0', sizeof(arg0->name));
   arg0->nxt = NULL;
   arg0->args = NULL;
   return arg0;
@@ -306,12 +306,16 @@ Lambda* parseLambda(char* s) {
     if (*(c+1) == '\0') {
       msg("Unable to parse lambda. Missing value.");
     } else if (*c == ' ') {
-      arg = appendNewArg(arg);
-      if (l->args == NULL) {
-        l->args = arg;
+      if (i+1 == c) {
+        i++;
+      } else {
+        arg = appendNewArg(arg);
+        if (l->args == NULL) {
+          l->args = arg;
+        }
+        strncpy(arg->val, i, c - i);
+        i = c;
       }
-      strncpy(arg->val, i, c - i);
-      i = c;
     } else if (*c < 'a' || *c > 'z') {
       msg("Unable to parse lambda. Invalid arg name.");
     }
@@ -404,19 +408,22 @@ void load() {
   size_t n = 0;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
   if (s != NULL) {
-    /*ArgTree* args = newArgTree();
-    ArgTree* arg = args;
+    Cmd* cmd = newCmd();
+    Cmd* cmd0 = cmd;
     while ((c = getc(s)) != EOF) {
-      arg = parseChar(arg, c);
+      parseChar(cmd, c);
+      if (cmd->nxt != NULL) {
+        cmd = cmd->nxt;
+      }
     }
-    eval(args);
-    freeArgTree(args);*/
+    eval(cmd0);
+    freeCmd(cmd0);
     fclose(s);
   }
 }
 
 void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
-  Func* f = funcByName(cmd->args->name);
+  Func* f = funcByName(cmd->name);
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
 
@@ -491,13 +498,13 @@ void assign(Cmd* cmd) {
 
   char i[512] = "";
   Cmd* c;
-  for (c = cmd->args; c != NULL; c = c->nxt) {
+  for (c = cmd->args->nxt; c != NULL; c = c->nxt) {
     strcat(i, c->name);
     if (c->nxt != NULL) {
       strcat(i, " ");
     }
   }
-  //f->lambda = parseLambda(i);
+  f->lambda = parseLambda(i);
 }
 
 /*void edit(Func* func) {
@@ -594,7 +601,7 @@ void alias(Arg* arg) { // FIXME: Check arg count
 }
 
 bool eval(Cmd* cmd) {
-  if (cmd != NULL) {
+  if (cmd != NULL && strlen(cmd->name) > 0) {
     if (strcmp(cmd->name, "::") == 0) {
       def(cmd);
     } else if (strcmp(cmd->name, "l") == 0) {
@@ -608,7 +615,7 @@ bool eval(Cmd* cmd) {
     } else if (strcmp(cmd->name, "load") == 0) {
       load();
     } else if (strcmp(cmd->name, "=") == 0) {
-      assign(cmd->nxt);
+      assign(cmd);
     //} else if (strcmp(args->val, "gen") == 0) {
     //  gen(args->nxt);
     //} else if (strcmp(args->val, "a") == 0) {
@@ -616,11 +623,10 @@ bool eval(Cmd* cmd) {
     } else if (strcmp(cmd->name, "exit") == 0 ||
                strcmp(cmd->name, "quit") == 0 ||
                strcmp(cmd->name, "q") == 0) {
-      freeCmd(cmd);
       return false;
     } else {
       if (funcByName(cmd->name) != NULL) {
-        if (cmd->nxt == NULL) {
+        if (cmd->args == NULL) {
           show(cmd);
         } else {
           run(cmd);
@@ -629,8 +635,8 @@ bool eval(Cmd* cmd) {
         output("Unkown function.");
       }
     }
+    eval(cmd->nxt);
   }
-  freeCmd(cmd);
   return true;
 }
 
@@ -640,7 +646,9 @@ void loop()
   bool continuer = true;
   addstr(">> ");
   while (continuer) {
-    continuer = eval(getInput());
+    Cmd* cmd = getInput();
+    continuer = eval(cmd);
+    freeCmd(cmd);
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
     refresh();
