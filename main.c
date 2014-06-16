@@ -225,27 +225,20 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-Cmd* currentCmd(Cmd* cmd) {
-  Cmd* current;
-  if (cmd->args != NULL) { // then you are parse it's args, not it's name.
-    for (current = cmd->args; current->nxt != NULL; current = current->nxt) {}
-  } else {
-    current = cmd;
-  }
-  return current;
-}
-
 Cmd* parseCmd(char* command) {
   char* s = command;
   Cmd* cmd = newCmd();
+  Cmd* current = cmd;
   while (*s != '\0') {
-    Cmd* current = currentCmd(cmd);
     if (*s == ' ') {
       if (current != cmd) { // then you are appending one, not creating the first arg.
         current->nxt = newCmd();
+        current = current->nxt;
       } else { 
         current->args = newCmd();
+        current = current->args;
       }
+    //} else if (*s == '(') {
     } else {
       straddch(current->name, *s);
     }
