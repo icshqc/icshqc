@@ -7,13 +7,12 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
-struct ArgTree { // x (y z) (a (b c d))
-  char val[52];
-  struct ArgTree* nxt;
-  struct ArgTree* prev;
-  struct ArgTree* child;
+struct Cmd { // x (y z) (a (b c d))
+  char name[52];
+  struct Cmd* nxt;
+  struct Cmd* args;
 };
-typedef struct ArgTree ArgTree;
+typedef struct Cmd Cmd;
 
 struct Lambda {
   Arg* args;      // x y z
@@ -30,11 +29,11 @@ struct Func {
 };
 typedef struct Func Func;
 
-struct FuncCall {
+/*struct FuncCall {
   Func* func;
   Lambda* lambda;
   Arg* args;      // 4 9 3
-};
+};*/
 
 struct Alias {
   char name[52];

@@ -11,8 +11,6 @@
 static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
 
-static void finish(int sig);
-
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
@@ -21,14 +19,13 @@ static Func* operators = NULL; // Operators are function with the form arg1 op a
 
 static Alias* aliases = NULL;
 
-ArgTree* newArgTree() {
-  ArgTree* arg0 = malloc(sizeof(ArgTree));
+Cmd* newCmd() {
+  Cmd* arg0 = malloc(sizeof(Cmd));
   if (arg0 == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  arg0->prev = NULL;
   arg0->nxt = NULL;
-  arg0->child = NULL;
+  arg0->args = NULL;
   return arg0;
 }
 
@@ -58,10 +55,10 @@ void freeArg(Arg* arg) {
   }
 }
 
-void freeArgTree(ArgTree* arg) {
+void freeCmd(Cmd* arg) {
   if (arg != NULL) {
-    freeArgTree(arg->nxt);
-    freeArgTree(arg->child);
+    freeCmd(arg->nxt);
+    freeCmd(arg->args);
   }
 }
 
@@ -208,41 +205,38 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-ArgTree* parseChar(ArgTree* arg, int ch) {
-  ArgTree* current;
-  if (arg->nxt != NULL) {
-    for (current = arg->nxt; current->nxt != NULL; current = current->nxt) {}
+void parseChar(Cmd* cmd, int ch) {
+  Cmd* current;
+  if (cmd->args != NULL) { // then you are parse it's args, not it's name.
+    for (current = cmd->args; current->nxt != NULL; current = current->nxt) {}
   } else {
-    current = arg;
+    current = cmd;
   }
   if (ch == ' ') {
-    current->nxt = newArgTree();  // FIXME: Should be the opposite. Inverse child and nxt.
-    current->nxt->prev = current;
+    if (current != cmd) { // then you are appending one, not creating the first arg.
+      current->nxt = newCmd();
+    } else { 
+      current->args = newCmd();
+    }
   } else if (ch == '\n' || ch == '\r') {
-    return NULL;
+    cmd->nxt = newCmd(); // FIXME: Dont create a new cmd unless you know its going to get used.
   } else {
-    straddch(current->val, ch);
+    straddch(current->name, ch);
   }
-  return arg;
 }
 
-// This function should do everything at once. Because it needs to know
-// about operators so it keeps getting input. You should also be able to
-// pass a starting string for editing (and copy pasting) and when loading.
-ArgTree* getInput() {  
-  ArgTree* args = newArgTree();
-  ArgTree* arg = args;
+Cmd* getInput() {  
+  Cmd* cmd = newCmd();
   int y, x;
   while (true) {
     int ch = getch();
     // FIXME: KEY_BACKSPACE and KEY_DC does not work.
     if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
-      if (strlen(arg->val) > 0) {
+      /*if (strlen(cmd->name) > 0) {
         getyx(curscr, y, x);
         mvdelch(y, x-1);
-        strdelch(arg->val);
-        refresh();
-      }
+        strdelch(cmd->name);
+        refresh();*/
     //} else if (ch == '\n' || ch == '\r') {
       /*if (s > c && *(s-1) == ';') {
         getyx(curscr, y, x);
@@ -255,14 +249,14 @@ ArgTree* getInput() {
     } else {
       addch(ch);
       refresh();
-      arg = parseChar(arg, ch);
-      if (arg == NULL) {
+      parseChar(cmd, ch);
+      if (cmd->nxt != NULL) { // Only get one command.
         break;
       }
     }
   }
   // FIXME: Remove last arg if empty
-  return args;
+  return cmd;
 }
 
 // Return a pointer to the first non whitespace char of the string.
@@ -384,7 +378,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
   fclose(s);
 }
 
-bool eval(ArgTree* args);
+bool eval(Cmd* cmd);
 
 void load() {
   int c;
@@ -402,12 +396,12 @@ void load() {
   }
 }
 
-void run(ArgTree* args) { // FIXME: Fonction dependencies must be added too.
-  Func* f = funcByName(args->val);
+void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
+  Func* f = funcByName(cmd->args->name);
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
 
-  ArgTree* argT;
+  Cmd* c;
   Arg* arg;
   Arg* ret;
   int n;
@@ -458,13 +452,13 @@ void run(ArgTree* args) { // FIXME: Fonction dependencies must be added too.
   fclose(s);
 
   char retVal[1024] = "";
-  char cmd[256] = "";
-  strcat(cmd, "gcc -o tmp/app tmp/app.c && ./tmp/app");
-  for (argT = args->nxt; argT != NULL; argT = argT->nxt) {
-    strcat(cmd, " "); 
-    strcat(cmd, argT->val); 
+  char cmds[256] = "";
+  strcat(cmds, "gcc -o tmp/app tmp/app.c && ./tmp/app");
+  for (c = cmd->args; c != NULL; c = c->nxt) {
+    strcat(cmds, " "); 
+    strcat(cmds, c->name); 
   }
-  FILE *fp = popen(cmd, "r"); // TODO: Args
+  FILE *fp = popen(cmds, "r"); // TODO: Args
 
   fscanf(fp, "%s", retVal);
   pclose(fp);
@@ -472,15 +466,15 @@ void run(ArgTree* args) { // FIXME: Fonction dependencies must be added too.
   output(retVal);
 }
 
-void assign(ArgTree* args) {
-  Func* f = funcByName(args->val);
+void assign(Cmd* cmd) {
+  Func* f = funcByName(cmd->args->name);
   if (f == NULL) return;
 
   char i[512] = "";
-  ArgTree* arg;
-  for (arg = args->nxt; arg != NULL; arg = arg->nxt) {
-    strcat(i, arg->val);
-    if (arg->nxt != NULL) {
+  Cmd* c;
+  for (c = cmd->args; c != NULL; c = c->nxt) {
+    strcat(i, c->name);
+    if (c->nxt != NULL) {
       strcat(i, " ");
     }
   }
@@ -510,10 +504,10 @@ void list(Func* d) {
   }
 }
 
-void def(ArgTree* args) {
+void def(Cmd* cmd) {
   Func* def = defs;
   Arg* arg = NULL;
-  ArgTree* n = args;
+  Cmd* n = cmd->args;
   /*FILE *f = fopen(DEF_FILE_PATH, "a");
   if (f == NULL) {
     abort(); // FIXME: "Can't open definition file."
@@ -533,13 +527,13 @@ void def(ArgTree* args) {
   }
   while (n != NULL) {
     if (strlen(def->name) == 0) {
-      strcpy(def->name, args->val);
+      strcpy(def->name, n->name);
     } else {
       arg = appendNewArg(arg);
       if (def->args == NULL) {
         def->args = arg;
       }
-      strcpy(arg->val, n->val);
+      strcpy(arg->val, n->name);
     }
     n = n->nxt;
   }
@@ -554,8 +548,8 @@ void def(ArgTree* args) {
   list(def); // FIXME: just show one
 }
 
-void show(ArgTree* arg) {
-  Func* f = funcByName(arg->val);
+void show(Cmd* cmd) {
+  Func* f = funcByName(cmd->name);
   char m[600] = "";
   if (f == NULL) {
     output("Unkown function");
@@ -580,44 +574,44 @@ void alias(Arg* arg) { // FIXME: Check arg count
   }
 }
 
-bool eval(ArgTree* args) {
-  if (args != NULL) {
-    if (strcmp(args->val, "::") == 0) {
-      def(args->nxt);
-    } else if (strcmp(args->val, "l") == 0) {
+bool eval(Cmd* cmd) {
+  if (cmd != NULL) {
+    if (strcmp(cmd->name, "::") == 0) {
+      def(cmd);
+    } else if (strcmp(cmd->name, "l") == 0) {
       list(defs);
-    } else if (strcmp(args->val, "save") == 0) {
+    } else if (strcmp(cmd->name, "save") == 0) {
       save(); // TODO: tmp, should always save automatically.
     //} else if (strcmp(args->val, "e") == 0) {
     //  edit(funcByName(args->nxt->val));
-    } else if (strcmp(args->val, "c") == 0) {
-      compile(funcByName(args->nxt->val));
-    } else if (strcmp(args->val, "load") == 0) {
+    } else if (strcmp(cmd->name, "c") == 0) {
+      compile(funcByName(cmd->args->name));
+    } else if (strcmp(cmd->name, "load") == 0) {
       load();
-    } else if (strcmp(args->val, "=") == 0) {
-      assign(args->nxt);
+    } else if (strcmp(cmd->name, "=") == 0) {
+      assign(cmd->nxt);
     //} else if (strcmp(args->val, "gen") == 0) {
     //  gen(args->nxt);
     //} else if (strcmp(args->val, "a") == 0) {
     //  alias(args->nxt);
-    } else if (strcmp(args->val, "exit") == 0 ||
-               strcmp(args->val, "quit") == 0 ||
-               strcmp(args->val, "q") == 0) {
-      freeArgTree(args);
+    } else if (strcmp(cmd->name, "exit") == 0 ||
+               strcmp(cmd->name, "quit") == 0 ||
+               strcmp(cmd->name, "q") == 0) {
+      freeCmd(cmd);
       return false;
     } else {
-      if (funcByName(args->val) != NULL) {
-        if (args->nxt == NULL) {
-          show(args);
+      if (funcByName(cmd->name) != NULL) {
+        if (cmd->nxt == NULL) {
+          show(cmd);
         } else {
-          run(args);
+          run(cmd);
         }
       } else {
         output("Unkown function.");
       }
     }
   }
-  freeArgTree(args);
+  freeCmd(cmd);
   return true;
 }
 
@@ -632,6 +626,18 @@ void loop()
     mvaddstr(y+1, 0, ">> ");
     refresh();
   }
+}
+
+static void finish(int sig)
+{
+  endwin();
+
+  freeFunc(defs);
+  defs = NULL;
+  freeAlias(aliases);
+  aliases = NULL;
+
+  exit(0);
 }
 
 void main()
@@ -653,19 +659,6 @@ void main()
 
   finish(0);
 }
-
-static void finish(int sig)
-{
-  endwin();
-
-  freeFunc(defs);
-  defs = NULL;
-  freeAlias(aliases);
-  aliases = NULL;
-
-  exit(0);
-}
-
 
 /*// TYPE
 
