@@ -623,7 +623,9 @@ void alias(Arg* arg) { // FIXME: Check arg count
 }
 
 bool eval(Cmd* cmd) {
-  if (cmd != NULL && strlen(cmd->name) > 0) {
+  if (cmd == NULL) return true;
+
+  if (strlen(cmd->name) > 0) {
     if (strcmp(cmd->name, ":::") == 0) {
       Func* f = def(cmd);
       f->opPriority = 1;
@@ -662,8 +664,8 @@ bool eval(Cmd* cmd) {
         output("Unkown function.");
       }
     }
-    eval(cmd->nxt);
   }
+  eval(cmd->nxt);
   return true;
 }
 
