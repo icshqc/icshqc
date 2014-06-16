@@ -227,8 +227,14 @@ Func* funcByName(char* name) {
 
 char* parseCmdName(Cmd* cmd, char* b) {
   char* s = b;
-  while (*s != '\0' && *s != ' ' && *s != '(') {
-    straddch(cmd->name, *s);
+  while (*s != '\0' && *s != '(') {
+    if (*s == ' ') {
+      if (strlen(cmd->name) > 0) {
+        break;
+      }
+    } else {
+      straddch(cmd->name, *s);
+    }
     ++s;
   }
   return s;
@@ -249,6 +255,14 @@ Cmd* parseCmd(char* command) {
         last = last->nxt;
       }
       s = parseCmdName(last, ++s);
+    } else if (*s == '(') {
+      Cmd* n = parseCmd(++s);
+      if (last == NULL) {
+        cmd->args = n;
+      } else {
+        last->nxt = n;
+      }
+      last = n;
     } else {
       msg("Error invalid cmd name.");
       break;
