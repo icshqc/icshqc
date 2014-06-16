@@ -225,26 +225,34 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-Cmd* parseCmd(char* command) {
-  char* s = command;
-  Cmd* cmd = newCmd();
-  Cmd* current = cmd;
-  while (*s != '\0' && *s != ')') {
-    if (*s == ' ' || *s == '(') {
-      if (current != cmd) {
-        current->nxt = newCmd();
-        current = current->nxt;
-      } else { 
-        current->args = newCmd();
-        current = current->args;
-      }
-      if (*s == '(') {
-        parseCmd(s+1);
-      }
-    } else {
-      straddch(current->name, *s);
-    }
+char* parseCmdName(Cmd* cmd, char* b) {
+  char* s = b;
+  while (*s != '\0' && *s != ' ' && *s != '(') {
+    straddch(cmd->name, *s);
     ++s;
+  }
+  return s;
+}
+
+Cmd* parseCmd(char* command) {
+  Cmd* cmd = newCmd();
+  char* s = parseCmdName(cmd, command);
+  // Parse arguments
+  Cmd* last = NULL;
+  while (*s != '\0') {
+    if (*s == ' ') {
+      if (last == NULL) {
+        cmd->args = newCmd();
+        last = cmd->args;
+      } else {
+        last->nxt = newCmd();
+        last = last->nxt;
+      }
+      s = parseCmdName(last, ++s);
+    } else {
+      msg("Error invalid cmd name.");
+      break;
+    }
   }
   return cmd;
 }
