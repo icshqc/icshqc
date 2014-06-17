@@ -19,14 +19,16 @@ void assign(Cmd* cmd);
 void list(Cmd* cmd);
 void def(Cmd* cmd);
 void save(Cmd* cmd);
+void printCmd(Cmd* cmd);
 
 static const LoadedFunc loadedDefs[] = {
   {"=", 1, assign},
   {"save", 0, assign},
   {"::", 1, def},
+  {":d", 1, printCmd},
   {"l", 0, list}
 };
-static const int nLoadedDefs = 4; // FIXME: Calculate automatically.
+static const int nLoadedDefs = 5; // FIXME: Calculate automatically.
 
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
@@ -321,14 +323,17 @@ Cmd* getInput() {
         refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
-      /*if (s > c && *(s-1) == ';') {
-        getyx(curscr, y, x);
-        move(y+1, 0);
-        refresh();
-      } else {*/
+      if (nested > 0) {
+        straddch(input, ' '); // Treat as whitespace maybe???
+        addch('\n');
+        int i;
+        for (i = 0; i < nested; i++) {
+          addch(' ');
+          addch(' ');
+        }
+      } else {
         break;
-      //}
-    //} else if (ch == ':') {
+      }
     } else {
       if (ch == '{') {
         nested++;
