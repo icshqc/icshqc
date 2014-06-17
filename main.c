@@ -472,6 +472,12 @@ void load() {
   }
 }
 
+char* argVal(char* buf, Cmd* arg) {
+  if (arg->args) {
+  }
+  strcat(buf, arg->name);
+}
+
 void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
   Func* f = funcByName(cmd->name);
   if (f == NULL) return;
@@ -532,7 +538,7 @@ void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
   strcat(cmds, "gcc -o tmp/app tmp/app.c && ./tmp/app");
   for (c = cmd->args; c != NULL; c = c->nxt) {
     strcat(cmds, " "); 
-    strcat(cmds, c->name); 
+    argVal(cmds, c);
   }
   FILE *fp = popen(cmds, "r"); // TODO: Args
 
