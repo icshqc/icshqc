@@ -209,7 +209,7 @@ void output(const char* str) {
 // Return a pointer to the first non whitespace char of the string.
 char* trim(char* s) {
   char* c = s;
-  while (*c != '\0' && *c == ' ') {
+  while (*c != '\0' && (*c == ' ' || *c == '\n')) {
     c++;
   }
   return c;
@@ -251,7 +251,7 @@ Func* funcByName(char* name) {
 
 char* parseCmdName(Cmd* cmd, char* b) {
   char* s = b;
-  while (*s != '\0' && *s != ' ') {
+  while (*s != '\0' && *s != ' ' && *s != '\n') {
     straddch(cmd->name, *s);
     ++s;
   }
@@ -309,6 +309,7 @@ Cmd* parseCmd(char* command) {
 Cmd* getInput() {  
   char input[256] = "";
   int y, x;
+  int nested = 0;
   while (true) {
     int ch = getch();
     // FIXME: KEY_BACKSPACE and KEY_DC does not work.
@@ -329,12 +330,20 @@ Cmd* getInput() {
       //}
     //} else if (ch == ':') {
     } else {
+      if (ch == '{') {
+        nested++;
+      } else if (ch == '}') {
+        nested--;
+      }
       addch(ch);
       refresh();
       straddch(input, ch);
     }
   }
-  // FIXME: Remove last arg if empty
+  if (nested != 0) {
+    msg("Invalid block syntax.");
+    return NULL;
+  }
   return parseCmd(input);
 }
 
