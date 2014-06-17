@@ -18,12 +18,15 @@ static Func* defs = NULL;
 void assign(Cmd* cmd);
 void list(Cmd* cmd);
 void def(Cmd* cmd);
+void save(Cmd* cmd);
 
 static const LoadedFunc loadedDefs[] = {
+  {"=", 1, assign},
+  {"save", 1, assign},
   {"::", 1, def},
   {"l", 1, list}
 };
-static const int nLoadedDefs = 2; // FIXME: Calculate automatically.
+static const int nLoadedDefs = 4; // FIXME: Calculate automatically.
 
 static Alias* aliases = NULL;
 
@@ -404,7 +407,7 @@ void compile(Func* f) {
   }
 }
 
-void save() { // .qc extension. Quick C, Quebec!!!
+void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
   Func* f = NULL;
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   char m[1024] = "";
@@ -541,7 +544,7 @@ void list(Cmd* cmd) {
   Func* d = defs;
   char m[256] = "";
   while (d != NULL) {
-    output(catDef(m,defs));
+    output(catDef(m,d));
     d = d->nxt;
   }
 }
@@ -621,48 +624,29 @@ bool eval(Cmd* cmd) {
 
   if (strlen(cmd->name) > 0) {
     int i;
-    for (i = 0; i < nLoadedDefs; i++) {
-      if (strcmp(cmd->name, loadedDefs[i].name) == 0) {
-        loadedDefs[i].ptr(cmd);
-        break;
-      }
-    }
-    if (strcmp(cmd->name, ":::") == 0) {
-      def(cmd);
-      //f->opPriority = 1;
-    //} else if (strcmp(cmd->name, "::") == 0) {
-    //  def(cmd);
-    } else if (strcmp(cmd->name, "d") == 0) { // debug
-      printCmd(cmd);
-    //} else if (strcmp(cmd->name, "l") == 0) {
-    //  list(cmd);
-    } else if (strcmp(cmd->name, "save") == 0) {
-      save(); // TODO: tmp, should always save automatically.
-    //} else if (strcmp(args->val, "e") == 0) {
-    //  edit(funcByName(args->nxt->val));
-    } else if (strcmp(cmd->name, "c") == 0) {
-      compile(funcByName(cmd->args->name));
-    } else if (strcmp(cmd->name, "load") == 0) {
-      load();
-    } else if (strcmp(cmd->name, "=") == 0) {
-      assign(cmd);
-    //} else if (strcmp(args->val, "gen") == 0) {
-    //  gen(args->nxt);
-    //} else if (strcmp(args->val, "a") == 0) {
-    //  alias(args->nxt);
-    } else if (strcmp(cmd->name, "exit") == 0 ||
+    if (strcmp(cmd->name, "exit") == 0 ||
                strcmp(cmd->name, "quit") == 0 ||
                strcmp(cmd->name, "q") == 0) {
       return false;
     } else {
-      if (funcByName(cmd->name) != NULL) {
-        if (cmd->args == NULL) {
-          show(cmd);
-        } else {
-          run(cmd);
+      bool found = false;
+      for (i = 0; i < nLoadedDefs; i++) {
+        if (strcmp(cmd->name, loadedDefs[i].name) == 0) {
+          loadedDefs[i].ptr(cmd);
+          found = true;
+          break;
         }
-      } else {
-        output("Unkown function.");
+      }
+      if (!found) {
+        if (funcByName(cmd->name) != NULL) {
+          if (cmd->args == NULL) {
+            show(cmd);
+          } else {
+            run(cmd);
+          }
+        } else {
+          output("Unkown function.");
+        }
       }
     }
   }
