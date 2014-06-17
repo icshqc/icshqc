@@ -253,59 +253,42 @@ Func* funcByName(char* name) {
 
 char* parseCmdName(Cmd* cmd, char* b) {
   char* s = b;
-  while (*s != '\0' && *s != ' ' && *s != '\n') {
+  while (*s != '\0' && *s != ' ' && *s != '(' && *s != '\n') {
     straddch(cmd->name, *s);
     ++s;
   }
   return s;
 }
 
-Cmd* parseCmd(char* command) {
+struct ParsePair {
+  Cmd* cmd;
+  char* ptr;
+};
+typedef struct ParsePair ParsePair;
+ParsePair parseCmdR(char* command, int nested) {
   Cmd* cmds = newCmd();
   Cmd* cmd = cmds;
   char* s = trim(command);
   while (*s != '\0') {
     s = trim(parseCmdName(cmd, s));
+    //if (*s == '(') {
+    //  cmd->nxt = parseCmdR(s, nested + 1);
+    //} else if (*s != '\0') {
     if (*s != '\0') {
       cmd->nxt = newCmd();
       cmd = cmd->nxt;
     }
   }
   int i;
-  // FIXME: Use operators priority.
-  //Cmd* previous = NULL;
-  //Cmd* sorted = NULL;
-  //for (cmd = cmds; cmd != NULL; cmd = cmd->nxt) {
-    /*for (i = 0; i < nLoadedDefs; i++) {
-      if (strcmp(cmd->name, loadedDefs[i].name) == 0) {
-        if (loadedDefs[i].priority != 0) {
-          if (previous == NULL || cmd->nxt == NULL) {
-            msg("Invalid operator use");
-            freeCmd(cmds);
-            return NULL;
-          } else {
-            cmd->args = previous;
-            cmd->args->nxt = cmd->nxt
-            if (sorted == NULL) {
-              sorted = cmd;
-            }
-          }
-        } else {
-          if (sorted == NULL) {
-            sorted = cmd;
-          }
-        }
-      }
-    }
-    previous = (sorted == cmd) ? NULL : cmd;*/
-    //Func* f = funcByName(cmd->name);
-    //if (f != NULL) {
-      // if f->priority....
-    //}
-  //}
   cmds->args = cmds->nxt;
   cmds->nxt = NULL;
-  return cmds;
+  ParsePair p;
+  p.cmd = cmds;
+  p.ptr = s;
+  return p;
+}
+Cmd* parseCmd(char* command) {
+  return parseCmdR(command, 0).cmd;
 }
 
 Cmd* getInput() {  
