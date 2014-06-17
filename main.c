@@ -472,10 +472,16 @@ void load() {
   }
 }
 
+void runCmd(char* retVal, Cmd* cmd);
+
 char* argVal(char* buf, Cmd* arg) {
   if (arg->args) {
+    char argValue[128] = "";
+    runCmd(argValue, arg);
+    strcat(buf, argValue);
+  } else {
+    strcat(buf, arg->name);
   }
-  strcat(buf, arg->name);
 }
 
 void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
@@ -489,7 +495,10 @@ void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be ad
   int n;
   int i;
 
-  FILE* s = fopen("tmp/app.c", "w"); // FIXME: Check if valid file. Not NULL.
+  // TODO: Move this part to a function
+  char filename[64] = "";
+  sprintf(filename, "tmp/%s.c", cmd->name);
+  FILE* s = fopen(filename, "w"); // FIXME: Check if valid file. Not NULL.
   fprintf(s, "#include <stdlib.h>\n");
   fprintf(s, "#include <stdio.h>\n\n");
 
@@ -533,8 +542,15 @@ void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be ad
   fprintf(s, "}\n");
   fclose(s);
 
+  char exeFilename[64] = "";
+  sprintf(exeFilename, "tmp/%s", cmd->name);
   char cmds[256] = "";
-  strcat(cmds, "gcc -o tmp/app tmp/app.c && ./tmp/app");
+  strcat(cmds, "gcc -o ");
+  strcat(cmds, exeFilename);
+  strcat(cmds, " ");
+  strcat(cmds, filename);
+  strcat(cmds, " && ./");
+  strcat(cmds, exeFilename);
   for (c = cmd->args; c != NULL; c = c->nxt) {
     strcat(cmds, " "); 
     argVal(cmds, c);
