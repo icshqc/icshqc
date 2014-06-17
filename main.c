@@ -253,7 +253,7 @@ Func* funcByName(char* name) {
 
 char* parseCmdName(Cmd* cmd, char* b) {
   char* s = b;
-  while (*s != '\0' && *s != ' ' && *s != '(' && *s != '\n') {
+  while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' && *s != '\n') {
     straddch(cmd->name, *s);
     ++s;
   }
@@ -271,10 +271,15 @@ ParsePair parseCmdR(char* command, int nested) {
   char* s = trim(command);
   while (*s != '\0') {
     s = trim(parseCmdName(cmd, s));
-    //if (*s == '(') {
-    //  cmd->nxt = parseCmdR(s, nested + 1);
-    //} else if (*s != '\0') {
-    if (*s != '\0') {
+    if (*s == ')') {
+      ++s;
+      break;
+    } else if (*s == '(') {
+      ParsePair p = parseCmdR(s+1, nested + 1);
+      s = p.ptr;
+      cmd->nxt = p.cmd;
+      cmd = cmd->nxt;
+    } else if (*s != '\0') {
       cmd->nxt = newCmd();
       cmd = cmd->nxt;
     }
