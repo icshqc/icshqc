@@ -17,12 +17,13 @@ static Func* defs = NULL;
 
 void assign(Cmd* cmd);
 void list(Cmd* cmd);
+void def(Cmd* cmd);
 
 static const LoadedFunc loadedDefs[] = {
-  //{"::", 1, assign},
+  {"::", 1, def},
   {"l", 1, list}
 };
-static const int nLoadedDefs = 1; // FIXME: Calculate automatically.
+static const int nLoadedDefs = 2; // FIXME: Calculate automatically.
 
 static Alias* aliases = NULL;
 
@@ -545,7 +546,7 @@ void list(Cmd* cmd) {
   }
 }
 
-Func* def(Cmd* cmd) {
+void def(Cmd* cmd) {
   Func* def = defs;
   Arg* arg = NULL;
   Cmd* n = cmd->args;
@@ -587,7 +588,6 @@ Func* def(Cmd* cmd) {
     strcpy(def->args->val, "void");
   }
   list(NULL); // FIXME: just show one
-  return def;
 }
 
 void show(Cmd* cmd) {
@@ -628,10 +628,10 @@ bool eval(Cmd* cmd) {
       }
     }
     if (strcmp(cmd->name, ":::") == 0) {
-      Func* f = def(cmd);
-      f->opPriority = 1;
-    } else if (strcmp(cmd->name, "::") == 0) {
       def(cmd);
+      //f->opPriority = 1;
+    //} else if (strcmp(cmd->name, "::") == 0) {
+    //  def(cmd);
     } else if (strcmp(cmd->name, "d") == 0) { // debug
       printCmd(cmd);
     //} else if (strcmp(cmd->name, "l") == 0) {
