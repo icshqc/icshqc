@@ -542,8 +542,8 @@ void assign(Cmd* cmd) {
 
 void list(Cmd* cmd) {
   Func* d = defs;
-  char m[256] = "";
   while (d != NULL) {
+    char m[256] = "";
     output(catDef(m,d));
     d = d->nxt;
   }
