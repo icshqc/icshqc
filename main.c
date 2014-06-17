@@ -264,10 +264,12 @@ ParsePair parseCmdR(char* command, int nested) {
   Cmd* cmd = cmds;
   char* s = trim(command);
   while (*s != '\0') {
+    char* i = s;
     while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' && *s != '\n') {
-      straddch(cmd->name, *s);
+      //straddch(cmd->name, *s);
       ++s;
     }
+    strncpy(cmd->name, i, s-i);
     s = trim(s);
     if (*s == ')') {
       ++s;
