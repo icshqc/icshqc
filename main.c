@@ -191,6 +191,15 @@ void output(const char* str) {
   }
 }
 
+// Return a pointer to the first non whitespace char of the string.
+char* trim(char* s) {
+  char* c = s;
+  while (*c != '\0' && *c == ' ') {
+    c++;
+  }
+  return c;
+}
+
 // APP
 
 char* catCmd(char* b, Cmd* cmd) {
@@ -227,48 +236,28 @@ Func* funcByName(char* name) {
 
 char* parseCmdName(Cmd* cmd, char* b) {
   char* s = b;
-  while (*s != '\0' && *s != '(') {
-    if (*s == ' ') {
-      if (strlen(cmd->name) > 0) {
-        break;
-      }
-    } else {
-      straddch(cmd->name, *s);
-    }
+  while (*s != '\0' && *s != ' ') {
+    straddch(cmd->name, *s);
     ++s;
   }
   return s;
 }
 
 Cmd* parseCmd(char* command) {
-  Cmd* cmd = newCmd();
-  char* s = parseCmdName(cmd, command);
-  // Parse arguments
-  Cmd* last = NULL;
+  Cmd* cmds = newCmd();
+  Cmd* cmd = cmds;
+  char* s = trim(command);
   while (*s != '\0') {
-    if (*s == ' ') {
-      if (last == NULL) {
-        cmd->args = newCmd();
-        last = cmd->args;
-      } else {
-        last->nxt = newCmd();
-        last = last->nxt;
-      }
-      s = parseCmdName(last, ++s);
-    } else if (*s == '(') {
-      Cmd* n = parseCmd(++s);
-      if (last == NULL) {
-        cmd->args = n;
-      } else {
-        last->nxt = n;
-      }
-      last = n;
-    } else {
-      msg("Error invalid cmd name.");
-      break;
+    s = trim(parseCmdName(cmd, s));
+    if (*s != '\0') {
+      cmd->nxt = newCmd();
+      cmd = cmd->nxt;
     }
   }
-  return cmd;
+  // TODO: Add the logic of operators.
+  cmds->args = cmds->nxt;
+  cmds->nxt = NULL;
+  return cmds;
 }
 
 Cmd* getInput() {  
@@ -301,15 +290,6 @@ Cmd* getInput() {
   }
   // FIXME: Remove last arg if empty
   return parseCmd(input);
-}
-
-// Return a pointer to the first non whitespace char of the string.
-char* trim(char* s) {
-  char* c = s;
-  while (*c != '\0' && *c == ' ') {
-    c++;
-  }
-  return c;
 }
 
 Lambda* parseLambda(char* s) {
