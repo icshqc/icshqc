@@ -252,12 +252,6 @@ Func* funcByName(char* name) {
 }
 
 char* parseCmdName(Cmd* cmd, char* b) {
-  char* s = b;
-  while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' && *s != '\n') {
-    straddch(cmd->name, *s);
-    ++s;
-  }
-  return s;
 }
 
 struct ParsePair {
@@ -270,7 +264,11 @@ ParsePair parseCmdR(char* command, int nested) {
   Cmd* cmd = cmds;
   char* s = trim(command);
   while (*s != '\0') {
-    s = trim(parseCmdName(cmd, s));
+    while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' && *s != '\n') {
+      straddch(cmd->name, *s);
+      ++s;
+    }
+    s = trim(s);
     if (*s == ')') {
       ++s;
       break;
