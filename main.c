@@ -256,7 +256,13 @@ struct ParsePair {
   char* ptr;
 };
 typedef struct ParsePair ParsePair;
-ParsePair parseCmdR(char* command, int nested) {
+ParsePair parsePair(Cmd* cmd, char* ptr) {
+  ParsePair p;
+  p.cmd = cmd;
+  p.ptr = ptr;
+  return p;
+}
+ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(add 12 12)"
   Cmd* cmds = newCmd();
   Cmd* cmd = cmds;
   char* s = trim(command);
@@ -283,10 +289,7 @@ ParsePair parseCmdR(char* command, int nested) {
   int i;
   cmds->args = cmds->nxt;
   cmds->nxt = NULL;
-  ParsePair p;
-  p.cmd = cmds;
-  p.ptr = s;
-  return p;
+  return parsePair(cmds, s);
 }
 Cmd* parseCmd(char* command) {
   return parseCmdR(command, 0).cmd;
