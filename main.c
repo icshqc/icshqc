@@ -22,11 +22,14 @@ void save(Cmd* cmd);
 
 static const LoadedFunc loadedDefs[] = {
   {"=", 1, assign},
-  {"save", 1, assign},
+  {"save", 0, assign},
   {"::", 1, def},
-  {"l", 1, list}
+  {"l", 0, list}
 };
 static const int nLoadedDefs = 4; // FIXME: Calculate automatically.
+
+// A block is a Cmd with two args. The first is the args, the second is the body
+static const char BLOCK[] = "BLOCK";
 
 static Alias* aliases = NULL;
 
@@ -266,7 +269,38 @@ Cmd* parseCmd(char* command) {
       cmd = cmd->nxt;
     }
   }
-  // TODO: Add the logic of operators.
+  int i;
+  // FIXME: Use operators priority.
+  //Cmd* previous = NULL;
+  //Cmd* sorted = NULL;
+  //for (cmd = cmds; cmd != NULL; cmd = cmd->nxt) {
+    /*for (i = 0; i < nLoadedDefs; i++) {
+      if (strcmp(cmd->name, loadedDefs[i].name) == 0) {
+        if (loadedDefs[i].priority != 0) {
+          if (previous == NULL || cmd->nxt == NULL) {
+            msg("Invalid operator use");
+            freeCmd(cmds);
+            return NULL;
+          } else {
+            cmd->args = previous;
+            cmd->args->nxt = cmd->nxt
+            if (sorted == NULL) {
+              sorted = cmd;
+            }
+          }
+        } else {
+          if (sorted == NULL) {
+            sorted = cmd;
+          }
+        }
+      }
+    }
+    previous = (sorted == cmd) ? NULL : cmd;*/
+    //Func* f = funcByName(cmd->name);
+    //if (f != NULL) {
+      // if f->priority....
+    //}
+  //}
   cmds->args = cmds->nxt;
   cmds->nxt = NULL;
   return cmds;
