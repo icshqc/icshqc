@@ -20,6 +20,13 @@ struct Lambda {
 };
 typedef struct Lambda Lambda;
 
+struct LoadedFunc {
+  char name[52];
+  int opPriority;
+  void (*ptr)(Cmd* cmd);
+};
+typedef struct LoadedFunc LoadedFunc;
+
 struct Func {
   char name[52];
   int opPriority;

@@ -15,6 +15,12 @@ static const char DEF_FILE_PATH[] = "defs";
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
 
+void assign(Cmd* cmd);
+
+static LoadedFunc loadedDefs[] = {
+  {"::", 1, assign}
+};
+
 static Alias* aliases = NULL;
 
 Cmd* newCmd() {
@@ -101,7 +107,6 @@ Func* newFunc() {
   func->opPriority = 0; // Not an operator by default.
   func->lambda = NULL;
   func->args = NULL;
-  //func->ret = NULL;
   func->nxt = NULL;
   return func;
 }
@@ -669,10 +674,6 @@ void loop()
   }
 }
 
-void initRequiredDefs() {
-  Func* f = newFunc();
-}
-
 static void finish(int sig)
 {
   endwin();
@@ -689,7 +690,6 @@ void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
-  initRequiredDefs();
   silent = true;
   load();
   silent = false;
