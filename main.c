@@ -16,10 +16,13 @@ static const char DEF_FILE_PATH[] = "defs";
 static Func* defs = NULL;
 
 void assign(Cmd* cmd);
+void list(Cmd* cmd);
 
-static LoadedFunc loadedDefs[] = {
-  {"::", 1, assign}
+static const LoadedFunc loadedDefs[] = {
+  //{"::", 1, assign},
+  {"l", 1, list}
 };
+static const int nLoadedDefs = 1; // FIXME: Calculate automatically.
 
 static Alias* aliases = NULL;
 
@@ -533,11 +536,12 @@ void assign(Cmd* cmd) {
   }
 }*/
 
-void list(Func* d) {
+void list(Cmd* cmd) {
+  Func* d = defs;
   char m[256] = "";
-  if (d != NULL) {
-    output(catDef(m,d));
-    list(d->nxt);
+  while (d != NULL) {
+    output(catDef(m,defs));
+    d = d->nxt;
   }
 }
 
@@ -582,7 +586,7 @@ Func* def(Cmd* cmd) {
     def->args = newArg();
     strcpy(def->args->val, "void");
   }
-  list(def); // FIXME: just show one
+  list(NULL); // FIXME: just show one
   return def;
 }
 
@@ -616,6 +620,13 @@ bool eval(Cmd* cmd) {
   if (cmd == NULL) return true;
 
   if (strlen(cmd->name) > 0) {
+    int i;
+    for (i = 0; i < nLoadedDefs; i++) {
+      if (strcmp(cmd->name, loadedDefs[i].name) == 0) {
+        loadedDefs[i].ptr(cmd);
+        break;
+      }
+    }
     if (strcmp(cmd->name, ":::") == 0) {
       Func* f = def(cmd);
       f->opPriority = 1;
@@ -623,8 +634,8 @@ bool eval(Cmd* cmd) {
       def(cmd);
     } else if (strcmp(cmd->name, "d") == 0) { // debug
       printCmd(cmd);
-    } else if (strcmp(cmd->name, "l") == 0) {
-      list(defs);
+    //} else if (strcmp(cmd->name, "l") == 0) {
+    //  list(cmd);
     } else if (strcmp(cmd->name, "save") == 0) {
       save(); // TODO: tmp, should always save automatically.
     //} else if (strcmp(args->val, "e") == 0) {
