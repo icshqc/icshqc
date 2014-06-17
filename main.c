@@ -251,9 +251,6 @@ Func* funcByName(char* name) {
   return NULL;
 }
 
-char* parseCmdName(Cmd* cmd, char* b) {
-}
-
 struct ParsePair {
   Cmd* cmd;
   char* ptr;
@@ -266,7 +263,6 @@ ParsePair parseCmdR(char* command, int nested) {
   while (*s != '\0') {
     char* i = s;
     while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' && *s != '\n') {
-      //straddch(cmd->name, *s);
       ++s;
     }
     strncpy(cmd->name, i, s-i);
