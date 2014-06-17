@@ -478,7 +478,7 @@ char* argVal(char* buf, Cmd* arg) {
   strcat(buf, arg->name);
 }
 
-void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
+void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
   Func* f = funcByName(cmd->name);
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
@@ -533,7 +533,6 @@ void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
   fprintf(s, "}\n");
   fclose(s);
 
-  char retVal[1024] = "";
   char cmds[256] = "";
   strcat(cmds, "gcc -o tmp/app tmp/app.c && ./tmp/app");
   for (c = cmd->args; c != NULL; c = c->nxt) {
@@ -544,7 +543,10 @@ void run(Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
 
   fscanf(fp, "%s", retVal);
   pclose(fp);
-  
+}
+void run(Cmd* cmd) {
+  char retVal[1024];
+  runCmd(retVal, cmd);
   output(retVal);
 }
 
