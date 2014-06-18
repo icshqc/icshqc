@@ -106,7 +106,8 @@ char* catArg(char* m, Arg* arg) {
     Arg* n = arg->nxt;
     strcat(m, arg->val);
     while (n != NULL) {
-      strcat(m, " -> ");
+      strcat(m, " ");
+      //strcat(m, " -> ");
       strcat(m, n->val);
       n = n->nxt;
     }
