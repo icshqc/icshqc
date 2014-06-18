@@ -342,12 +342,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
       break;
     } else if (*s == '#') {
       char* i = s; // Keep the '#' on purpose.
-      while (*(++s) != '#') {
-        if (*s == '\0') {
-          msg("Error parsing cmd. Missing ending #.");
-          freeCmd(cmds);
-          return parsePair(NULL, s);
-        }
+      while (*(++s) != '#' && *s != '\0') {
       }
       cmd->nxt = newCmd();
       cmd = cmd->nxt;
@@ -595,6 +590,19 @@ void load() {
   }
 }
 
+void runC(Cmd* cmd) {
+  if (cmd->args->name[0] != '#') {
+    msg("Error, is not of type cval");
+    return;
+  }
+  char f[1024] = "";
+  strcat(f, "void "); // TMP
+  strcat(f, "anonymousFunction1() {\n");
+  strcat(f, cmd->args->name + 1);
+  strcat(f, "\n}");
+  output(f);
+}
+
 //void runCmd(char* retVal, Cmd* cmd);
 
 char* argVal(char* buf, Cmd* arg) {
@@ -824,6 +832,7 @@ void initLoadedDefs() {
   addLoadedDef("$vars", 0, listVars);
   addLoadedDef("$types", 0, listTypes);
   addLoadedDef(":d", 0, printCmd);
+  addLoadedDef("runc", 0, runC);
 }
 
 void main()
