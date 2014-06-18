@@ -578,7 +578,7 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
   fclose(s);
 }
 
-bool eval(Cmd* cmd);
+void eval(Cmd* cmd);
 
 void load() {
   int c;
@@ -870,27 +870,19 @@ void alias(Arg* arg) { // FIXME: Check arg count
   }
 }
 
-bool eval(Cmd* cmd) {
-  if (cmd == NULL) return true;
+void eval(Cmd* cmd) {
+  if (cmd == NULL) return;
 
   if (strlen(cmd->name) > 0) {
-    int i;
-    if (strcmp(cmd->name, "exit") == 0 ||
-               strcmp(cmd->name, "quit") == 0 ||
-               strcmp(cmd->name, "q") == 0) {
-      return false;
-    } else {
-      LoadedFunc* d;
-      for (d = loadedDefs; d != NULL; d = d->nxt) {
-        if (strcmp(cmd->name, d->name) == 0) {
-          d->ptr(cmd);
-          break;
-        }
+    LoadedFunc* d;
+    for (d = loadedDefs; d != NULL; d = d->nxt) {
+      if (strcmp(cmd->name, d->name) == 0) {
+        d->ptr(cmd);
+        break;
       }
     }
   }
   eval(cmd->nxt);
-  return true;
 }
 
 void loop()
@@ -900,7 +892,13 @@ void loop()
   addstr(">> ");
   while (continuer) {
     Cmd* cmd = getInput();
-    continuer = eval(cmd);
+    if (strcmp(cmd->name, "exit") == 0 ||
+               strcmp(cmd->name, "quit") == 0 ||
+               strcmp(cmd->name, "q") == 0) {
+      freeCmd(cmd);
+      return;
+    }
+    eval(cmd);
     freeCmd(cmd);
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
