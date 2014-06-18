@@ -36,6 +36,15 @@ LoadedFunc* lastLoadedFunc() {
   }
 }
 
+LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd), LoadedFunc* nxt) {
+  LoadedFunc* d = malloc(sizeof(LoadedFunc));
+  strcpy(d->name, name);
+  d->opPriority = priority;
+  d->ptr = ptr;
+  d->nxt = nxt;
+  return d;
+}
+
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
@@ -436,6 +445,12 @@ void escapeName(char* str) {
     } else if (*c == '-') { // TODO: Add all chars that need to be escaped.
       strcat(buf, "__minus__");
       i = strlen(buf) - 1;
+    } else if (*c == '*') { // TODO: Add all chars that need to be escaped.
+      strcat(buf, "__mult__");
+      i = strlen(buf) - 1;
+    } else if (*c == '/') { // TODO: Add all chars that need to be escaped.
+      strcat(buf, "__div__");
+      i = strlen(buf) - 1;
     } else {
       buf[i] = *c;
     }
@@ -699,6 +714,7 @@ Func* defFunc(Cmd* cmd) {
     strcpy(def->args->val, "void");
   }
   list(NULL); // FIXME: just show one
+  lastLoadedFunc()->nxt = addLoadedFunc(def->name, def->opPriority, run, NULL);
   return def;
 }
 void def(Cmd* cmd) {
@@ -755,7 +771,7 @@ bool eval(Cmd* cmd) {
           break;
         }
       }
-      if (!found) {
+      /*if (!found) {
         if (funcByName(cmd->name) != NULL) {
           if (cmd->args == NULL) {
             show(cmd);
@@ -765,7 +781,7 @@ bool eval(Cmd* cmd) {
         } else {
           output("Unkown function.");
         }
-      }
+      }*/
     }
   }
   eval(cmd->nxt);
@@ -799,15 +815,6 @@ static void finish(int sig)
   aliases = NULL;
 
   exit(0);
-}
-
-LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd), LoadedFunc* nxt) {
-  LoadedFunc* d = malloc(sizeof(LoadedFunc));
-  strcpy(d->name, name);
-  d->opPriority = priority;
-  d->ptr = ptr;
-  d->nxt = nxt;
-  return d;
 }
 
 void initLoadedFuncs() {
