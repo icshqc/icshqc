@@ -11,16 +11,12 @@
 static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
 
+static Type* types = NULL;
+static Var* vars = NULL;
+
 // FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
-
-void assign(Cmd* cmd);
-void list(Cmd* cmd);
-void def(Cmd* cmd);
-void save(Cmd* cmd);
-void printCmd(Cmd* cmd);
-void defOp(Cmd* cmd);
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedFunc and the function passed would call the executable.
@@ -36,13 +32,22 @@ LoadedFunc* lastLoadedFunc() {
   }
 }
 
-LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd), LoadedFunc* nxt) {
+LoadedFunc* createLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd)) {
   LoadedFunc* d = malloc(sizeof(LoadedFunc));
   strcpy(d->name, name);
   d->opPriority = priority;
   d->ptr = ptr;
-  d->nxt = nxt;
+  d->nxt = NULL;
   return d;
+}
+
+LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd)) {
+  LoadedFunc* f = createLoadedFunc(name, priority, ptr);
+  if (loadedDefs == NULL) {
+    loadedDefs = f;
+  } else {
+    lastLoadedFunc()->nxt = f;
+  }
 }
 
 // A block is a Cmd with two args. The first is the args, the second is the body
@@ -77,6 +82,20 @@ Arg* appendNewArg(Arg* arg) {
   } else {
     arg->nxt = newArg();
     return arg->nxt;
+  }
+}
+
+void freeVar(Var* t) {
+  if (t != NULL) {
+    freeVar(t->nxt);
+    free(t);
+  }
+}
+
+void freeType(Type* t) {
+  if (t != NULL) {
+    freeType(t->nxt);
+    free(t);
   }
 }
 
@@ -261,6 +280,17 @@ void printCmd(Cmd* cmd) {
   char b[1024] = "";
   catCmd(b, cmd);
   output(b);
+}
+
+Type* typeByName(char* name) {
+  Type* t = types;
+  while (t != NULL) {
+    if (strcmp(t->name, name) == 0) {
+      return t;
+    }
+    t = t->nxt;
+  }
+  return NULL;
 }
 
 LoadedFunc* loadedFuncByName(char* name) {
@@ -645,6 +675,27 @@ void run(Cmd* cmd) {
   output(retVal);
 }
 
+void createVar(Cmd* cmd) {
+  Var* var = malloc(sizeof(Var));
+  strcpy(var->name, cmd->args->name);
+  var->type = typeByName(cmd->name);
+  Var* oldFirst = vars;
+  vars = var;
+  var->nxt = oldFirst;
+}
+
+void createType(Cmd* cmd) {
+  Type* type = malloc(sizeof(Type));
+  strcpy(type->name, cmd->args->name);
+  Type* oldFirst = types;
+  types = type;
+  type->nxt = oldFirst;
+  addLoadedFunc(type->name, 0, createVar);
+}
+
+void assign2(Cmd* cmd) {
+}
+
 void assign(Cmd* cmd) {
   Func* f = funcByName(cmd->args->name);
   if (f == NULL) return;
@@ -674,6 +725,32 @@ void assign(Cmd* cmd) {
     func->lambda = parseLambda(i);
   }
 }*/
+
+void listTypes(Cmd* cmd) {
+  Type* t;
+  char m[1024] = "";
+  for (t = types; t != NULL; t = t->nxt) {
+    strcat(m, t->name);
+    if (t->nxt != NULL) {
+      strcat(m, "\n");
+    }
+  }
+  output(m);
+}
+
+void listVars(Cmd* cmd) {
+  Var* v;
+  char m[1024] = "";
+  for (v = vars; v != NULL; v = v->nxt) {
+    strcat(m, v->type->name);
+    strcat(m, " ");
+    strcat(m, v->name);
+    if (v->nxt != NULL) {
+      strcat(m, "\n");
+    }
+  }
+  output(m);
+}
 
 void list(Cmd* cmd) {
   Func* d = defs;
@@ -727,7 +804,7 @@ Func* defFunc(Cmd* cmd, int opPriority) {
   }
   def->opPriority = opPriority;
   list(NULL); // FIXME: just show one
-  lastLoadedFunc()->nxt = addLoadedFunc(def->name, def->opPriority, run, NULL);
+  addLoadedFunc(def->name, def->opPriority, run);
   return def;
 }
 void def(Cmd* cmd) {
@@ -823,6 +900,10 @@ static void finish(int sig)
   defs = NULL;
   freeLoadedFunc(loadedDefs);
   loadedDefs = NULL;
+  freeType(types);
+  types = NULL;
+  freeVar(vars);
+  vars = NULL;
   freeAlias(aliases);
   aliases = NULL;
 
@@ -830,13 +911,16 @@ static void finish(int sig)
 }
 
 void initLoadedFuncs() {
-  loadedDefs = addLoadedFunc("=", 1, assign,
-      addLoadedFunc("save", 0, save,
-      addLoadedFunc("::", 1, def,
-      addLoadedFunc(":::", 1, defOp,
-      addLoadedFunc(":d", 0, printCmd,
-      addLoadedFunc("l", 0, list, NULL
-      ))))));
+  addLoadedFunc("=", 1, assign);
+  addLoadedFunc("save", 0, save);
+  addLoadedFunc("::", 1, def);
+  addLoadedFunc(":::", 1, defOp);
+  addLoadedFunc(":=", 1, assign2);
+  addLoadedFunc("type", 0, createType);
+  addLoadedFunc("$vars", 0, listVars);
+  addLoadedFunc("$types", 0, listTypes);
+  addLoadedFunc(":d", 0, printCmd);
+  addLoadedFunc("l", 0, list);
 }
 
 void main()
@@ -859,139 +943,3 @@ void main()
 
   finish(0);
 }
-
-/*// TYPE
-
-struct Type {
-  enum { STRUCT, POINTER, INT } type;
-  struct Type* subtype; // Some types have subtype. e.g. Pointer, Array
-  char* (*catType)(char*, struct Type*);
-  // freeType
-  // initType set to zero
-};
-typedef struct Type Type;
-
-struct TypeVal {
-  Type type;
-  char* val;
-};
-typedef struct TypeVal TypeVal;
-
-TypeVal typeVal(Type type, char* val) {
-  TypeVal v;
-  v.type = type;
-  v.val = val;
-  return v;
-}
-
-char* intCatType(char* buf, Type* type) {
-  return buf;
-}
-
-Type types[] = {
-  {INT, NULL, intCatType},
-  {POINTER, NULL, intCatType},
-  {STRUCT, NULL, intCatType}
-}; */
-
-// Fuck gen. A la place, creer des types dans le nouveau language de prog et ca rajoute des fonctions automatique.
-/*void gen(Arg* args) {
-  if (args == NULL) return;
-
-  TypeVal attr[12];
-  memset(attr, 0, sizeof(attr));
-  int nattr = 0;
-  int i;
-
-  // FIXME: Array does not work. Need to add char name[24]; !!! Need to add [24] after name.
-  Arg* arg = args->nxt;
-  while (arg != NULL) {
-    char* c = strchr(arg->val, ':');
-    if (c == NULL) {
-      msg("Error: Wrong syntax to generate. Missing ':' for attr.");
-      return;
-    }
-    strncpy(attr[nattr].val,arg->val,c-arg->val);
-    // FIXME: Ugly hack. Not decided yet what syntax should be anyway...
-    if (strcmp(c+1, "struct") == 0) {
-      strcpy(attr[nattr].val, "struct ");
-      strcpy(attr[nattr].val + 7, arg->nxt->val);
-      arg = arg->nxt;
-    } else {
-      strcpy(attr[nattr][1], c+1);
-    }
-    nattr++;  
-    arg = arg->nxt;
-  }
-
-  char* name = args->val;
-
-  char buf[52];
-  sprintf(buf, "model/%s.h", name);
-  FILE* s = fopen(buf, "w");
-
-  fprintf(s, "// WARNING: AUTOGENERATED, DO NOT OVERWRITE\n\n");
-
-  fprintf(s, "#ifndef %s_H\n", name);
-  fprintf(s, "#define %s_H\n\n", name);
- 
-  fprintf(s, "struct %s {\n", name);
-  for (i = 0; i < nattr; i++) {
-    fprintf(s, "  %s %s;\n", attr[i][1], attr[i][0]);
-  }
-  // TODO: Args
-  fprintf(s, "};\n");
-  fprintf(s, "typedef struct %s %s;\n\n", name, name);
- 
-  fprintf(s, "%s* new%s();\n", name, name);
-  fprintf(s, "void free%s(%s* a);\n", name, name);
-  fprintf(s, "char* cat%s(char* m, %s* a);\n\n", name, name);
- 
-  fprintf(s, "#endif // %s_h", name);
-  fclose(s);
-  
-  sprintf(buf, "model/%s.c", name);
-  s = fopen(buf, "w");
-  fprintf(s, "#include <stdlib.h>\n");
-  fprintf(s, "#include <stdio.h>\n");
-  fprintf(s, "#include <string.h>\n\n");
- 
-  fprintf(s, "#include \"%s.h\"\n\n", name);
- 
-  fprintf(s, "void free%s(%s* a) {\n", name, name);
-  fprintf(s, "  if (a != NULL) {\n");
-  // FIXME: Check for pointers and free those. Yet should you always free?
-  // fprintf(s, "    freeArg(arg->nxt);");
-  fprintf(s, "    free(a);\n");
-  fprintf(s, "  }\n");
-  fprintf(s, "}\n\n");
- 
-  fprintf(s, "%s* new%s() {\n", name, name);
-  fprintf(s, "  %s* a = malloc(sizeof(%s));\n", name, name);
-  fprintf(s, "  if (a == NULL) {\n");
-  fprintf(s, "    abort(); // FIXME msg: Can't allocate memory\n");
-  fprintf(s, "  }\n");
-  // FIXME: Init args
-  //fprintf(s, "  memset(arg0->val, '\0', sizeof(arg0->val));");
-  //fprintf(s, "  arg0->nxt = NULL;");
-  fprintf(s, "  return a;\n");
-  fprintf(s, "}\n\n");
- 
-//  fprintf(s, "char* cat%s(char* m, %s* a) {\n", name, name);
-//  fprintf(s, "  if (a != NULL) {\n");
-  //fprintf(s, "    Arg* n = arg->nxt;"); // FIXME
-//  fprintf(s, "    strcat(m, \"%s[\\\"\");\n", name);
-  //fprintf(s, "    strcat(m, arg->val);"); // FIXME
-  //fprintf(s, "    while (n != NULL) {");
-  //fprintf(s, "      strcat(m, \"\\\", \\\"\");");
-  //fprintf(s, "      strcat(m, n->val);");
-  //fprintf(s, "      n = n->nxt;");
-  //fprintf(s, "    }");
-//  fprintf(s, "    strcat(m, \"\\\"]\");\n");
-//  fprintf(s, "  }\n");
-//  fprintf(s, "  return m;\n");
-//  fprintf(s, "}\n");
-
-  fclose(s);
-}*/
-

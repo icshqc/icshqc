@@ -28,6 +28,19 @@ struct LoadedFunc {
 };
 typedef struct LoadedFunc LoadedFunc;
 
+struct Type {
+  char name[32];
+  struct Type* nxt;
+};
+typedef struct Type Type;
+
+struct Var {
+  char name[32];
+  Type* type;
+  struct Var* nxt;
+};
+typedef struct Var Var;
+
 struct Func {
   char name[52];
   int opPriority;
