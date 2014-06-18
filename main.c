@@ -53,8 +53,6 @@ LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd)) {
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
-static Alias* aliases = NULL;
-
 Cmd* newCmd() {
   Cmd* arg0 = malloc(sizeof(Cmd));
   if (arg0 == NULL) {
@@ -145,13 +143,6 @@ void freeFunc(Func* f) {
   }
 }
 
-void freeAlias(Alias* a) {
-  if (a != NULL) {
-    freeAlias(a->nxt);
-    free(a);
-  }
-}
-
 Func* newFunc() {
   Func* func = malloc(sizeof(Func));
   if (func == NULL) {
@@ -163,16 +154,6 @@ Func* newFunc() {
   func->args = NULL;
   func->nxt = NULL;
   return func;
-}
-
-Alias* newAlias() {
-  Alias* a = malloc(sizeof(Alias));
-  if (a == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(a->name, '\0', sizeof(a->name));
-  a->func = NULL;
-  return a;
 }
 
 char* catDef(char* m, Func* f) {
@@ -273,17 +254,23 @@ char* trim(char* s) {
 // APP
 
 char* catCmd(char* b, Cmd* cmd) {
-  if (cmd-> args != NULL) {
-    strcat(b,"(");
-    strcat(b,cmd->name);
-    Cmd* a;
-    for (a = cmd->args; a != NULL; a = a->nxt) {
-      strcat(b," ");
-      catCmd(b, a);
+  if (cmd != NULL) {
+    if (cmd->args != NULL) {
+      strcat(b,"(");
+      strcat(b,cmd->name);
+      Cmd* a;
+      for (a = cmd->args; a != NULL; a = a->nxt) {
+        strcat(b," ");
+        catCmd(b, a);
+      }
+      strcat(b,")");
+    } else {
+      strcat(b,cmd->name);
     }
-    strcat(b,")");
-  } else {
-    strcat(b,cmd->name);
+    if (cmd->nxt != NULL) {
+      strcat(b, " ");
+      catCmd(b, cmd->nxt);
+    }
   }
   return b;
 }
@@ -291,6 +278,18 @@ void printCmd(Cmd* cmd) {
   char b[1024] = "";
   catCmd(b, cmd);
   output(b);
+}
+
+void catVar(char* m, Var* v) {
+  if (v != NULL) {
+    strcat(m, v->type->name);
+    strcat(m, " ");
+    strcat(m, v->name);
+    if (v->val != NULL) {
+      strcat(m, " ");
+      catCmd(m, v->val);
+    }
+  }
 }
 
 Var* varByName(char* name) {
@@ -697,6 +696,16 @@ void run(Cmd* cmd) {
   output(retVal);
 }
 
+void printVar(Cmd* cmd) {
+  if (cmd->args == NULL) {
+    char b[1024] = "";
+    catVar(b, varByName(cmd->name));
+    output(b);
+  } else {
+
+  }
+}
+
 void createVar(Cmd* cmd) {
   Var* var = malloc(sizeof(Var));
   strcpy(var->name, cmd->args->name);
@@ -705,6 +714,8 @@ void createVar(Cmd* cmd) {
   vars = var;
   var->nxt = oldFirst;
   var->val = NULL;
+  // FIXME: Not sure about that. Probably should not be doing this.
+  addLoadedFunc(var->name, 0, printVar); 
 }
 
 void createType(Cmd* cmd) {
@@ -767,13 +778,7 @@ void listVars(Cmd* cmd) {
   Var* v;
   char m[1024] = "";
   for (v = vars; v != NULL; v = v->nxt) {
-    strcat(m, v->type->name);
-    strcat(m, " ");
-    strcat(m, v->name);
-    if (v->val != NULL) {
-      strcat(m, " ");
-      catCmd(m, v->val);
-    }
+    catVar(m, v);
     if (v->nxt != NULL) {
       strcat(m, "\n");
     }
@@ -854,22 +859,6 @@ void show(Cmd* cmd) {
   }
 }
 
-void alias(Arg* arg) { // FIXME: Check arg count
-  Func* f = funcByName(arg->nxt->val);
-  Alias* a;
-  if (f != NULL) {
-    if (aliases == NULL) {
-      aliases = newAlias();
-      a = aliases;
-    } else {
-      aliases->nxt = newAlias();
-      a = aliases->nxt;
-    }
-    strcpy(a->name, arg->val);
-    a->func = f;
-  }
-}
-
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
@@ -918,8 +907,6 @@ static void finish(int sig)
   types = NULL;
   freeVar(vars);
   vars = NULL;
-  freeAlias(aliases);
-  aliases = NULL;
 
   exit(0);
 }

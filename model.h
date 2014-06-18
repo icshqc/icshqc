@@ -52,17 +52,4 @@ struct Func {
 };
 typedef struct Func Func;
 
-/*struct FuncCall {
-  Func* func;
-  Lambda* lambda;
-  Arg* args;      // 4 9 3
-};*/
-
-struct Alias {
-  char name[52];
-  Func* func;
-  struct Alias* nxt;
-};
-typedef struct Alias Alias;
-
 #endif // MODEL.h
