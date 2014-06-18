@@ -262,6 +262,16 @@ void printCmd(Cmd* cmd) {
   output(b);
 }
 
+LoadedFunc* loadedFuncByName(char* name) {
+  LoadedFunc* d = loadedDefs;
+  while (d != NULL) {
+    if (strcmp(d->name, name) == 0) {
+      return d;
+    }
+    d = d->nxt;
+  }
+  return NULL;
+}
 Func* funcByName(char* name) {
   Func* d = defs;
   while (d != NULL) {
