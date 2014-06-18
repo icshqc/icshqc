@@ -22,6 +22,8 @@ void save(Cmd* cmd);
 void printCmd(Cmd* cmd);
 void defOp(Cmd* cmd);
 
+// TODO: Have a list that contains both the loaded defs and the runtime one.
+// They should of type struct LoadedFunc and the function passed would call the executable.
 static const LoadedFunc loadedDefs[] = {
   {"=", 1, assign},
   {"save", 0, assign},
@@ -288,9 +290,21 @@ ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(a
       cmd = cmd->nxt;
     }
   }
-  int i;
-  cmds->args = cmds->nxt;
-  cmds->nxt = NULL;
+  Func* f;
+  if ((f = funcByName(cmds->name)) != NULL && f->opPriority == 0) {
+    cmds->args = cmds->nxt;
+    cmds->nxt = NULL;
+  /*} else if (cmds->nxt != NULL && (f = funcByName(cmds->nxt->name)) != NULL && f->opPriority > 0) {
+    cmd = cmds;
+    cmds = cmds->nxt;
+    cmds->args = cmd;
+    cmd->nxt = cmds->nxt;
+    cmds->nxt = NULL;*/
+  } else {
+    // FIXME: TMP because the funcByName should return the loaded functions too.
+    cmds->args = cmds->nxt;
+    cmds->nxt = NULL;
+  }
   return parsePair(cmds, s);
 }
 Cmd* parseCmd(char* command) {
