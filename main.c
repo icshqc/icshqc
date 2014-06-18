@@ -202,6 +202,17 @@ char* catFunc(char* m, Func* f) {
   return m;
 }
 
+void setVarVal(Var* v, Cmd* val) {
+  if (v->val != NULL) {
+    freeCmd(v->val);
+  } else {
+    v->val = newCmd();
+    strcpy(v->val->name, val->name);
+    v->val->args = val->args;
+    v->val->nxt = val->nxt;
+  }
+}
+
 // HELPER
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
@@ -280,6 +291,17 @@ void printCmd(Cmd* cmd) {
   char b[1024] = "";
   catCmd(b, cmd);
   output(b);
+}
+
+Var* varByName(char* name) {
+  Var* t = vars;
+  while (t != NULL) {
+    if (strcmp(t->name, name) == 0) {
+      return t;
+    }
+    t = t->nxt;
+  }
+  return NULL;
 }
 
 Type* typeByName(char* name) {
@@ -682,6 +704,7 @@ void createVar(Cmd* cmd) {
   Var* oldFirst = vars;
   vars = var;
   var->nxt = oldFirst;
+  var->val = NULL;
 }
 
 void createType(Cmd* cmd) {
@@ -694,6 +717,8 @@ void createType(Cmd* cmd) {
 }
 
 void assign2(Cmd* cmd) {
+  Var* v = varByName(cmd->args->name);
+  setVarVal(v, cmd->args->nxt);
 }
 
 void assign(Cmd* cmd) {
@@ -745,6 +770,10 @@ void listVars(Cmd* cmd) {
     strcat(m, v->type->name);
     strcat(m, " ");
     strcat(m, v->name);
+    if (v->val != NULL) {
+      strcat(m, " ");
+      catCmd(m, v->val);
+    }
     if (v->nxt != NULL) {
       strcat(m, "\n");
     }

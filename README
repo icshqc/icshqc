@@ -3,6 +3,10 @@ TODO:
 int x
 x
 $vars
+x := 2
+x := 4 + 3
+int x := 2
+int y := x + 3
 
 ---
 
@@ -11,23 +15,6 @@ Rajouter une syntax pour que le contenu soit du C inchanger.
 Un lambda est un block. La seule forme est: Ce qui est pratique quand pas args.
 {|x y| return x + y}
 {printf "Hello world!"}
-
----
-Pour parser:
-
-a b c d
-=> a(b, c, d)
-a (b c) d
-=> a(b(c), d)
-
-1. parseFuncName
-2. quand t'arrive a ' ', parseArg
-3. quand t'arrive a ' ', parseArg nxt
-4. quand t'arrive a '(', parse nxt
-
-add 1 + 4 * 2 / (3 - 1)
-
-add, 1, +, 4, *, 2, /, (, 3, -, 1, )
 
 ---
 

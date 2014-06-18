@@ -37,6 +37,7 @@ typedef struct Type Type;
 struct Var {
   char name[32];
   Type* type;
+  Cmd* val;
   struct Var* nxt;
 };
 typedef struct Var Var;
