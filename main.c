@@ -402,6 +402,24 @@ bool isOperator(char* opName) {
   return t;
 }*/
 
+void escapeName(char* str) {
+  char buf[128] = "";
+  int i;
+  char *c;
+  for (c = str, i = 0; *c != '\0'; ++c, ++i) {
+    if (*c == '+') { // TODO: Add all chars that need to be escaped.
+      strcat(buf, "__plus__");
+      i = strlen(buf) - 1;
+    } else if (*c == '-') { // TODO: Add all chars that need to be escaped.
+      strcat(buf, "__minus__");
+      i = strlen(buf) - 1;
+    } else {
+      buf[i] = *c;
+    }
+  }
+  strcpy(str, buf);
+}
+
 void compileFunc(char* s, Func* f) {
   char tmp[1024] = "";
   Arg* ret;
@@ -413,7 +431,10 @@ void compileFunc(char* s, Func* f) {
   }
   ret = arg;
 
-  sprintf(tmp, "%s %s(", ret->val, f->name);
+  char escName[128] = "";
+  strcpy(escName, f->name);
+  escapeName(escName);
+  sprintf(tmp, "%s %s(", ret->val, escName);
   strcat(s, tmp);
  
   for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
@@ -501,8 +522,11 @@ void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be ad
   int i;
 
   // TODO: Move this part to a function
+  char escName[128] = "";
+  strcpy(escName, cmd->name);
+  escapeName(escName);
   char filename[64] = "";
-  sprintf(filename, "tmp/%s.c", cmd->name);
+  sprintf(filename, "tmp/%s.c", escName);
   FILE* s = fopen(filename, "w"); // FIXME: Check if valid file. Not NULL.
   fprintf(s, "#include <stdlib.h>\n");
   fprintf(s, "#include <stdio.h>\n\n");
@@ -529,9 +553,9 @@ void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be ad
     fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
   }
   if (strcmp(ret->val, "void") == 0) {
-    fprintf(s, "  %s(", f->name);
+    fprintf(s, "  %s(", escName);
   } else {
-    fprintf(s, "  %s r = %s(", ret->val, f->name);
+    fprintf(s, "  %s r = %s(", ret->val, escName);
   }
   for (i = 0; i < n; i++) {
     fprintf(s, "arg%d", i);
@@ -548,7 +572,7 @@ void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be ad
   fclose(s);
 
   char exeFilename[64] = "";
-  sprintf(exeFilename, "tmp/%s", cmd->name);
+  sprintf(exeFilename, "tmp/%s", escName);
   char cmds[256] = "";
   strcat(cmds, "gcc -o ");
   strcat(cmds, exeFilename);
