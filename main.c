@@ -15,9 +15,6 @@ static Type* types = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
 
-// Or fuck conventions and let it be static...
-static Func* defs = NULL;
-
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
@@ -128,57 +125,6 @@ char* catArg(char* m, Arg* arg) {
       strcat(m, n->val);
       n = n->nxt;
     }
-  }
-  return m;
-}
-
-void freeFunc(Func* f) {
-  if (f != NULL) {
-    freeFunc(f->nxt);
-    freeArg(f->args);
-    if (f->lambda != NULL) {
-      free(f->lambda);
-    }
-    free(f);
-  }
-}
-
-Func* newFunc() {
-  Func* func = malloc(sizeof(Func));
-  if (func == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(func->name, '\0', sizeof(func->name));
-  func->isOperator = false;
-  func->lambda = NULL;
-  func->args = NULL;
-  func->nxt = NULL;
-  return func;
-}
-
-char* catDef(char* m, Func* f) {
-  strcat(m, f->name);
-  strcat(m, " :: ");
-  catArg(m, f->args); 
-  return m;
-}
-
-char* catFunc(char* m, Func* f) {
-  Arg* arg;
-  catDef(m, f);
-  strcat(m, "\n");
-  strcat(m, f->name);
-  strcat(m, " = ");
-  if (f->lambda != NULL) {
-    strcat(m, "\\");
-    for (arg = f->lambda->args; arg != NULL; arg = arg->nxt) {
-      strcat(m, arg->val);
-      strcat(m, " ");
-    }
-    strcat(m, "-> ");
-    strcat(m, f->lambda->body);
-  } else {
-    strcat(m, "\"\"");
   }
   return m;
 }
@@ -316,16 +262,6 @@ Type* typeByName(char* name) {
 
 LoadedDef* loadedFuncByName(char* name) {
   LoadedDef* d = loadedDefs;
-  while (d != NULL) {
-    if (strcmp(d->name, name) == 0) {
-      return d;
-    }
-    d = d->nxt;
-  }
-  return NULL;
-}
-Func* funcByName(char* name) {
-  Func* d = defs;
   while (d != NULL) {
     if (strcmp(d->name, name) == 0) {
       return d;
@@ -521,7 +457,7 @@ void escapeName(char* str) {
   strcpy(str, buf);
 }
 
-void compileFunc(char* s, Func* f) {
+/*void compileFunc(char* s, Func* f) {
   char tmp[1024] = "";
   Arg* ret;
   Arg* arg;
@@ -556,25 +492,17 @@ void compileFunc(char* s, Func* f) {
     strcat(s, f->lambda->body);
   }
   strcat(s, "\n}");
-}
-
-void compile(Func* f) {
-  if (f != NULL) {
-    char fs[2056] = "";
-    compileFunc(fs, f);
-    output(fs);
-  }
-}
+}*/
 
 void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
-  Func* f = NULL;
+  /*Func* f = NULL;
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   char m[1024] = "";
   for (f = defs; f != NULL; f = f->nxt) {
     m[0] = '\0';
     fprintf(s, "\n%s", catFunc(m, f));
   }
-  fclose(s);
+  fclose(s);*/
 }
 
 void eval(Cmd* cmd);
@@ -599,19 +527,19 @@ void load() {
   }
 }
 
-void runCmd(char* retVal, Cmd* cmd);
+//void runCmd(char* retVal, Cmd* cmd);
 
 char* argVal(char* buf, Cmd* arg) {
   if (arg->args) {
     char argValue[128] = "";
-    runCmd(argValue, arg);
+    //runCmd(argValue, arg);
     strcat(buf, argValue);
   } else {
     strcat(buf, arg->name);
   }
 }
 
-void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
+/*void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
   Func* f = funcByName(cmd->name);
   if (f == NULL) return;
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
@@ -689,10 +617,10 @@ void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be ad
 
   fscanf(fp, "%s", retVal);
   pclose(fp);
-}
+}*/
 void run(Cmd* cmd) {
   char retVal[1024];
-  runCmd(retVal, cmd);
+  //runCmd(retVal, cmd);
   output(retVal);
 }
 
@@ -727,24 +655,9 @@ void createType(Cmd* cmd) {
   addLoadedDef(type->name, 0, createVar);
 }
 
-void assign2(Cmd* cmd) {
+void assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   setVarVal(v, cmd->args->nxt);
-}
-
-void assign(Cmd* cmd) {
-  Func* f = funcByName(cmd->args->name);
-  if (f == NULL) return;
-
-  char i[512] = "";
-  Cmd* c;
-  for (c = cmd->args->nxt; c != NULL; c = c->nxt) {
-    strcat(i, c->name);
-    if (c->nxt != NULL) {
-      strcat(i, " ");
-    }
-  }
-  f->lambda = parseLambda(i);
 }
 
 /*void edit(Func* func) {
@@ -784,79 +697,6 @@ void listVars(Cmd* cmd) {
     }
   }
   output(m);
-}
-
-void list(Cmd* cmd) {
-  Func* d = defs;
-  while (d != NULL) {
-    char m[256] = "";
-    output(catDef(m,d));
-    d = d->nxt;
-  }
-}
-
-Func* defFunc(Cmd* cmd, int isOp) {
-  Func* def = defs;
-  Arg* arg = NULL;
-  Cmd* n = cmd->args;
-  /*FILE *f = fopen(DEF_FILE_PATH, "a");
-  if (f == NULL) {
-    abort(); // FIXME: "Can't open definition file."
-  }
-  fputs(d, f);
-  fclose(f);*/
-
-  if (def == NULL) {
-    defs = newFunc();
-    def = defs;
-  } else {
-    while (def->nxt != NULL) {
-      def = def->nxt;
-    }
-    def->nxt = newFunc();
-    def = def->nxt;
-  }
-  while (n != NULL) {
-    if (strlen(def->name) == 0) {
-      strcpy(def->name, n->name);
-    } else {
-      arg = appendNewArg(arg);
-      if (def->args == NULL) {
-        def->args = arg;
-      }
-      strcpy(arg->val, n->name);
-    }
-    n = n->nxt;
-  }
-  //if (arg == NULL) {
-  //  def->args = newArg();
-  //  strdef->args
-  //}
-  if (def->args == NULL) {
-    def->args = newArg();
-    strcpy(def->args->val, "void");
-  }
-  def->isOperator = isOp;
-  list(NULL); // FIXME: just show one
-  addLoadedDef(def->name, def->isOperator, run);
-  return def;
-}
-void def(Cmd* cmd) {
-  defFunc(cmd, 0);
-}
-
-void defOp(Cmd* cmd) {
-  Func* f = defFunc(cmd, 1);
-}
-
-void show(Cmd* cmd) {
-  Func* f = funcByName(cmd->name);
-  char m[600] = "";
-  if (f == NULL) {
-    output("Unkown function");
-  } else {
-    output(catFunc(m, f));
-  }
 }
 
 void eval(Cmd* cmd) {
@@ -899,8 +739,6 @@ static void finish(int sig)
 {
   endwin();
 
-  freeFunc(defs);
-  defs = NULL;
   freeLoadedDef(loadedDefs);
   loadedDefs = NULL;
   freeType(types);
@@ -912,16 +750,12 @@ static void finish(int sig)
 }
 
 void initLoadedDefs() {
-  addLoadedDef("=", 1, assign);
   addLoadedDef("save", 0, save);
-  addLoadedDef("::", 1, def);
-  addLoadedDef(":::", 1, defOp);
-  addLoadedDef(":=", 1, assign2);
+  addLoadedDef("=", 1, assign);
   addLoadedDef("type", 0, createType);
   addLoadedDef("$vars", 0, listVars);
   addLoadedDef("$types", 0, listTypes);
   addLoadedDef(":d", 0, printCmd);
-  addLoadedDef("l", 0, list);
 }
 
 void main()
