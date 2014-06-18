@@ -24,15 +24,7 @@ void defOp(Cmd* cmd);
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedFunc and the function passed would call the executable.
-static const LoadedFunc loadedDefs[] = {
-  {"=", 1, assign},
-  {"save", 0, assign},
-  {"::", 1, def},
-  {":::", 1, defOp},
-  {":d", 1, printCmd},
-  {"l", 0, list}
-};
-static const int nLoadedDefs = 6; // FIXME: Calculate automatically.
+static LoadedFunc* loadedDefs = NULL;
 
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
@@ -66,6 +58,13 @@ Arg* appendNewArg(Arg* arg) {
   } else {
     arg->nxt = newArg();
     return arg->nxt;
+  }
+}
+
+void freeLoadedFunc(LoadedFunc* d) {
+  if (d != NULL) {
+    freeLoadedFunc(d->nxt);
+    free(d);
   }
 }
 
@@ -738,9 +737,10 @@ bool eval(Cmd* cmd) {
       return false;
     } else {
       bool found = false;
-      for (i = 0; i < nLoadedDefs; i++) {
-        if (strcmp(cmd->name, loadedDefs[i].name) == 0) {
-          loadedDefs[i].ptr(cmd);
+      LoadedFunc* d;
+      for (d = loadedDefs; d != NULL; d = d->nxt) {
+        if (strcmp(cmd->name, d->name) == 0) {
+          d->ptr(cmd);
           found = true;
           break;
         }
@@ -783,15 +783,38 @@ static void finish(int sig)
 
   freeFunc(defs);
   defs = NULL;
+  freeLoadedFunc(loadedDefs);
+  loadedDefs = NULL;
   freeAlias(aliases);
   aliases = NULL;
 
   exit(0);
 }
 
+LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd), LoadedFunc* nxt) {
+  LoadedFunc* d = malloc(sizeof(LoadedFunc));
+  strcpy(d->name, name);
+  d->opPriority = priority;
+  d->ptr = ptr;
+  d->nxt = nxt;
+  return d;
+}
+
+void initLoadedFuncs() {
+  loadedDefs = addLoadedFunc("=", 1, assign,
+      addLoadedFunc("save", 0, save,
+      addLoadedFunc("::", 0, def,
+      addLoadedFunc(":::", 0, defOp,
+      addLoadedFunc(":d", 0, printCmd,
+      addLoadedFunc("l", 0, list, NULL
+      ))))));
+}
+
 void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
+
+  initLoadedFuncs();
 
   silent = true;
   load();

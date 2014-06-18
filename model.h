@@ -24,6 +24,7 @@ struct LoadedFunc {
   char name[52];
   int opPriority;
   void (*ptr)(Cmd* cmd);
+  struct LoadedFunc* nxt;
 };
 typedef struct LoadedFunc LoadedFunc;
 
