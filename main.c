@@ -20,15 +20,17 @@ void list(Cmd* cmd);
 void def(Cmd* cmd);
 void save(Cmd* cmd);
 void printCmd(Cmd* cmd);
+void defOp(Cmd* cmd);
 
 static const LoadedFunc loadedDefs[] = {
   {"=", 1, assign},
   {"save", 0, assign},
   {"::", 1, def},
+  {":::", 1, defOp},
   {":d", 1, printCmd},
   {"l", 0, list}
 };
-static const int nLoadedDefs = 5; // FIXME: Calculate automatically.
+static const int nLoadedDefs = 6; // FIXME: Calculate automatically.
 
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
@@ -175,7 +177,7 @@ char* strdelch(char* str) {
   }
   return str;
 }
-     
+
 // NCURSES HELPER
 
 // TODO: debug(), fatal(), error(), warn(), log()
@@ -608,7 +610,7 @@ void list(Cmd* cmd) {
   }
 }
 
-void def(Cmd* cmd) {
+Func* defFunc(Cmd* cmd) {
   Func* def = defs;
   Arg* arg = NULL;
   Cmd* n = cmd->args;
@@ -650,6 +652,15 @@ void def(Cmd* cmd) {
     strcpy(def->args->val, "void");
   }
   list(NULL); // FIXME: just show one
+  return def;
+}
+void def(Cmd* cmd) {
+  defFunc(cmd);
+}
+
+void defOp(Cmd* cmd) {
+  Func* f = defFunc(cmd);
+  f->opPriority = 1;
 }
 
 void show(Cmd* cmd) {
