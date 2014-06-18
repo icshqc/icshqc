@@ -32,10 +32,10 @@ LoadedFunc* lastLoadedFunc() {
   }
 }
 
-LoadedFunc* createLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd)) {
+LoadedFunc* createLoadedFunc(char* name, bool isOp, void (*ptr)(Cmd* cmd)) {
   LoadedFunc* d = malloc(sizeof(LoadedFunc));
   strcpy(d->name, name);
-  d->opPriority = priority;
+  d->isOperator = isOp;
   d->ptr = ptr;
   d->nxt = NULL;
   return d;
@@ -158,7 +158,7 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(func->name, '\0', sizeof(func->name));
-  func->opPriority = 0; // Not an operator by default.
+  func->isOperator = false;
   func->lambda = NULL;
   func->args = NULL;
   func->nxt = NULL;
@@ -372,13 +372,13 @@ ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(a
     }
   }
   LoadedFunc* f;
-  if (cmds->nxt != NULL && (f = loadedFuncByName(cmds->nxt->name)) != NULL && f->opPriority > 0) {
+  if (cmds->nxt != NULL && (f = loadedFuncByName(cmds->nxt->name)) != NULL && f->isOperator == true) {
     cmd = cmds;
     cmds = cmds->nxt;
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
     cmds->nxt = NULL;
-  } else if ((f = loadedFuncByName(cmds->name)) != NULL && f->opPriority == 0) {
+  } else if ((f = loadedFuncByName(cmds->name)) != NULL && f->isOperator == false) {
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
   } else if (strlen(cmds->name) > 0) {
@@ -790,7 +790,7 @@ void list(Cmd* cmd) {
   }
 }
 
-Func* defFunc(Cmd* cmd, int opPriority) {
+Func* defFunc(Cmd* cmd, int isOp) {
   Func* def = defs;
   Arg* arg = NULL;
   Cmd* n = cmd->args;
@@ -831,9 +831,9 @@ Func* defFunc(Cmd* cmd, int opPriority) {
     def->args = newArg();
     strcpy(def->args->val, "void");
   }
-  def->opPriority = opPriority;
+  def->isOperator = isOp;
   list(NULL); // FIXME: just show one
-  addLoadedFunc(def->name, def->opPriority, run);
+  addLoadedFunc(def->name, def->isOperator, run);
   return def;
 }
 void def(Cmd* cmd) {
@@ -880,26 +880,13 @@ bool eval(Cmd* cmd) {
                strcmp(cmd->name, "q") == 0) {
       return false;
     } else {
-      bool found = false;
       LoadedFunc* d;
       for (d = loadedDefs; d != NULL; d = d->nxt) {
         if (strcmp(cmd->name, d->name) == 0) {
           d->ptr(cmd);
-          found = true;
           break;
         }
       }
-      /*if (!found) {
-        if (funcByName(cmd->name) != NULL) {
-          if (cmd->args == NULL) {
-            show(cmd);
-          } else {
-            run(cmd);
-          }
-        } else {
-          output("Unkown function.");
-        }
-      }*/
     }
   }
   eval(cmd->nxt);

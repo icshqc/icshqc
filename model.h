@@ -22,7 +22,7 @@ typedef struct Lambda Lambda;
 
 struct LoadedFunc {
   char name[52];
-  int opPriority;
+  bool isOperator;
   void (*ptr)(Cmd* cmd);
   struct LoadedFunc* nxt;
 };
@@ -44,7 +44,7 @@ typedef struct Var Var;
 
 struct Func {
   char name[52];
-  int opPriority;
+  bool isOperator;
   Lambda* lambda;
   Arg* args;      // int int int int
   //Arg ret;
