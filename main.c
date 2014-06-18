@@ -12,6 +12,7 @@ static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
 
 static Type* types = NULL;
+// Maybe vars by scope.
 static Var* vars = NULL;
 
 // FIXME: Made static so I can free in finalize. Should not be static.
