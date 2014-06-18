@@ -1,3 +1,5 @@
+Rajouter une syntax pour que le contenu soit du C inchanger.
+
 Un lambda est un block. La seule forme est: Ce qui est pratique quand pas args.
 {|x y| return x + y}
 {printf "Hello world!"}
