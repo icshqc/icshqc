@@ -20,13 +20,13 @@ struct Lambda {
 };
 typedef struct Lambda Lambda;
 
-struct LoadedFunc {
+struct LoadedDef {
   char name[52];
   bool isOperator;
   void (*ptr)(Cmd* cmd);
-  struct LoadedFunc* nxt;
+  struct LoadedDef* nxt;
 };
-typedef struct LoadedFunc LoadedFunc;
+typedef struct LoadedDef LoadedDef;
 
 struct Type {
   char name[32];

@@ -15,26 +15,25 @@ static Type* types = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
 
-// FIXME: Made static so I can free in finalize. Should not be static.
 // Or fuck conventions and let it be static...
 static Func* defs = NULL;
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
-// They should of type struct LoadedFunc and the function passed would call the executable.
-static LoadedFunc* loadedDefs = NULL;
+// They should of type struct LoadedDef and the function passed would call the executable.
+static LoadedDef* loadedDefs = NULL;
 
-LoadedFunc* lastLoadedFunc() {
+LoadedDef* lastLoadedDef() {
   if (loadedDefs == NULL) {
     return NULL;
   } else {
-    LoadedFunc* f;
+    LoadedDef* f;
     for (f = loadedDefs; f->nxt != NULL; f = f->nxt) {}
     return f;
   }
 }
 
-LoadedFunc* createLoadedFunc(char* name, bool isOp, void (*ptr)(Cmd* cmd)) {
-  LoadedFunc* d = malloc(sizeof(LoadedFunc));
+LoadedDef* createLoadedDef(char* name, bool isOp, void (*ptr)(Cmd* cmd)) {
+  LoadedDef* d = malloc(sizeof(LoadedDef));
   strcpy(d->name, name);
   d->isOperator = isOp;
   d->ptr = ptr;
@@ -42,12 +41,12 @@ LoadedFunc* createLoadedFunc(char* name, bool isOp, void (*ptr)(Cmd* cmd)) {
   return d;
 }
 
-LoadedFunc* addLoadedFunc(char* name, int priority, void (*ptr)(Cmd* cmd)) {
-  LoadedFunc* f = createLoadedFunc(name, priority, ptr);
+LoadedDef* addLoadedDef(char* name, int priority, void (*ptr)(Cmd* cmd)) {
+  LoadedDef* f = createLoadedDef(name, priority, ptr);
   if (loadedDefs == NULL) {
     loadedDefs = f;
   } else {
-    lastLoadedFunc()->nxt = f;
+    lastLoadedDef()->nxt = f;
   }
 }
 
@@ -98,9 +97,9 @@ void freeType(Type* t) {
   }
 }
 
-void freeLoadedFunc(LoadedFunc* d) {
+void freeLoadedDef(LoadedDef* d) {
   if (d != NULL) {
-    freeLoadedFunc(d->nxt);
+    freeLoadedDef(d->nxt);
     free(d);
   }
 }
@@ -315,8 +314,8 @@ Type* typeByName(char* name) {
   return NULL;
 }
 
-LoadedFunc* loadedFuncByName(char* name) {
-  LoadedFunc* d = loadedDefs;
+LoadedDef* loadedFuncByName(char* name) {
+  LoadedDef* d = loadedDefs;
   while (d != NULL) {
     if (strcmp(d->name, name) == 0) {
       return d;
@@ -371,7 +370,7 @@ ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(a
       cmd = cmd->nxt;
     }
   }
-  LoadedFunc* f;
+  LoadedDef* f;
   if (cmds->nxt != NULL && (f = loadedFuncByName(cmds->nxt->name)) != NULL && f->isOperator == true) {
     cmd = cmds;
     cmds = cmds->nxt;
@@ -716,7 +715,7 @@ void createVar(Cmd* cmd) {
   var->nxt = oldFirst;
   var->val = NULL;
   // FIXME: Not sure about that. Probably should not be doing this.
-  addLoadedFunc(var->name, 0, printVar); 
+  addLoadedDef(var->name, 0, printVar); 
 }
 
 void createType(Cmd* cmd) {
@@ -725,7 +724,7 @@ void createType(Cmd* cmd) {
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
-  addLoadedFunc(type->name, 0, createVar);
+  addLoadedDef(type->name, 0, createVar);
 }
 
 void assign2(Cmd* cmd) {
@@ -839,7 +838,7 @@ Func* defFunc(Cmd* cmd, int isOp) {
   }
   def->isOperator = isOp;
   list(NULL); // FIXME: just show one
-  addLoadedFunc(def->name, def->isOperator, run);
+  addLoadedDef(def->name, def->isOperator, run);
   return def;
 }
 void def(Cmd* cmd) {
@@ -864,7 +863,7 @@ void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
   if (strlen(cmd->name) > 0) {
-    LoadedFunc* d;
+    LoadedDef* d;
     for (d = loadedDefs; d != NULL; d = d->nxt) {
       if (strcmp(cmd->name, d->name) == 0) {
         d->ptr(cmd);
@@ -902,7 +901,7 @@ static void finish(int sig)
 
   freeFunc(defs);
   defs = NULL;
-  freeLoadedFunc(loadedDefs);
+  freeLoadedDef(loadedDefs);
   loadedDefs = NULL;
   freeType(types);
   types = NULL;
@@ -912,24 +911,24 @@ static void finish(int sig)
   exit(0);
 }
 
-void initLoadedFuncs() {
-  addLoadedFunc("=", 1, assign);
-  addLoadedFunc("save", 0, save);
-  addLoadedFunc("::", 1, def);
-  addLoadedFunc(":::", 1, defOp);
-  addLoadedFunc(":=", 1, assign2);
-  addLoadedFunc("type", 0, createType);
-  addLoadedFunc("$vars", 0, listVars);
-  addLoadedFunc("$types", 0, listTypes);
-  addLoadedFunc(":d", 0, printCmd);
-  addLoadedFunc("l", 0, list);
+void initLoadedDefs() {
+  addLoadedDef("=", 1, assign);
+  addLoadedDef("save", 0, save);
+  addLoadedDef("::", 1, def);
+  addLoadedDef(":::", 1, defOp);
+  addLoadedDef(":=", 1, assign2);
+  addLoadedDef("type", 0, createType);
+  addLoadedDef("$vars", 0, listVars);
+  addLoadedDef("$types", 0, listTypes);
+  addLoadedDef(":d", 0, printCmd);
+  addLoadedDef("l", 0, list);
 }
 
 void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
-  initLoadedFuncs();
+  initLoadedDefs();
 
   silent = true;
   load();
