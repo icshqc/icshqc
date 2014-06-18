@@ -318,18 +318,19 @@ ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(a
       cmd = cmd->nxt;
     }
   }
-  Func* f;
-  if ((f = funcByName(cmds->name)) != NULL && f->opPriority == 0) {
-    cmds->args = cmds->nxt;
-    cmds->nxt = NULL;
-  /*} else if (cmds->nxt != NULL && (f = funcByName(cmds->nxt->name)) != NULL && f->opPriority > 0) {
+  LoadedFunc* f;
+  if (cmds->nxt != NULL && (f = loadedFuncByName(cmds->nxt->name)) != NULL && f->opPriority > 0) {
     cmd = cmds;
     cmds = cmds->nxt;
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
-    cmds->nxt = NULL;*/
-  } else {
+    cmds->nxt = NULL;
+  } else if ((f = loadedFuncByName(cmds->name)) != NULL && f->opPriority == 0) {
+    cmds->args = cmds->nxt;
+    cmds->nxt = NULL;
+  } else if (strlen(cmds->name) > 0) {
     // FIXME: TMP because the funcByName should return the loaded functions too.
+    msg("Error parsing. Is not a function");
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
   }
@@ -682,7 +683,7 @@ void list(Cmd* cmd) {
   }
 }
 
-Func* defFunc(Cmd* cmd) {
+Func* defFunc(Cmd* cmd, int opPriority) {
   Func* def = defs;
   Arg* arg = NULL;
   Cmd* n = cmd->args;
@@ -723,17 +724,17 @@ Func* defFunc(Cmd* cmd) {
     def->args = newArg();
     strcpy(def->args->val, "void");
   }
+  def->opPriority = opPriority;
   list(NULL); // FIXME: just show one
   lastLoadedFunc()->nxt = addLoadedFunc(def->name, def->opPriority, run, NULL);
   return def;
 }
 void def(Cmd* cmd) {
-  defFunc(cmd);
+  defFunc(cmd, 0);
 }
 
 void defOp(Cmd* cmd) {
-  Func* f = defFunc(cmd);
-  f->opPriority = 1;
+  Func* f = defFunc(cmd, 1);
 }
 
 void show(Cmd* cmd) {
@@ -830,8 +831,8 @@ static void finish(int sig)
 void initLoadedFuncs() {
   loadedDefs = addLoadedFunc("=", 1, assign,
       addLoadedFunc("save", 0, save,
-      addLoadedFunc("::", 0, def,
-      addLoadedFunc(":::", 0, defOp,
+      addLoadedFunc("::", 1, def,
+      addLoadedFunc(":::", 1, defOp,
       addLoadedFunc(":d", 0, printCmd,
       addLoadedFunc("l", 0, list, NULL
       ))))));
