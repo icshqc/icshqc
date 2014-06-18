@@ -285,13 +285,52 @@ ParsePair parsePair(Cmd* cmd, char* ptr) {
   p.ptr = ptr;
   return p;
 }
-ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(add 12 12)"
+ParsePair parseCmdR(char* command);
+ParsePair parseBlock(char* command) {
+  char* s = trim(command);
+  Cmd* block = newCmd();
+  Cmd* arg = NULL;
+  if (*s == '|') { // parse args
+    char* i = ++s;
+    while (true) {
+      if (*s == '\0') {
+        msg("Error parsing block. Missing end args pipe.");
+        freeCmd(block);
+        return parsePair(NULL, s);
+      } else if (*s == ',' || *s == '|') {
+        if (arg == NULL) {
+          block->args = newCmd();
+          arg = block->args;
+        } else {
+          arg->nxt = newCmd();
+          arg = arg->nxt;
+        }
+        strncpy(arg->name, i, s-i);
+        if (*s == '|') {
+          break;
+        }
+      }
+      ++s;
+    }
+  }
+  ParsePair p = parseCmdR(s);
+  s = p.ptr;
+  if (*s != '}') {
+    msg("Error parsing block. Missing end bracket.");
+    freeCmd(block);
+    return parsePair(NULL, s);
+  }
+  block->body = p.cmd;
+  return parsePair(block, ++s);
+}
+ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
   Cmd* cmds = newCmd();
   Cmd* cmd = cmds;
   char* s = trim(command);
   while (*s != '\0') {
     char* i = s;
-    while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' && *s != '\n') {
+    while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' &&
+           *s != '{' && *s != '}' && *s != '#' && *s != '\n') {
       ++s;
     }
     strncpy(cmd->name, i, s-i);
@@ -299,8 +338,34 @@ ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(a
     if (*s == ')') {
       ++s;
       break;
+    } else if (*s == '}') {
+      break;
+    } else if (*s == '#') {
+      char* i = s; // Keep the '#' on purpose.
+      while (*(++s) != '#') {
+        if (*s == '\0') {
+          msg("Error parsing cmd. Missing ending #.");
+          freeCmd(cmds);
+          return parsePair(NULL, s);
+        }
+      }
+      cmd->nxt = newCmd();
+      cmd = cmd->nxt;
+      strncpy(cmd->name, i, s-i);
+      ++s;
+      if (*s != '\0') {
+        cmd->nxt = newCmd();
+        cmd = cmd->nxt;
+      }
+    } else if (*s == '{') {
+      ParsePair p = parseBlock(s+1);
+      if (p.cmd != NULL) {
+        s = p.ptr;
+        cmd->nxt = p.cmd;
+        cmd = cmd->nxt;
+      }
     } else if (*s == '(') {
-      ParsePair p = parseCmdR(s+1, nested + 1);
+      ParsePair p = parseCmdR(s+1);
       s = p.ptr;
       cmd->nxt = p.cmd;
       cmd = cmd->nxt;
@@ -328,7 +393,7 @@ ParsePair parseCmdR(char* command, int nested) { // FIXME: Does not work for "(a
   return parsePair(cmds, s);
 }
 Cmd* parseCmd(char* command) {
-  return parseCmdR(command, 0).cmd;
+  return parseCmdR(command).cmd;
 }
 
 Cmd* getInput() {  

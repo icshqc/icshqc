@@ -1,3 +1,4 @@
+type cval
 type int
 type float
 type double

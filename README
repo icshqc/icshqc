@@ -1,3 +1,5 @@
+TODO: Parse a block;
+
 Il n'y a pas de liste de fonctions. Juste une liste de variables. Une fonction
 est juste une variable de type comme un autre, mais de type fonction.
 
@@ -12,6 +14,9 @@ int 9
 + 5
 
 (int x) = (2 + 4)
+
+cval x
+x = #1 + 2;#
 
 int x
 x

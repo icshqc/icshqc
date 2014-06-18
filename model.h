@@ -8,7 +8,7 @@ struct Arg {
 typedef struct Arg Arg;
 
 struct Cmd { // x (y z) (a (b c d))
-  char name[52];
+  char name[128];
   struct Cmd* body; // If it is a block;
   struct Cmd* nxt;
   struct Cmd* args;
