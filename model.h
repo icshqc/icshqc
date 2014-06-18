@@ -9,6 +9,7 @@ typedef struct Arg Arg;
 
 struct Cmd { // x (y z) (a (b c d))
   char name[52];
+  struct Cmd* block;
   struct Cmd* nxt;
   struct Cmd* args;
 };

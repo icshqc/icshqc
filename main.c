@@ -58,6 +58,7 @@ Cmd* newCmd() {
   memset(arg0->name, '\0', sizeof(arg0->name));
   arg0->nxt = NULL;
   arg0->args = NULL;
+  arg0->block = NULL;
   return arg0;
 }
 
@@ -112,6 +113,7 @@ void freeCmd(Cmd* arg) {
   if (arg != NULL) {
     freeCmd(arg->nxt);
     freeCmd(arg->args);
+    freeCmd(arg->block);
   }
 }
 
@@ -137,6 +139,7 @@ void setVarVal(Var* v, Cmd* val) {
     strcpy(v->val->name, val->name);
     v->val->args = val->args;
     v->val->nxt = val->nxt;
+    v->val->block = val->block;
   }
 }
 
