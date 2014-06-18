@@ -26,6 +26,16 @@ void defOp(Cmd* cmd);
 // They should of type struct LoadedFunc and the function passed would call the executable.
 static LoadedFunc* loadedDefs = NULL;
 
+LoadedFunc* lastLoadedFunc() {
+  if (loadedDefs == NULL) {
+    return NULL;
+  } else {
+    LoadedFunc* f;
+    for (f = loadedDefs; f->nxt != NULL; f = f->nxt) {}
+    return f;
+  }
+}
+
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
