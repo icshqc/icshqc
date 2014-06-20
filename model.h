@@ -1,12 +1,17 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-struct Arg {
+struct Arg { // TODO: Delete Arg
   char val[52];
   struct Arg* nxt;
 };
 typedef struct Arg Arg;
 
+// A Cmd can be:
+// arg/var: x in f x y
+// function: f in f x y #blah
+// a c value: #blah
+// a number: 2 in f 3 2
 struct Cmd { // x (y z) (a (b c d))
   char name[128];
   struct Cmd* body; // If it is a block;

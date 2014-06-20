@@ -47,6 +47,10 @@ LoadedDef* addLoadedDef(char* name, int priority, void (*ptr)(Cmd* cmd)) {
   }
 }
 
+bool isCValue(Cmd* cmd) {
+  return cmd->name[0] == '#';
+}
+
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
@@ -590,17 +594,12 @@ void load() {
   }
 }
 
-void runC(Cmd* cmd) {
-  if (cmd->args->name[0] != '#') {
-    msg("Error, is not of type cval");
-    return;
+void runCFunction(Cmd* cmd) {
+  // TODO: Be able to run printf, only by including stdlib.h
+  // TODO: Run a function dynamically using assembler.
+  if (strcmp(cmd->name, "addstr")) {
+    addstr(cmd->args->name);
   }
-  char f[1024] = "";
-  strcat(f, "void "); // TMP
-  strcat(f, "anonymousFunction1() {\n");
-  strcat(f, cmd->args->name + 1);
-  strcat(f, "\n}");
-  output(f);
 }
 
 //void runCmd(char* retVal, Cmd* cmd);
@@ -777,7 +776,7 @@ void listVars(Cmd* cmd) {
 
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
-
+  
   if (strlen(cmd->name) > 0) {
     LoadedDef* d;
     for (d = loadedDefs; d != NULL; d = d->nxt) {
@@ -832,7 +831,6 @@ void initLoadedDefs() {
   addLoadedDef("$vars", 0, listVars);
   addLoadedDef("$types", 0, listTypes);
   addLoadedDef(":d", 0, printCmd);
-  addLoadedDef("runc", 0, runC);
 }
 
 void main()

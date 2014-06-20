@@ -5,13 +5,19 @@ est juste une variable de type comme un autre, mais de type fonction.
 
 TODO:
 
-Priority list:
+Operator Priority list:
 = 10
 int 9
 / 6
 * 6
 - 5
 + 5
+
+printf "Hello world!"
+int x = #2 + 2 // The type #2 + 2 is infered by the type of the variable.
+
+Idealement, fuck off le #...bullshit...# Les fonctions C de bases serait simplement des fonctions C,
+parce que en QC, tu peux caller des fonctions C, c'est le but...
 
 (int x) = (2 + 4)
 
