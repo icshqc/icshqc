@@ -568,6 +568,78 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
   fclose(s);*/
 }
 
+void debug() {}
+
+void parseCIncludeFile(Cmd* cmd) {
+  FILE* s = fopen("/usr/include/stdlib.h", "r");
+  char c;
+  char p = EOF;
+  int lineNumber = 0;
+  if (s != NULL) {
+    char input[512] = "";
+    bool inMultiComment = false;
+    int nested = 0;
+    bool discardToEOL = false;
+    bool discardToSemiColon = false;
+    while ((c = getc(s)) != EOF) {
+      if (c == '\n' || c == '\r') {
+        lineNumber++;
+      }
+      if (lineNumber == 98) {
+        debug();
+      }
+      if (inMultiComment) {
+        if (p == '*' && c == '/') {
+          inMultiComment = false;
+        }
+      } else if (c == '{') {
+        ++nested;
+      } else if (nested > 0) {
+        if (c == '}') {
+          --nested;
+        }
+      } else if (c == '\r' || c == '\n') {
+        if (p != '\\') {
+          if (strlen(input) > 0) {
+            output(input);
+            output("\n\n");
+            input[0] = '\0';
+          }
+          discardToEOL = false;
+        }
+      } else if ((c == ' ' || c == '\t') && strlen(input) <= 0) {
+        // Discard trailing whitespaces
+      } else if (discardToSemiColon) {
+        if (c == ';') {
+          discardToSemiColon = false;
+        }
+      } else if (discardToEOL) {
+        // Discard comments
+      } else if (c == '#') {
+        // Discard preprocessor
+        discardToEOL = true;
+      } else if (p == '/' && c == '/') {
+        discardToEOL = true;
+        strdelch(input);
+      } else if (p == '/' && c == '*') {
+        inMultiComment = true;
+        strdelch(input);
+      } else if (strncmp(input, "__", 2) == 0) {
+        discardToEOL = true;
+        input[0] = '\0';
+      } else if (strncmp(input, "typedef", 7) == 0) {
+        discardToSemiColon = true;
+        input[0] = '\0';
+      } else {
+        straddch(input, c);
+      }
+      p = c;
+    }
+  } else {
+    output("Invalid include file.");
+  }
+}
+
 void eval(Cmd* cmd);
 
 void load() {
@@ -836,6 +908,7 @@ void initLoadedDefs() {
   addLoadedDef("$types", 0, listTypes);
   addLoadedDef(":d", 0, printCmd);
   addLoadedDef("addstr", 0, addstrBind);
+  addLoadedDef("include", 0, parseCIncludeFile);
 }
 
 void main()
