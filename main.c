@@ -186,12 +186,7 @@ void msg(const char* str) {
 static bool silent = false;
 void output(const char* str) {
   if (!silent) {
-    int y, x;
-    getyx(curscr, y, x);
-    move(y+1, indent);
-    addstr("=> ");
     addstr(str);
-    //move(y+2, x);
     refresh();
   }
 }
@@ -778,6 +773,14 @@ void listVars(Cmd* cmd) {
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
   
+  if (!silent) {
+    int y, x;
+    getyx(curscr, y, x);
+    move(y+1, indent);
+    addstr("=> ");
+    refresh();
+  }
+
   if (strlen(cmd->name) > 0) {
     LoadedDef* d;
     for (d = loadedDefs; d != NULL; d = d->nxt) {
