@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "model.h"
+#include "glue.h"
 
 // MODEL
 
@@ -831,6 +832,7 @@ void initLoadedDefs() {
   addLoadedDef("$vars", 0, listVars);
   addLoadedDef("$types", 0, listTypes);
   addLoadedDef(":d", 0, printCmd);
+  addLoadedDef("addstr", 0, addstrBind);
 }
 
 void main()
