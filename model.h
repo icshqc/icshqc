@@ -2,7 +2,8 @@
 #define MODEL_H
 
 struct Arg { // TODO: Delete Arg
-  char val[52];
+  char name[52];
+  char type[52];
   struct Arg* nxt;
 };
 typedef struct Arg Arg;

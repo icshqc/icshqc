@@ -72,7 +72,8 @@ Arg* newArg() {
   if (arg0 == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  memset(arg0->val, '\0', sizeof(arg0->val));
+  memset(arg0->name, '\0', sizeof(arg0->name));
+  memset(arg0->type, '\0', sizeof(arg0->type));
   arg0->nxt = NULL;
   return arg0;
 }
@@ -122,7 +123,7 @@ void freeCmd(Cmd* arg) {
   }
 }
 
-char* catArg(char* m, Arg* arg) {
+/*char* catArg(char* m, Arg* arg) {
   if (arg != NULL) {
     Arg* n = arg->nxt;
     strcat(m, arg->val);
@@ -134,7 +135,7 @@ char* catArg(char* m, Arg* arg) {
     }
   }
   return m;
-}
+}*/
 
 void setVarVal(Var* v, Cmd* val) {
   if (v->val != NULL) {
@@ -435,7 +436,7 @@ Cmd* getInput() {
   return parseCmd(input);
 }
 
-Lambda* parseLambda(char* s) {
+/*Lambda* parseLambda(char* s) {
   Lambda* l = malloc(sizeof(Lambda)); // newLambda...
   if (l == NULL) {
     abort();
@@ -471,7 +472,7 @@ Lambda* parseLambda(char* s) {
   }
   strcpy(l->body, trim(c+2));
   return l;
-}
+}*/
 
 bool isOperator(char* opName) {
   if (strcmp(opName, "::") == 0 ||
