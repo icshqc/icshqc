@@ -580,6 +580,7 @@ void parseCIncludeFile(Cmd* cmd) {
     char debugInput[512] = "";
     bool inMultiComment = false;
     int nested = 0;
+    int nestedP = 0;
     bool discardToEOL = false;
     bool discardToSemiColon = false;
     while ((c = getc(s)) != EOF) {
@@ -603,7 +604,7 @@ void parseCIncludeFile(Cmd* cmd) {
           --nested;
         }
       } else if (c == '\r' || c == '\n') {
-        if (p != '\\') {
+        if (p != '\\' && nestedP == 0) {
           if (strlen(input) > 0) {
             if (strchr(input, '(')) {
               output(input);
@@ -615,6 +616,8 @@ void parseCIncludeFile(Cmd* cmd) {
         }
       } else if ((c == ' ' || c == '\t') && strlen(input) <= 0) {
         // Discard trailing whitespaces
+      } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
+        // Discard double whitespaces
       } else if (discardToSemiColon) {
         if (c == ';') {
           discardToSemiColon = false;
@@ -638,7 +641,16 @@ void parseCIncludeFile(Cmd* cmd) {
         discardToSemiColon = true;
         input[0] = '\0';
       } else {
-        straddch(input, c);
+        if (c == '(') {
+          ++nestedP;
+        } else if (c == ')') {
+          --nestedP;
+        }
+        if (c == '\t') {
+          straddch(input, ' ');
+        } else {
+          straddch(input, c);
+        }
       }
       p = c;
     }
