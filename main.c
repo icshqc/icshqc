@@ -591,7 +591,7 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
 
 void debug() {}
 
-void bindCFunctions(CFunc* fs) {
+void bindCFunctionsHeader(CFunc* fs) {
   CFunc* f;
   Arg* a;
 
@@ -606,6 +606,34 @@ void bindCFunctions(CFunc* fs) {
       }
     }
     fprintf(s, ");\n");
+  }
+  fclose(s);
+}
+
+void bindCFunctionsSource(CFunc* fs) {
+  CFunc* f;
+  Arg* a;
+
+  FILE* s = fopen("tmp/bind.c", "w");
+
+  for (f = fs; f != NULL; f = f->nxt) {
+    fprintf(s, "void %s(Cmd* cmd) {\n", f->name);
+    fprintf(s, "  Cmd* args = cmd->args;\n");
+    for (a = f->args; a != NULL; a = a->nxt) {
+      fprintf(s, "  %s %s0 = arg%s(&args);\n", a->type, a->name, a->type);
+    }
+    if (strlen(f->ret) > 0) {
+      fprintf(s, "  %s ret = %s(", f->ret, f->name);
+    } else {
+      fprintf(s, "  %s(", f->name);
+    }
+    for (a = f->args; a != NULL; a = a->nxt) {
+      fprintf(s, "%s0", a->name);
+      if (a->nxt != NULL) {
+        fprintf(s, ", ");
+      }
+    }
+    fprintf(s, ");\n}\n\n");
   }
   fclose(s);
 }
@@ -740,7 +768,8 @@ void parseCIncludeFile(Cmd* cmd) {
   } else {
     output("Invalid include file.");
   }
-  bindCFunctions(f0);
+  bindCFunctionsHeader(f0);
+  bindCFunctionsSource(f0);
   freeCFunc(f);
 }
 
