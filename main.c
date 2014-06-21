@@ -571,22 +571,26 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
 void debug() {}
 
 void parseCIncludeFile(Cmd* cmd) {
-  FILE* s = fopen("/usr/include/stdlib.h", "r");
+  FILE* s = fopen(cmd->args->name, "r");
   char c;
   char p = EOF;
-  int lineNumber = 0;
+  int lineNumber = 1;
   if (s != NULL) {
     char input[512] = "";
+    char debugInput[512] = "";
     bool inMultiComment = false;
     int nested = 0;
     bool discardToEOL = false;
     bool discardToSemiColon = false;
     while ((c = getc(s)) != EOF) {
       if (c == '\n' || c == '\r') {
-        lineNumber++;
-      }
-      if (lineNumber == 98) {
-        debug();
+        ++lineNumber;
+        if (lineNumber >= 98) {
+          debug();
+        }
+        debugInput[0] = '\0';
+      } else {
+        straddch(debugInput, c);
       }
       if (inMultiComment) {
         if (p == '*' && c == '/') {
@@ -601,8 +605,10 @@ void parseCIncludeFile(Cmd* cmd) {
       } else if (c == '\r' || c == '\n') {
         if (p != '\\') {
           if (strlen(input) > 0) {
-            output(input);
-            output("\n\n");
+            if (strchr(input, '(')) {
+              output(input);
+              output("\n\n");
+            }
             input[0] = '\0';
           }
           discardToEOL = false;
@@ -627,7 +633,8 @@ void parseCIncludeFile(Cmd* cmd) {
       } else if (strncmp(input, "__", 2) == 0) {
         discardToEOL = true;
         input[0] = '\0';
-      } else if (strncmp(input, "typedef", 7) == 0) {
+      //} else if (strncmp(input, "typedef", 7) == 0) { // case: __extension typedef...
+      } else if (strstr(input, "typedef") != NULL || strstr(input, "struct") != NULL) {
         discardToSemiColon = true;
         input[0] = '\0';
       } else {
