@@ -595,7 +595,7 @@ void bindCFunctions(CFunc* fs) {
   CFunc* f;
   Arg* a;
 
-  FILE* s = fopen("bind.h", "w");
+  FILE* s = fopen("tmp/bind.h", "w");
 
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "%s %s(", f->ret, f->name);
@@ -607,22 +607,27 @@ void bindCFunctions(CFunc* fs) {
     }
     fprintf(s, ");\n");
   }
+  fclose(s);
 }
 
 CFunc* parseCFunction(char* s0) {
   char* s = s0;
   CFunc* f = newCFunc();
   char* lastSpace = NULL;
-  char* lastArg = NULL;
+  char* lastArg = s0;
   Arg* a = NULL;
+  int nested = 0;
   while (*s != '\0') {
-    if (*s == ' ') {
+    if (*s == ' ' && lastArg == s) {
+      // discard trailing spaces;
+      ++lastArg;
+    } else if (*s == ' ') {
       lastSpace = s;
-    } else if (f->ret == NULL && *s == '(') {
+    } else if (a == NULL && *s == '(') {
       strncpy(f->ret, s0, lastSpace - s0);
-      strncpy(f->name, lastSpace+1, s - lastSpace);
+      strncpy(f->name, lastSpace+1, s - (lastSpace+1));
       lastArg = s+1;
-    } else if (*s == ',') {
+    } else if (*s == ',' || (nested == 1 && *s == ')' && lastArg != s && lastSpace > lastArg)) {
       if (a == NULL) {
         f->args = newArg();
         a = f->args;
@@ -631,9 +636,11 @@ CFunc* parseCFunction(char* s0) {
         a = a->nxt;
       }
       strncpy(a->type, lastArg, lastSpace - lastArg);
-      strncpy(a->name, lastSpace, s - lastSpace);
+      strncpy(a->name, lastSpace+1, s - (lastSpace+1));
       lastArg = s+1;
     }
+    if (*s == '(') ++nested;
+    if (*s == ')') --nested;
     ++s;
   }
   return f;
@@ -644,6 +651,7 @@ void parseCIncludeFile(Cmd* cmd) {
   char c;
   char p = EOF;
   int lineNumber = 1;
+  CFunc* f0 = NULL;
   CFunc* f = NULL;
   if (s != NULL) {
     char input[512] = "";
@@ -677,8 +685,9 @@ void parseCIncludeFile(Cmd* cmd) {
         if (p != '\\' && nestedP == 0) {
           if (strlen(input) > 0) {
             if (strchr(input, '(')) {
-              if (f == NULL) {
-                f = parseCFunction(input);
+              if (f0 == NULL) {
+                f0 = parseCFunction(input);
+                f = f0;
               } else {
                 f->nxt = parseCFunction(input);
                 f = f->nxt;
@@ -731,7 +740,7 @@ void parseCIncludeFile(Cmd* cmd) {
   } else {
     output("Invalid include file.");
   }
-  bindCFunctions(f);
+  bindCFunctions(f0);
   freeCFunc(f);
 }
 
