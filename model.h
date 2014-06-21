@@ -8,6 +8,14 @@ struct Arg { // TODO: Delete Arg
 };
 typedef struct Arg Arg;
 
+struct CFunc {
+  char name[52];
+  Arg* ret;
+  Arg* args;
+  struct CFunc* nxt;
+};
+typedef struct CFunc CFunc;
+
 // A Cmd can be:
 // arg/var: x in f x y
 // function: f in f x y #blah

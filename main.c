@@ -67,6 +67,18 @@ Cmd* newCmd() {
   return arg0;
 }
 
+CFunc* newCFunc() {
+  CFunc* arg0 = malloc(sizeof(CFunc));
+  if (arg0 == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(arg0->name, '\0', sizeof(arg0->name));
+  arg0->ret = NULL;
+  arg0->args = NULL;
+  arg0->nxt = NULL;
+  return arg0;
+}
+
 Arg* newArg() {
   Arg* arg0 = malloc(sizeof(Arg));
   if (arg0 == NULL) {
@@ -108,10 +120,19 @@ void freeLoadedDef(LoadedDef* d) {
   }
 }
 
-void freeArg(Arg* arg) {
-  if (arg != NULL) {
-    freeArg(arg->nxt);
-    free(arg);
+void freeArg(Arg* f) {
+  if (f != NULL) {
+    freeArg(f->nxt);
+    free(f);
+  }
+}
+
+void freeCFunc(CFunc* f) {
+  if (f != NULL) {
+    freeArg(f->ret);
+    freeArg(f->args);
+    freeCFunc(f->nxt);
+    free(f);
   }
 }
 
