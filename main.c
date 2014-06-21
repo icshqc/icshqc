@@ -73,7 +73,7 @@ CFunc* newCFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
-  arg0->ret = NULL;
+  memset(arg0->ret, '\0', sizeof(arg0->ret));
   arg0->args = NULL;
   arg0->nxt = NULL;
   return arg0;
@@ -129,7 +129,6 @@ void freeArg(Arg* f) {
 
 void freeCFunc(CFunc* f) {
   if (f != NULL) {
-    freeArg(f->ret);
     freeArg(f->args);
     freeCFunc(f->nxt);
     free(f);
@@ -592,9 +591,52 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
 
 void debug() {}
 
-Cmd* parseCFunction(char* s) {
-  output(s);
-  output("\n");
+void bindCFunctions(CFunc* fs) {
+  CFunc* f;
+  Arg* a;
+
+  FILE* s = fopen("bind.h", "w");
+
+  for (f = fs; f != NULL; f = f->nxt) {
+    fprintf(s, "%s %s(", f->ret, f->name);
+    for (a = f->args; a != NULL; a = a->nxt) {
+      fprintf(s, "%s %s", a->type, a->name);
+      if (a->nxt != NULL) {
+        fprintf(s, ", ");
+      }
+    }
+    fprintf(s, ");\n");
+  }
+}
+
+CFunc* parseCFunction(char* s0) {
+  char* s = s0;
+  CFunc* f = newCFunc();
+  char* lastSpace = NULL;
+  char* lastArg = NULL;
+  Arg* a = NULL;
+  while (*s != '\0') {
+    if (*s == ' ') {
+      lastSpace = s;
+    } else if (f->ret == NULL && *s == '(') {
+      strncpy(f->ret, s0, lastSpace - s0);
+      strncpy(f->name, lastSpace+1, s - lastSpace);
+      lastArg = s+1;
+    } else if (*s == ',') {
+      if (a == NULL) {
+        f->args = newArg();
+        a = f->args;
+      } else {
+        a->nxt = newArg();
+        a = a->nxt;
+      }
+      strncpy(a->type, lastArg, lastSpace - lastArg);
+      strncpy(a->name, lastSpace, s - lastSpace);
+      lastArg = s+1;
+    }
+    ++s;
+  }
+  return f;
 }
 
 void parseCIncludeFile(Cmd* cmd) {
@@ -602,6 +644,7 @@ void parseCIncludeFile(Cmd* cmd) {
   char c;
   char p = EOF;
   int lineNumber = 1;
+  CFunc* f = NULL;
   if (s != NULL) {
     char input[512] = "";
     char debugInput[512] = "";
@@ -634,7 +677,12 @@ void parseCIncludeFile(Cmd* cmd) {
         if (p != '\\' && nestedP == 0) {
           if (strlen(input) > 0) {
             if (strchr(input, '(')) {
-              parseCFunction(input);
+              if (f == NULL) {
+                f = parseCFunction(input);
+              } else {
+                f->nxt = parseCFunction(input);
+                f = f->nxt;
+              }
             }
             input[0] = '\0';
           }
@@ -683,6 +731,8 @@ void parseCIncludeFile(Cmd* cmd) {
   } else {
     output("Invalid include file.");
   }
+  bindCFunctions(f);
+  freeCFunc(f);
 }
 
 void eval(Cmd* cmd);
