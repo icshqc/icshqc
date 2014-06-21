@@ -7,6 +7,8 @@
 #include "model.h"
 #include "glue.h"
 
+#include "bind.h"
+
 // TODO: Be able to construt a struct and pass as arg.
 // I mean, for ex, void f(Cmd* cmd)
 // => f {name = "blah"}
@@ -601,6 +603,15 @@ void bindCFunctionsHeader(CFunc* fs) {
 
   FILE* s = fopen("tmp/bind.h", "w");
 
+  fprintf(s, "#ifndef BIND_H\n");
+  fprintf(s, "#define BIND_H\n\n");
+  fprintf(s, "#include <stdlib.h>\n"); // FIXME: Use include given
+  fprintf(s, "#include <stdio.h>\n");
+  fprintf(s, "#include <ncurses.h>\n");
+  fprintf(s, "#include <signal.h>\n");
+  fprintf(s, "#include <string.h>\n\n");
+  fprintf(s, "#include \"glue.h\"\n\n");
+
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "%s %s(", f->ret, f->name);
     for (a = f->args; a != NULL; a = a->nxt) {
@@ -611,6 +622,12 @@ void bindCFunctionsHeader(CFunc* fs) {
     }
     fprintf(s, ");\n");
   }
+  fprintf(s, "\n");
+  for (f = fs; f != NULL; f = f->nxt) {
+    fprintf(s, "void bind_%s(Cmd* cmd);\n", f->name);
+  }
+
+  fprintf(s, "#endif // BIND_H");
   fclose(s);
 }
 
@@ -632,8 +649,10 @@ void bindCFunctionsSource(CFunc* fs) {
 
   FILE* s = fopen("tmp/bind.c", "w");
 
+  fprintf(s, "#include \"bind.h\"\n\n");
+
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "void %s(Cmd* cmd) {\n", f->name);
+    fprintf(s, "void bind_%s(Cmd* cmd) {\n", f->name);
     fprintf(s, "  Cmd* args = cmd->args;\n");
     for (a = f->args; a != NULL; a = a->nxt) {
       char argTypeFuncName[52] = "";
@@ -1058,7 +1077,6 @@ void initLoadedDefs() {
   addLoadedDef("$vars", 0, listVars);
   addLoadedDef("$types", 0, listTypes);
   addLoadedDef(":d", 0, printCmd);
-  addLoadedDef("addstr", 0, addstrBind);
   addLoadedDef("include", 0, parseCIncludeFile);
 }
 

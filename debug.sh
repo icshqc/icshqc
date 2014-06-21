@@ -1,1 +1,1 @@
-gcc -g -o build/debug glue.c main.c -lncurses && gdb build/debug
+gcc -g -o build/debug bind.c glue.c main.c -lncurses && gdb build/debug

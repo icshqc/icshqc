@@ -5,7 +5,7 @@
 
 #include "model.h"
 
-char* argStr(Cmd** cmd) {
+char* argstring(Cmd** cmd) {
   Cmd* c = *cmd;
   if (c == NULL) {
     return NULL;
@@ -13,9 +13,6 @@ char* argStr(Cmd** cmd) {
   *cmd = c->nxt;
   return c->name;
 }
-
-void addstrBind(Cmd* cmd) {
-  Cmd* args = cmd->args;
-  char* arg0 = argStr(&args);
-  addstr(arg0);
+char argchar(Cmd** cmd) {
+  return 'a';
 }
