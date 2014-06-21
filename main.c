@@ -570,6 +570,11 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
 
 void debug() {}
 
+Cmd* parseCFunction(char* s) {
+  output(s);
+  output("\n");
+}
+
 void parseCIncludeFile(Cmd* cmd) {
   FILE* s = fopen(cmd->args->name, "r");
   char c;
@@ -607,8 +612,7 @@ void parseCIncludeFile(Cmd* cmd) {
         if (p != '\\' && nestedP == 0) {
           if (strlen(input) > 0) {
             if (strchr(input, '(')) {
-              output(input);
-              output("\n\n");
+              parseCFunction(input);
             }
             input[0] = '\0';
           }
