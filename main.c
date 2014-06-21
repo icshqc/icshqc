@@ -7,6 +7,10 @@
 #include "model.h"
 #include "glue.h"
 
+// TODO: Be able to construt a struct and pass as arg.
+// I mean, for ex, void f(Cmd* cmd)
+// => f {name = "blah"}
+
 // MODEL
 
 static const int MSG_CONSOLE_SIZE = 10;
@@ -610,6 +614,18 @@ void bindCFunctionsHeader(CFunc* fs) {
   fclose(s);
 }
 
+char* argTypeFunc(char* name) {
+  char type[52];
+  strcpy(type, name); 
+  name[0] = '\0';
+  if (strcmp(type, "char*") == 0) {
+    sprintf(name, "argstring");
+  } else {
+    sprintf(name, "arg%s", type);
+  }
+  return name;
+}
+
 void bindCFunctionsSource(CFunc* fs) {
   CFunc* f;
   Arg* a;
@@ -620,7 +636,9 @@ void bindCFunctionsSource(CFunc* fs) {
     fprintf(s, "void %s(Cmd* cmd) {\n", f->name);
     fprintf(s, "  Cmd* args = cmd->args;\n");
     for (a = f->args; a != NULL; a = a->nxt) {
-      fprintf(s, "  %s %s0 = arg%s(&args);\n", a->type, a->name, a->type);
+      char argTypeFuncName[52] = "";
+      strcpy(argTypeFuncName, a->type);
+      fprintf(s, "  %s %s0 = %s(&args);\n", a->type, a->name, argTypeFunc(argTypeFuncName));
     }
     if (strlen(f->ret) > 0) {
       fprintf(s, "  %s ret = %s(", f->ret, f->name);
