@@ -1,5 +1,8 @@
 #include "bind.h"
 
+void initCFunctions(LoadedDef* d) {
+}
+
 char* straddch(char*, char);
 char* strdelch(char*);
 char* trim(char*);

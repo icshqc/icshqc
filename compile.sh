@@ -1,1 +1,1 @@
-gcc -o build/icsh bind.c glue.c main.c -lncurses
+gcc -o build/icsh model.c bind.c glue.c main.c -lncurses

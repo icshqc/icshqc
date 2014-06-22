@@ -1,6 +1,11 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <signal.h>
+#include <string.h>
+
 struct Arg { // TODO: Delete Arg
   char name[52];
   char type[52];
@@ -37,7 +42,7 @@ typedef struct Lambda Lambda;
 
 struct LoadedDef {
   char name[52];
-  bool isOperator;
+  int isOperator;
   void (*ptr)(Cmd* cmd);
   struct LoadedDef* nxt;
 };
@@ -59,12 +64,17 @@ typedef struct Var Var;
 
 struct Func {
   char name[52];
-  bool isOperator;
+  int isOperator;
   Lambda* lambda;
   Arg* args;      // int int int int
   //Arg ret;
   struct Func* nxt;
 };
 typedef struct Func Func;
+
+LoadedDef* lastLoadedDef();
+LoadedDef* createLoadedDef(char* name, int isOp, void (*ptr)(Cmd* cmd));
+LoadedDef* addLoadedDef(char* name, int priority, void (*ptr)(Cmd* cmd));
+
 
 #endif // MODEL.h

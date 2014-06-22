@@ -10,6 +10,8 @@
 #include "model.h"
 #include "glue.h"
 
+void initCFunctions(LoadedDef* d);
+
 void bind_straddch(Cmd* cmd);
 void bind_strdelch(Cmd* cmd);
 //void msg(Cmd* cmd);

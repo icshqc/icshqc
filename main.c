@@ -26,35 +26,16 @@ static Var* vars = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
-LoadedDef* lastLoadedDef() {
-  if (loadedDefs == NULL) {
-    return NULL;
-  } else {
-    LoadedDef* f;
-    for (f = loadedDefs; f->nxt != NULL; f = f->nxt) {}
-    return f;
-  }
-}
-
-LoadedDef* createLoadedDef(char* name, bool isOp, void (*ptr)(Cmd* cmd)) {
-  LoadedDef* d = malloc(sizeof(LoadedDef));
-  strcpy(d->name, name);
-  d->isOperator = isOp;
-  d->ptr = ptr;
-  d->nxt = NULL;
-  return d;
-}
-
 LoadedDef* addLoadedDef(char* name, int priority, void (*ptr)(Cmd* cmd)) {
   LoadedDef* f = createLoadedDef(name, priority, ptr);
   if (loadedDefs == NULL) {
     loadedDefs = f;
   } else {
-    lastLoadedDef()->nxt = f;
+    lastLoadedDef(loadedDefs)->nxt = f;
   }
 }
 
-bool isCValue(Cmd* cmd) {
+int isCValue(Cmd* cmd) {
   return cmd->name[0] == '#';
 }
 
@@ -210,7 +191,7 @@ void msg(const char* str) {
   refresh();
 }
 
-static bool silent = false;
+static int silent = false;
 void output(const char* str) {
   if (!silent) {
     addstr(str);
@@ -500,7 +481,7 @@ Cmd* getInput() {
   return l;
 }*/
 
-bool isOperator(char* opName) {
+int isOperator(char* opName) {
   if (strcmp(opName, "::") == 0 ||
       strcmp(opName, "=") == 0) {
     return true; 
@@ -612,6 +593,8 @@ void bindCFunctionsHeader(CFunc* fs) {
   fprintf(s, "#include <string.h>\n\n");
   fprintf(s, "#include \"glue.h\"\n\n");
 
+  // In case the header was not defined, that it was just
+  // a source file, define the prototype of the function.
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "%s %s(", f->ret, f->name);
     for (a = f->args; a != NULL; a = a->nxt) {
@@ -721,11 +704,11 @@ void parseCIncludeFile(Cmd* cmd) {
   if (s != NULL) {
     char input[512] = "";
     char debugInput[512] = "";
-    bool inMultiComment = false;
+    int inMultiComment = false;
     int nested = 0;
     int nestedP = 0;
-    bool discardToEOL = false;
-    bool discardToSemiColon = false;
+    int discardToEOL = false;
+    int discardToSemiColon = false;
     while ((c = getc(s)) != EOF) {
       if (c == '\n' || c == '\r') {
         ++lineNumber;
@@ -1038,7 +1021,7 @@ void eval(Cmd* cmd) {
 void loop()
 {
   int y, x;
-  bool continuer = true;
+  int continuer = true;
   addstr(">> ");
   while (continuer) {
     Cmd* cmd = getInput();
@@ -1084,6 +1067,7 @@ void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
+  initCFunctions(loadedDefs);
   initLoadedDefs();
 
   silent = true;
