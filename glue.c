@@ -7,12 +7,14 @@
 
 char* argstring(Cmd** cmd) {
   Cmd* c = *cmd;
-  if (c == NULL) {
-    return NULL;
-  }
+  if (c == NULL) return NULL;
   *cmd = c->nxt;
   return c->name;
 }
 char argchar(Cmd** cmd) {
-  return 'a';
+  Cmd* c = *cmd;
+  if (c == NULL) return '\0';;
+  *cmd = c->nxt;
+  //if (strlen(c->name) != 1) { error }
+  return c->name[0];
 }
