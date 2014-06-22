@@ -9,9 +9,7 @@
 
 #include "bind.h"
 
-// TODO: Be able to construt a struct and pass as arg.
-// I mean, for ex, void f(Cmd* cmd)
-// => f {name = "blah"}
+// TODO: Assign values to variables. int, char and string
 
 // MODEL
 
