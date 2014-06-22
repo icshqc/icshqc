@@ -26,15 +26,6 @@ static Var* vars = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
-LoadedDef* addLoadedDef(char* name, int priority, void (*ptr)(Cmd* cmd)) {
-  LoadedDef* f = createLoadedDef(name, priority, ptr);
-  if (loadedDefs == NULL) {
-    loadedDefs = f;
-  } else {
-    lastLoadedDef(loadedDefs)->nxt = f;
-  }
-}
-
 int isCValue(Cmd* cmd) {
   return cmd->name[0] == '#';
 }
@@ -939,7 +930,7 @@ void createVar(Cmd* cmd) {
   var->nxt = oldFirst;
   var->val = NULL;
   // FIXME: Not sure about that. Probably should not be doing this.
-  addLoadedDef(var->name, 0, printVar); 
+  addLoadedDef(loadedDefs, var->name, 0, printVar); 
 }
 
 void createType(Cmd* cmd) {
@@ -948,7 +939,7 @@ void createType(Cmd* cmd) {
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
-  addLoadedDef(type->name, 0, createVar);
+  addLoadedDef(loadedDefs, type->name, 0, createVar);
 }
 
 void assign(Cmd* cmd) {
@@ -1054,21 +1045,21 @@ static void finish(int sig)
 }
 
 void initLoadedDefs() {
-  addLoadedDef("save", 0, save);
-  addLoadedDef("=", 1, assign);
-  addLoadedDef("type", 0, createType);
-  addLoadedDef("$vars", 0, listVars);
-  addLoadedDef("$types", 0, listTypes);
-  addLoadedDef(":d", 0, printCmd);
-  addLoadedDef("include", 0, parseCIncludeFile);
+  loadedDefs = createLoadedDef("save", 0, save);
+  addLoadedDef(loadedDefs, "=", 1, assign);
+  addLoadedDef(loadedDefs, "type", 0, createType);
+  addLoadedDef(loadedDefs, "$vars", 0, listVars);
+  addLoadedDef(loadedDefs, "$types", 0, listTypes);
+  addLoadedDef(loadedDefs, ":d", 0, printCmd);
+  addLoadedDef(loadedDefs, "include", 0, parseCIncludeFile);
 }
 
 void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
-  initCFunctions(loadedDefs);
   initLoadedDefs();
+  initCFunctions(loadedDefs);
 
   silent = true;
   load();

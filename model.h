@@ -74,7 +74,7 @@ typedef struct Func Func;
 
 LoadedDef* lastLoadedDef();
 LoadedDef* createLoadedDef(char* name, int isOp, void (*ptr)(Cmd* cmd));
-LoadedDef* addLoadedDef(char* name, int priority, void (*ptr)(Cmd* cmd));
+LoadedDef* addLoadedDef(LoadedDef* def, char* name, int priority, void (*ptr)(Cmd* cmd));
 
 
 #endif // MODEL.h

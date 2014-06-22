@@ -1,6 +1,9 @@
 #include "bind.h"
 
 void initCFunctions(LoadedDef* d) {
+  addLoadedDef(d, "straddch", 0, bind_straddch);
+  addLoadedDef(d, "strdelch", 0, bind_strdelch);
+  addLoadedDef(d, "trim", 0, bind_trim);
 }
 
 char* straddch(char*, char);
@@ -12,12 +15,14 @@ void bind_straddch(Cmd* cmd) {
   char* str0 = argstring(&args);
   char c0 = argchar(&args);
   char* ret = straddch(str0, c0);
+  addstr(ret);
 }
 
 void bind_strdelch(Cmd* cmd) {
   Cmd* args = cmd->args;
   char* str0 = argstring(&args);
   char* ret = strdelch(str0);
+  addstr(ret);
 }
 
 /*void bind_msg(Cmd* cmd) {
@@ -36,4 +41,5 @@ void bind_trim(Cmd* cmd) {
   Cmd* args = cmd->args;
   char* s0 = argstring(&args);
   char* ret = trim(s0);
+  addstr(ret);
 }

@@ -1,5 +1,10 @@
 #include "model.h"
 
+LoadedDef* addLoadedDef(LoadedDef* p, char* name, int priority, void (*ptr)(Cmd* cmd)) {
+  LoadedDef* f = createLoadedDef(name, priority, ptr);
+  lastLoadedDef(p)->nxt = f;
+}
+
 LoadedDef* lastLoadedDef(LoadedDef* d) {
   if (d == NULL) {
     return NULL;
