@@ -272,6 +272,22 @@ LoadedDef* loadedFuncByName(char* name) {
   return NULL;
 }
 
+Cmd* typeCmd(Cmd* cmd) {
+  Cmd* c;
+  for (c = cmd; c != NULL; c = c->nxt) {
+    LoadedDef* f = loadedFuncByName(c->name);
+    Var* v;
+    if (f != NULL) {
+      c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+    } else if ((v = varByName(c->name)) != NULL) {
+      c->type = VAR;
+    } else {
+      c->type = STRING;
+    }
+  }
+  return cmd;
+}
+
 struct ParsePair {
   Cmd* cmd;
   char* ptr;
@@ -328,7 +344,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
   while (*s != '\0') {
     char* i = s;
     while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' &&
-           *s != '{' && *s != '}' && *s != '#' && *s != '\n') {
+           *s != '{' && *s != '}' && *s != '\n') {
       ++s;
     }
     strncpy(cmd->name, i, s-i);
@@ -338,18 +354,6 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
       break;
     } else if (*s == '}') {
       break;
-    } else if (*s == '#') {
-      char* i = s; // Keep the '#' on purpose.
-      while (*(++s) != '#' && *s != '\0') {
-      }
-      cmd->nxt = newCmd();
-      cmd = cmd->nxt;
-      strncpy(cmd->name, i, s-i);
-      ++s;
-      if (*s != '\0') {
-        cmd->nxt = newCmd();
-        cmd = cmd->nxt;
-      }
     } else if (*s == '{') {
       ParsePair p = parseBlock(s+1);
       if (p.cmd != NULL) {
@@ -367,14 +371,14 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
       cmd = cmd->nxt;
     }
   }
-  LoadedDef* f;
-  if (cmds->nxt != NULL && (f = loadedFuncByName(cmds->nxt->name)) != NULL && f->isOperator == true) {
+  typeCmd(cmds);
+  if (cmds->nxt != NULL && cmds->nxt->type == OPERATOR) {
     cmd = cmds;
     cmds = cmds->nxt;
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
     cmds->nxt = NULL;
-  } else if ((f = loadedFuncByName(cmds->name)) != NULL && f->isOperator == false) {
+  } else if (cmds->type == FUNCTION) {
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
   } else if (strlen(cmds->name) > 0) {
@@ -985,6 +989,10 @@ void listVars(Cmd* cmd) {
   output(m);
 }
 
+// TODO:
+// If cmd->type == CFUNCTION, call it and replace the cmd by it's result
+// If cmd->type == FUNCTION, call it and replace the cmd by it's result
+// If cmd->type == VAR, get it's value and replace the cmd by it's result
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
   
