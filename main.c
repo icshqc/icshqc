@@ -37,6 +37,7 @@ Cmd* newCmd() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
+  arg0->type = UNKOWN;
   arg0->nxt = NULL;
   arg0->args = NULL;
   arg0->body = NULL;

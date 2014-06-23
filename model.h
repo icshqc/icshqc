@@ -21,13 +21,16 @@ struct CFunc {
 };
 typedef struct CFunc CFunc;
 
+enum CmdType {UNKOWN, INT, STRING, BOOL, CHAR, POINTER};
+typedef enum CmdType CmdType;
+
 // A Cmd can be:
 // arg/var: x in f x y
-// function: f in f x y #blah
-// a c value: #blah
+// function: f in f x y
 // a number: 2 in f 3 2
 struct Cmd { // x (y z) (a (b c d))
-  char name[128];
+  CmdType type;
+  char name[128]; // name of attribute should be value
   struct Cmd* body; // If it is a block;
   struct Cmd* nxt;
   struct Cmd* args;
