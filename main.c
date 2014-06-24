@@ -386,12 +386,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
     cmds->nxt = NULL;
-  } else if (cmds->type == FUNCTION) {
-    cmds->args = cmds->nxt;
-    cmds->nxt = NULL;
-  } else if (strlen(cmds->name) > 0) {
-    // FIXME: TMP because the funcByName should return the loaded functions too.
-    msg("Error parsing. Is not a function");
+  } else if (cmds->type == FUNCTION || strlen(cmds->name) > 0) {
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
   }
@@ -1012,14 +1007,8 @@ void eval(Cmd* cmd) {
     refresh();
   }
 
-  if (strlen(cmd->name) > 0) {
-    LoadedDef* d;
-    for (d = loadedDefs; d != NULL; d = d->nxt) {
-      if (strcmp(cmd->name, d->name) == 0) {
-        d->ptr(cmd);
-        break;
-      }
-    }
+  if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
+    loadedFuncByName(cmd->name)->ptr(cmd);
   }
   eval(cmd->nxt);
 }
