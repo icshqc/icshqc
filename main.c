@@ -275,14 +275,20 @@ LoadedDef* loadedFuncByName(char* name) {
 Cmd* typeCmd(Cmd* cmd) {
   Cmd* c;
   for (c = cmd; c != NULL; c = c->nxt) {
-    LoadedDef* f = loadedFuncByName(c->name);
+    char* n = c->name;
+    LoadedDef* f = loadedFuncByName(n);
     Var* v;
     if (f != NULL) {
       c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
-    } else if ((v = varByName(c->name)) != NULL) {
+    } else if ((v = varByName(n)) != NULL) {
       c->type = VAR;
-    } else {
+    } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
+      c->type = CHAR;
+    } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
       c->type = STRING;
+    } else {
+      // TODO: Check for int.
+      c->type = UNKOWN;
     }
   }
   return cmd;
