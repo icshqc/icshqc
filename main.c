@@ -286,6 +286,8 @@ Cmd* typeCmd(Cmd* cmd) {
       c->type = CHAR;
     } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
       c->type = STRING;
+    } else if (n[0] == ':') {
+      c->type = EDITOR;
     } else {
       // TODO: Check for int.
       c->type = UNKOWN;
@@ -1029,11 +1031,14 @@ void loop()
   addstr(">> ");
   while (continuer) {
     Cmd* cmd = getInput();
-    if (strcmp(cmd->name, "exit") == 0 ||
-               strcmp(cmd->name, "quit") == 0 ||
-               strcmp(cmd->name, "q") == 0) {
-      freeCmd(cmd);
-      return;
+    if (cmd->type == EDITOR) {
+      char* name = cmd->name + 1;
+      if (strcmp(name, "exit") == 0 ||
+                 strcmp(name, "quit") == 0 ||
+                 strcmp(name, "q") == 0) {
+        freeCmd(cmd);
+        return;
+      }
     }
     eval(cmd);
     freeCmd(cmd);
