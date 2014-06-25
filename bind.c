@@ -1,45 +1,42 @@
 #include "bind.h"
 
 void initCFunctions(LoadedDef* d) {
-  addLoadedDef(d, "straddch", 0, bind_straddch);
-  addLoadedDef(d, "strdelch", 0, bind_strdelch);
-  addLoadedDef(d, "trim", 0, bind_trim);
+  addLoadedDef(d, "add", 0, bind_add);
+  addLoadedDef(d, "sus", 0, bind_sus);
+  addLoadedDef(d, "mult", 0, bind_mult);
+  addLoadedDef(d, "divide", 0, bind_divide);
 }
 
-char* straddch(char*, char);
-char* strdelch(char*);
-char* trim(char*);
+int add(int x, int y);
+int sus(int x, int y);
+int mult(int x, int y);
+int divide(int x, int y);
 
-void bind_straddch(Cmd* cmd) {
+void bind_add(Cmd* cmd) {
   Cmd* args = cmd->args;
-  char* str0 = argstring(&args);
-  char c0 = argchar(&args);
-  char* ret = straddch(str0, c0);
-  addstr(ret);
+  int x0 = argint(&args);
+  int y0 = argint(&args);
+  int ret = add(x0, y0);
 }
 
-void bind_strdelch(Cmd* cmd) {
+void bind_sus(Cmd* cmd) {
   Cmd* args = cmd->args;
-  char* str0 = argstring(&args);
-  char* ret = strdelch(str0);
-  addstr(ret);
+  int x0 = argint(&args);
+  int y0 = argint(&args);
+  int ret = sus(x0, y0);
 }
 
-/*void bind_msg(Cmd* cmd) {
+void bind_mult(Cmd* cmd) {
   Cmd* args = cmd->args;
-  const char* str0 = argconst char*(&args);
-  void ret = msg(str0);
+  int x0 = argint(&args);
+  int y0 = argint(&args);
+  int ret = mult(x0, y0);
 }
 
-void bind_output(Cmd* cmd) {
+void bind_divide(Cmd* cmd) {
   Cmd* args = cmd->args;
-  const char* str0 = argconst char*(&args);
-  void ret = output(str0);
-}*/
-
-void bind_trim(Cmd* cmd) {
-  Cmd* args = cmd->args;
-  char* s0 = argstring(&args);
-  char* ret = trim(s0);
-  addstr(ret);
+  int x0 = argint(&args);
+  int y0 = argint(&args);
+  int ret = divide(x0, y0);
 }
+

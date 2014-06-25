@@ -12,10 +12,8 @@
 
 void initCFunctions(LoadedDef* d);
 
-void bind_straddch(Cmd* cmd);
-void bind_strdelch(Cmd* cmd);
-//void msg(Cmd* cmd);
-//void output(Cmd* cmd);
-void bind_trim(Cmd* cmd);
-
+void bind_add(Cmd* cmd);
+void bind_sus(Cmd* cmd);
+void bind_mult(Cmd* cmd);
+void bind_divide(Cmd* cmd);
 #endif // BIND_H

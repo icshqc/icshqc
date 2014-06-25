@@ -672,19 +672,8 @@ void bindCFunctionsHeader(CFunc* fs) {
   fprintf(s, "#include \"model.h\"\n");
   fprintf(s, "#include \"glue.h\"\n\n");
 
-  // In case the header was not defined, that it was just
-  // a source file, define the prototype of the function.
-  for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "%s %s(", f->ret, f->name);
-    for (a = f->args; a != NULL; a = a->nxt) {
-      fprintf(s, "%s %s", a->type, a->name);
-      if (a->nxt != NULL) {
-        fprintf(s, ", ");
-      }
-    }
-    fprintf(s, ");\n");
-  }
-  fprintf(s, "\n");
+  fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
+
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "void bind_%s(Cmd* cmd);\n", f->name);
   }
@@ -712,6 +701,26 @@ void bindCFunctionsSource(CFunc* fs) {
   FILE* s = fopen("tmp/bind.c", "w");
 
   fprintf(s, "#include \"bind.h\"\n\n");
+
+  fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
+  for (f = fs; f != NULL; f = f->nxt) {
+    fprintf(s, "  addLoadedDef(d, \"%s\", 0, bind_%s);\n", f->name, f->name);
+  }
+  fprintf(s, "}\n\n");
+
+  // In case the header was not defined, that it was just
+  // a source file, define the prototype of the function.
+  for (f = fs; f != NULL; f = f->nxt) {
+    fprintf(s, "%s %s(", f->ret, f->name);
+    for (a = f->args; a != NULL; a = a->nxt) {
+      fprintf(s, "%s %s", a->type, a->name);
+      if (a->nxt != NULL) {
+        fprintf(s, ", ");
+      }
+    }
+    fprintf(s, ");\n");
+  }
+  fprintf(s, "\n");
 
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "void bind_%s(Cmd* cmd) {\n", f->name);
