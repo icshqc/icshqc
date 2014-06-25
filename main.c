@@ -201,22 +201,50 @@ char* trim(char* s) {
 
 // APP
 
+char* catCmdType(char* b, CmdType t) {
+  if (t == INT) {
+    strcat(b, "INT");
+  } else if (t == FUNCTION) {
+    strcat(b, "FUNCTION");
+  } else if (t == CFUNCTION) {
+    strcat(b, "CFUNCTION");
+  } else if (t == VAR) {
+    strcat(b, "VAR");
+  } else if (t == FLOAT) {
+    strcat(b, "FLOAT");
+  } else if (t == EDITOR) {
+    strcat(b, "EDITOR");
+  } else if (t == OPERATOR) {
+    strcat(b, "OPERATOR");
+  } else if (t == UNKOWN) {
+    strcat(b, "UNKOWN");
+  } else if (t == STRING) {
+    strcat(b, "STRING");
+  } else if (t == BOOL) {
+    strcat(b, "BOOL");
+  } else if (t == CHAR) {
+    strcat(b, "CHAR");
+  } else if (t == POINTER) {
+    strcat(b, "POINTER");
+  }
+}
+
 char* catCmd(char* b, Cmd* cmd) {
   if (cmd != NULL) {
-    if (cmd->args != NULL) {
-      strcat(b,"(");
-      strcat(b,cmd->name);
-      Cmd* a;
-      for (a = cmd->args; a != NULL; a = a->nxt) {
-        strcat(b," ");
-        catCmd(b, a);
+    strcat(b,"(");
+    catCmdType(b, cmd->type);
+    strcat(b, " ");
+    strcat(b,cmd->name);
+    Cmd* a;
+    for (a = cmd->args; a != NULL; a = a->nxt) {
+      catCmd(b, a);
+      if (a->nxt != NULL) {
+        strcat(b,", ");
       }
-      strcat(b,")");
-    } else {
-      strcat(b,cmd->name);
     }
+    strcat(b,")");
     if (cmd->nxt != NULL) {
-      strcat(b, " ");
+      strcat(b, ", ");
       catCmd(b, cmd->nxt);
     }
   }
@@ -225,7 +253,7 @@ char* catCmd(char* b, Cmd* cmd) {
 void printCmd(Cmd* cmd) {
   char b[1024] = "";
   catCmd(b, cmd);
-  output(b);
+  msg(b);
 }
 
 void catVar(char* m, Var* v) {
@@ -976,6 +1004,9 @@ void createType(Cmd* cmd) {
   addLoadedDef(loadedDefs, type->name, 0, createVar);
 }
 
+void define(Cmd* cmd) {
+}
+
 void assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   setVarVal(v, cmd->args->nxt);
@@ -1041,6 +1072,7 @@ void eval(Cmd* cmd) {
   } else {
     output(cmd->name);
   }
+  printCmd(cmd);
 
   eval(cmd->nxt);
 }
@@ -1052,20 +1084,22 @@ void loop()
   addstr(">> ");
   while (continuer) {
     Cmd* cmd = getInput();
-    if (cmd->type == EDITOR) {
-      char* name = cmd->name + 1;
-      if (strcmp(name, "exit") == 0 ||
-                 strcmp(name, "quit") == 0 ||
-                 strcmp(name, "q") == 0) {
-        freeCmd(cmd);
-        return;
+    if (cmd != NULL) {
+      if (cmd->type == EDITOR) {
+        char* name = cmd->name + 1;
+        if (strcmp(name, "exit") == 0 ||
+                   strcmp(name, "quit") == 0 ||
+                   strcmp(name, "q") == 0) {
+          freeCmd(cmd);
+          return;
+        }
+      } else if (cmd->type == UNKOWN) {
+        output("\nError. Unkown function.");
+      } else {
+        eval(cmd);
       }
-    } else if (cmd->type == UNKOWN) {
-      output("\nError. Unkown function.");
-    } else {
-      eval(cmd);
+      freeCmd(cmd);
     }
-    freeCmd(cmd);
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");
     refresh();
@@ -1088,12 +1122,12 @@ static void finish(int sig)
 
 void initLoadedDefs() {
   loadedDefs = createLoadedDef("save", 0, save);
-  addLoadedDef(loadedDefs, "=", 1, assign);
+  addLoadedDef(loadedDefs, "=", 1, assign); // Assigns a value to an existing variable.
+  addLoadedDef(loadedDefs, "::", 1, define); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "type", 0, createType);
   addLoadedDef(loadedDefs, "$vars", 0, listVars);
   addLoadedDef(loadedDefs, "$types", 0, listTypes);
   addLoadedDef(loadedDefs, "$defs", 0, listDefs);
-  addLoadedDef(loadedDefs, ":d", 0, printCmd);
   addLoadedDef(loadedDefs, "include", 0, parseCIncludeFile);
 }
 
