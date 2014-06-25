@@ -272,6 +272,31 @@ LoadedDef* loadedFuncByName(char* name) {
   return NULL;
 }
 
+int isFloat(char* str) {
+  char* c;
+  int hasDecimal = false;
+  for (c = str; *c != '\0'; ++c) {
+    if (*c == '.' || *c == ',') {
+      if (hasDecimal) {
+        return false;
+      }
+      hasDecimal = true;
+    } else if (*c < '0' || *c > '9') {
+      return false;
+    }
+  }
+  return hasDecimal ? true : false;
+}
+int isInteger(char* str) {
+  char* c;
+  for (c = str; *c != '\0'; ++c) {
+    if (*c < '0' || *c > '9') {
+      return false;
+    }
+  }
+  return true;
+}
+
 Cmd* typeCmd(Cmd* cmd) {
   Cmd* c;
   for (c = cmd; c != NULL; c = c->nxt) {
@@ -288,6 +313,10 @@ Cmd* typeCmd(Cmd* cmd) {
       c->type = STRING;
     } else if (n[0] == ':') {
       c->type = EDITOR;
+    } else if (isInteger(n)) {
+      c->type = INT;
+    } else if (isFloat(n)) {
+      c->type = FLOAT;
     } else {
       // TODO: Check for int.
       c->type = UNKOWN;
@@ -999,13 +1028,7 @@ void listVars(Cmd* cmd) {
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
   
-  if (!silent) {
-    int y, x;
-    getyx(curscr, y, x);
-    move(y+1, indent);
-    addstr("=> ");
-    refresh();
-  }
+  output("\n=> ");
 
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
     loadedFuncByName(cmd->name)->ptr(cmd);
@@ -1028,8 +1051,11 @@ void loop()
         freeCmd(cmd);
         return;
       }
+    } else if (cmd->type == UNKOWN) {
+      output("\nError. Unkown function.");
+    } else {
+      eval(cmd);
     }
-    eval(cmd);
     freeCmd(cmd);
     getyx(curscr, y, x);
     mvaddstr(y+1, 0, ">> ");

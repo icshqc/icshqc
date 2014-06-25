@@ -21,7 +21,7 @@ struct CFunc {
 };
 typedef struct CFunc CFunc;
 
-enum CmdType {UNKOWN, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING, BOOL, CHAR, POINTER};
+enum CmdType {UNKOWN, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING, BOOL, CHAR, POINTER, FLOAT};
 typedef enum CmdType CmdType;
 
 // A Cmd can be:
