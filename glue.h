@@ -5,6 +5,7 @@
 
 char* argstring(Cmd** cmd);
 char argchar(Cmd** cmd);
+int argint(Cmd** cmd);
 
 LoadedDef* lastLoadedDef();
 LoadedDef* createLoadedDef(char* name, int isOp, void (*ptr)(Cmd* cmd));

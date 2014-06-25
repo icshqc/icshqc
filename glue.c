@@ -13,10 +13,17 @@ char* argstring(Cmd** cmd) {
 }
 char argchar(Cmd** cmd) {
   Cmd* c = *cmd;
-  if (c == NULL) return '\0';;
+  if (c == NULL) return '\0';
   *cmd = c->nxt;
   //if (strlen(c->name) != 1) { error }
   return c->name[0];
+}
+int argint(Cmd** cmd) {
+  Cmd* c = *cmd;
+  if (c == NULL) return -1;
+  *cmd = c->nxt;
+  //if (strlen(c->name) != 1) { error }
+  return 1;//c->name[0]; // TODO: string to integer
 }
 
 LoadedDef* addLoadedDef(LoadedDef* p, char* name, int priority, void (*ptr)(Cmd* cmd)) {

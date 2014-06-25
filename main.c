@@ -669,6 +669,7 @@ void bindCFunctionsHeader(CFunc* fs) {
   fprintf(s, "#include <ncurses.h>\n");
   fprintf(s, "#include <signal.h>\n");
   fprintf(s, "#include <string.h>\n\n");
+  fprintf(s, "#include \"model.h\"\n");
   fprintf(s, "#include \"glue.h\"\n\n");
 
   // In case the header was not defined, that it was just
@@ -1122,6 +1123,10 @@ void loop()
                    strcmp(name, "q") == 0) {
           freeCmd(cmd);
           return;
+        } else if (strcmp(name, "h") == 0 ||
+                   strcmp(name, "help") == 0) {
+          output("\n");
+          listDefs(NULL);
         }
       } else if (cmd->type == UNKOWN) {
         output("\nError. Unkown function.");
