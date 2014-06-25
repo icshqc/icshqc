@@ -965,8 +965,6 @@ void createVar(Cmd* cmd) {
   vars = var;
   var->nxt = oldFirst;
   var->val = NULL;
-  // FIXME: Not sure about that. Probably should not be doing this.
-  addLoadedDef(loadedDefs, var->name, 0, printVar); 
 }
 
 void createType(Cmd* cmd) {
@@ -1021,6 +1019,9 @@ void listVars(Cmd* cmd) {
   }
   output(m);
 }
+void listDefs(Cmd* cmd) {
+  // TODO: list vars of type function or operator.
+}
 
 // TODO:
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
@@ -1033,7 +1034,14 @@ void eval(Cmd* cmd) {
 
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
     loadedFuncByName(cmd->name)->ptr(cmd);
+  } else if (cmd->type == VAR) {
+    printVar(cmd);
+  } else if (cmd->type == UNKOWN) {
+    // TODO: Handle error.
+  } else {
+    output(cmd->name);
   }
+
   eval(cmd->nxt);
 }
 
@@ -1084,6 +1092,7 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "type", 0, createType);
   addLoadedDef(loadedDefs, "$vars", 0, listVars);
   addLoadedDef(loadedDefs, "$types", 0, listTypes);
+  addLoadedDef(loadedDefs, "$defs", 0, listDefs);
   addLoadedDef(loadedDefs, ":d", 0, printCmd);
   addLoadedDef(loadedDefs, "include", 0, parseCIncludeFile);
 }
