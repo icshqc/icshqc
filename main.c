@@ -135,6 +135,7 @@ void freeCmd(Cmd* arg) {
 }*/
 
 void setVarVal(Var* v, Cmd* val) {
+  if (v == NULL) return;
   if (v->val != NULL) {
     freeCmd(v->val);
   } else {
