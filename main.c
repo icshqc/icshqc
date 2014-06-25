@@ -57,6 +57,19 @@ CFunc* newCFunc() {
   return arg0;
 }
 
+Func* newFunc() {
+  Func* f = malloc(sizeof(Func));
+  if (f == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(f->name, '\0', sizeof(f->name));
+  f->cmd = NULL;
+  f->args = NULL;
+  f->isOperator = false;
+  f->nxt = NULL;
+  return f;
+}
+
 Arg* newArg() {
   Arg* arg0 = malloc(sizeof(Arg));
   if (arg0 == NULL) {
@@ -118,6 +131,15 @@ void freeCmd(Cmd* arg) {
     freeCmd(arg->nxt);
     freeCmd(arg->args);
     freeCmd(arg->body);
+  }
+}
+
+void freeFunc(Func* f) {
+  if (f != NULL) {
+    freeCmd(f->cmd);
+    freeArg(f->args);
+    freeFunc(f->nxt);
+    free(f);
   }
 }
 
@@ -1006,6 +1028,7 @@ void createType(Cmd* cmd) {
 }
 
 void define(Cmd* cmd) {
+  Func* f = malloc(sizeof(Func));
 }
 
 void assign(Cmd* cmd) {
