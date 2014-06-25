@@ -676,7 +676,7 @@ void bindCFunctionsHeader(CFunc* fs) {
   fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
 
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "void bind_%s(Cmd* cmd);\n", f->name);
+    fprintf(s, "Cmd* bind_%s(Cmd* cmd);\n", f->name);
   }
 
   fprintf(s, "#endif // BIND_H");
@@ -724,7 +724,7 @@ void bindCFunctionsSource(CFunc* fs) {
   fprintf(s, "\n");
 
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "void bind_%s(Cmd* cmd) {\n", f->name);
+    fprintf(s, "Cmd* bind_%s(Cmd* cmd) {\n", f->name);
     fprintf(s, "  Cmd* args = cmd->args;\n");
     for (a = f->args; a != NULL; a = a->nxt) {
       char argTypeFuncName[52] = "";
