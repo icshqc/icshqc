@@ -32,19 +32,6 @@ int isCValue(Cmd* cmd) {
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
-Cmd* newCmd() {
-  Cmd* arg0 = malloc(sizeof(Cmd));
-  if (arg0 == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(arg0->name, '\0', sizeof(arg0->name));
-  arg0->type = UNKOWN;
-  arg0->nxt = NULL;
-  arg0->args = NULL;
-  arg0->body = NULL;
-  return arg0;
-}
-
 CFunc* newCFunc() {
   CFunc* arg0 = malloc(sizeof(CFunc));
   if (arg0 == NULL) {
@@ -1113,7 +1100,11 @@ void eval(Cmd* cmd) {
   output("\n=> ");
 
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
-    loadedFuncByName(cmd->name)->ptr(cmd);
+    Cmd* ret = loadedFuncByName(cmd->name)->ptr(cmd);
+    if (ret != NULL) {
+      output("\n== ");
+      output(ret->name);
+    }
   } else if (cmd->type == VAR) {
     printVar(cmd);
   } else if (cmd->type == UNKOWN) {
