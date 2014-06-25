@@ -30,18 +30,12 @@ typedef enum CmdType CmdType;
 // a number: 2 in f 3 2
 struct Cmd { // x (y z) (a (b c d))
   CmdType type;
-  char name[128]; // name of attribute should be value
+  char name[52]; // name of attribute should be value
   struct Cmd* body; // If it is a block;
   struct Cmd* nxt;
   struct Cmd* args;
 };
 typedef struct Cmd Cmd;
-
-struct Lambda {
-  Arg* args;      // x y z
-  char body[256];
-};
-typedef struct Lambda Lambda;
 
 struct LoadedDef {
   char name[52];
@@ -68,12 +62,10 @@ typedef struct Var Var;
 struct Func {
   char name[52];
   int isOperator;
-  Lambda* lambda;
-  Arg* args;      // int int int int
-  //Arg ret;
+  Arg* args;
+  Cmd* cmd;
   struct Func* nxt;
 };
 typedef struct Func Func;
-
 
 #endif // MODEL.h
