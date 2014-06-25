@@ -1075,7 +1075,13 @@ void listVars(Cmd* cmd) {
   output(m);
 }
 void listDefs(Cmd* cmd) {
-  // TODO: list vars of type function or operator.
+  LoadedDef* d;
+  for (d = loadedDefs; d != NULL; d = d->nxt) {
+    char m[1024] = "";
+    strcat(m, d->name);
+    strcat(m, "\n");
+    output(m);
+  }
 }
 
 // TODO:
