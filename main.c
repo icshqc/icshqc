@@ -643,7 +643,7 @@ void escapeName(char* str) {
   strcat(s, "\n}");
 }*/
 
-void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
+Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
   /*Func* f = NULL;
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   char m[1024] = "";
@@ -652,6 +652,7 @@ void save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
     fprintf(s, "\n%s", catFunc(m, f));
   }
   fclose(s);*/
+  return NULL;
 }
 
 void debug() {}
@@ -782,7 +783,7 @@ CFunc* parseCFunction(char* s0) {
   return f;
 }
 
-void parseCIncludeFile(Cmd* cmd) {
+Cmd* parseCIncludeFile(Cmd* cmd) {
   FILE* s = fopen(cmd->args->name, "r");
   char c;
   char p = EOF;
@@ -879,6 +880,7 @@ void parseCIncludeFile(Cmd* cmd) {
   bindCFunctionsHeader(f0);
   bindCFunctionsSource(f0);
   freeCFunc(f);
+  return NULL;
 }
 
 void eval(Cmd* cmd);
@@ -1018,7 +1020,7 @@ void printVar(Cmd* cmd) {
   }
 }
 
-void createVar(Cmd* cmd) {
+Cmd* createVar(Cmd* cmd) {
   Var* var = malloc(sizeof(Var));
   strcpy(var->name, cmd->args->name);
   var->type = typeByName(cmd->name);
@@ -1026,24 +1028,28 @@ void createVar(Cmd* cmd) {
   vars = var;
   var->nxt = oldFirst;
   var->val = NULL;
+  return NULL;
 }
 
-void createType(Cmd* cmd) {
+Cmd* createType(Cmd* cmd) {
   Type* type = malloc(sizeof(Type));
   strcpy(type->name, cmd->args->name);
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
   addLoadedDef(loadedDefs, type->name, 0, createVar);
+  return NULL;
 }
 
-void define(Cmd* cmd) {
+Cmd* define(Cmd* cmd) {
   Func* f = malloc(sizeof(Func));
+  return NULL;
 }
 
-void assign(Cmd* cmd) {
+Cmd* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   setVarVal(v, cmd->args->nxt);
+  return NULL;
 }
 
 /*void edit(Func* func) {
@@ -1061,7 +1067,7 @@ void assign(Cmd* cmd) {
   }
 }*/
 
-void listTypes(Cmd* cmd) {
+Cmd* listTypes(Cmd* cmd) {
   Type* t;
   char m[1024] = "";
   for (t = types; t != NULL; t = t->nxt) {
@@ -1071,9 +1077,10 @@ void listTypes(Cmd* cmd) {
     }
   }
   output(m);
+  return NULL;
 }
 
-void listVars(Cmd* cmd) {
+Cmd* listVars(Cmd* cmd) {
   Var* v;
   char m[1024] = "";
   for (v = vars; v != NULL; v = v->nxt) {
@@ -1083,8 +1090,9 @@ void listVars(Cmd* cmd) {
     }
   }
   output(m);
+  return NULL;
 }
-void listDefs(Cmd* cmd) {
+Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
   for (d = loadedDefs; d != NULL; d = d->nxt) {
     char m[1024] = "";
@@ -1092,6 +1100,7 @@ void listDefs(Cmd* cmd) {
     strcat(m, "\n");
     output(m);
   }
+  return NULL;
 }
 
 // TODO:

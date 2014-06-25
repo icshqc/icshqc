@@ -40,7 +40,7 @@ typedef struct Cmd Cmd;
 struct LoadedDef {
   char name[52];
   int isOperator;
-  void (*ptr)(Cmd* cmd);
+  Cmd* (*ptr)(Cmd* cmd);
   struct LoadedDef* nxt;
 };
 typedef struct LoadedDef LoadedDef;

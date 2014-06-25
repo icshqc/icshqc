@@ -8,7 +8,7 @@ char argchar(Cmd** cmd);
 int argint(Cmd** cmd);
 
 LoadedDef* lastLoadedDef();
-LoadedDef* createLoadedDef(char* name, int isOp, void (*ptr)(Cmd* cmd));
-LoadedDef* addLoadedDef(LoadedDef* def, char* name, int priority, void (*ptr)(Cmd* cmd));
+LoadedDef* createLoadedDef(char* name, int isOp, Cmd* (*ptr)(Cmd* cmd));
+LoadedDef* addLoadedDef(LoadedDef* def, char* name, int priority, Cmd* (*ptr)(Cmd* cmd));
 
 #endif // GLUE_H

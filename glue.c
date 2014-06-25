@@ -26,7 +26,7 @@ int argint(Cmd** cmd) {
   return 1;//c->name[0]; // TODO: string to integer
 }
 
-LoadedDef* addLoadedDef(LoadedDef* p, char* name, int priority, void (*ptr)(Cmd* cmd)) {
+LoadedDef* addLoadedDef(LoadedDef* p, char* name, int priority, Cmd* (*ptr)(Cmd* cmd)) {
   LoadedDef* f = createLoadedDef(name, priority, ptr);
   lastLoadedDef(p)->nxt = f;
 }
@@ -41,7 +41,7 @@ LoadedDef* lastLoadedDef(LoadedDef* d) {
   }
 }
 
-LoadedDef* createLoadedDef(char* name, int isOp, void (*ptr)(Cmd* cmd)) {
+LoadedDef* createLoadedDef(char* name, int isOp, Cmd* (*ptr)(Cmd* cmd)) {
   LoadedDef* d = malloc(sizeof(LoadedDef));
   strcpy(d->name, name);
   d->isOperator = isOp;
