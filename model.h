@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <string.h>
 
-struct Arg { // TODO: Delete Arg
+struct Arg {
   char name[52];
   char type[52];
   struct Arg* nxt;

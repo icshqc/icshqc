@@ -19,6 +19,7 @@ static const char DEF_FILE_PATH[] = "defs";
 static Type* types = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
+static Func* funcs = NULL;
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
