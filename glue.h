@@ -7,6 +7,10 @@ char* argstring(Cmd** cmd);
 char argchar(Cmd** cmd);
 int argint(Cmd** cmd);
 
+char* cat_argstring(char* b, char* s);
+char* cat_argchar(char* b, char s);
+char* cat_argint(char* b, int s);
+
 Cmd* newCmd();
 Cmd* retCmd(CmdType type, char* name);
 

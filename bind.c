@@ -16,7 +16,8 @@ Cmd* bind_add(Cmd* cmd) {
   Cmd* args = cmd->args;
   int x0 = argint(&args);
   int y0 = argint(&args);
-  int ret = add(x0, y0);
+  char ret[52] = "";
+  retCmd(INT, cat_argint(ret, add(x0, y0)));
 }
 
 Cmd* bind_sus(Cmd* cmd) {

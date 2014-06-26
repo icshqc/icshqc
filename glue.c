@@ -18,6 +18,18 @@ Cmd* newCmd() {
   return arg0;
 }
 
+char* cat_argstring(char* b, char* s) {
+  strcat(b, s);
+}
+char* cat_argchar(char* b, char s) {
+  *(b + strlen(b)) = s;
+}
+char* cat_argint(char* b, int s) {
+  char buffer[52] = "";
+  sprintf(buffer, "%d", s);
+  strcat(b, buffer);
+}
+
 char* argstring(Cmd** cmd) {
   Cmd* c = *cmd;
   if (c == NULL) return NULL;
@@ -36,7 +48,8 @@ int argint(Cmd** cmd) {
   if (c == NULL) return -1;
   *cmd = c->nxt;
   //if (strlen(c->name) != 1) { error }
-  return 1;//c->name[0]; // TODO: string to integer
+  char* num; // ???
+  return strtol(&c->name[0], &num, 0); // TODO: string to integer
 }
 
 Cmd* retCmd(CmdType type, char* name) {
