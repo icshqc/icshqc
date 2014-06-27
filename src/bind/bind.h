@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include "model.h"
+#include "../../model.h"
 #include "glue.h"
 
 void initCFunctions(LoadedDef* d);

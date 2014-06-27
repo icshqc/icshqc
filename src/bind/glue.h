@@ -1,7 +1,7 @@
 #ifndef GLUE_H
 #define GLUE_H
 
-#include "model.h"
+#include "../../model.h"
 
 char* argstring(Cmd** cmd);
 char argchar(Cmd** cmd);

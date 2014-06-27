@@ -16,27 +16,31 @@ Cmd* bind_add(Cmd* cmd) {
   Cmd* args = cmd->args;
   int x0 = argint(&args);
   int y0 = argint(&args);
-  char ret[52] = "";  retCmd(INT, catargint(add(x0, y0)));
+  char ret[52] = "";
+  retCmd(INT, cat_argint(ret, add(x0, y0)));
 }
 
 Cmd* bind_sus(Cmd* cmd) {
   Cmd* args = cmd->args;
   int x0 = argint(&args);
   int y0 = argint(&args);
-  char ret[52] = "";  retCmd(INT, catargint(sus(x0, y0)));
+  char ret[52] = "";
+  retCmd(INT, cat_argint(ret, sus(x0, y0)));
 }
 
 Cmd* bind_mult(Cmd* cmd) {
   Cmd* args = cmd->args;
   int x0 = argint(&args);
   int y0 = argint(&args);
-  char ret[52] = "";  retCmd(INT, catargint(mult(x0, y0)));
+  char ret[52] = "";
+  retCmd(INT, cat_argint(ret, mult(x0, y0)));
 }
 
 Cmd* bind_divide(Cmd* cmd) {
   Cmd* args = cmd->args;
   int x0 = argint(&args);
   int y0 = argint(&args);
-  char ret[52] = "";  retCmd(INT, catargint(divide(x0, y0)));
+  char ret[52] = "";
+  retCmd(INT, cat_argint(ret, divide(x0, y0)));
 }
 

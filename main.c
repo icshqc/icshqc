@@ -5,9 +5,10 @@
 #include <string.h>
 
 #include "model.h"
-#include "glue.h"
+#include "src/bind/glue.h"
 
-#include "bind.h"
+//#include "bind.h"
+#include "src/bind/bind.h"
 
 // TODO: Assign values to variables. int, char and string
 
@@ -663,8 +664,8 @@ void bindCFunctionsHeader(CFunc* fs) {
   fprintf(s, "#include <ncurses.h>\n");
   fprintf(s, "#include <signal.h>\n");
   fprintf(s, "#include <string.h>\n\n");
-  fprintf(s, "#include \"model.h\"\n");
-  fprintf(s, "#include \"glue.h\"\n\n");
+  fprintf(s, "#include \"../../model.h\"\n");
+  fprintf(s, "#include \"../../glue.h\"\n\n");
 
   fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
 
@@ -725,8 +726,8 @@ void bindCFunctionsSource(CFunc* fs) {
       fprintf(s, "  %s %s0 = %s(&args);\n", a->type, a->name, argTypeFunc(argTypeFuncName));
     }
     if (strlen(f->ret) > 0) {
-      fprintf(s, "  char ret[52] = \"\";");
-      fprintf(s, "  retCmd(INT, catarg%s(%s(", f->ret, f->name);
+      fprintf(s, "  char ret[52] = \"\";\n");
+      fprintf(s, "  retCmd(INT, cat_arg%s(ret, %s(", f->ret, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
