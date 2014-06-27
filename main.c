@@ -33,6 +33,17 @@ int isCValue(Cmd* cmd) {
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
+
+CStruct* newCStruct() {
+  CStruct* arg0 = malloc(sizeof(CStruct));
+  if (arg0 == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(arg0->name, '\0', sizeof(arg0->name));
+  arg0->attrs = NULL;
+  return arg0;
+}
+
 CFunc* newCFunc() {
   CFunc* arg0 = malloc(sizeof(CFunc));
   if (arg0 == NULL) {
@@ -103,6 +114,13 @@ void freeArg(Arg* f) {
   if (f != NULL) {
     freeArg(f->nxt);
     free(f);
+  }
+}
+
+void freeCStruct(CStruct* s) {
+  if (s != NULL) {
+    freeArg(s->attrs);
+    free(s);
   }
 }
 

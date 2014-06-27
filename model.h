@@ -13,6 +13,12 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
+struct CStruct {
+  char name[52];
+  Arg* attrs;
+};
+typedef struct CStruct CStruct;
+
 struct CFunc {
   char name[52];
   char ret[52];
