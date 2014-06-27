@@ -11,6 +11,7 @@
 #include "src/bind/bind.h"
 
 // TODO: Assign values to variables. int, char and string
+// TODO: + :: {|int x, int y| add x y}
 
 // MODEL
 
@@ -1026,13 +1027,9 @@ char* argVal(char* buf, Cmd* arg) {
 }*/
 
 Cmd* printVar(Cmd* cmd) {
-  if (cmd->args == NULL) {
-    char b[1024] = "";
-    catVar(b, varByName(cmd->name));
-    return outputStr(b);
-  } else {
-
-  }
+  char b[1024] = "";
+  catVar(b, varByName(cmd->name));
+  return outputStr(b);
 }
 
 Cmd* createVar(Cmd* cmd) {
@@ -1122,22 +1119,25 @@ Cmd* listDefs(Cmd* cmd) {
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
-  
+ 
+  Cmd* ret = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
-    Cmd* ret = loadedFuncByName(cmd->name)->ptr(cmd);
-    if (ret != NULL) {
-      output("\n=> ");
-      output(ret->name);
-      freeCmd(ret);
-    }
+    ret = loadedFuncByName(cmd->name)->ptr(cmd);
   } else if (cmd->type == VAR) {
-    printVar(cmd);
+    Var* v = varByName(cmd->name);
+    ret = v->val;
   } else if (cmd->type == UNKOWN) {
     // TODO: Handle error.
   } else {
+    output("\n=> ");
     output(cmd->name);
   }
-  printCmd(cmd);
+  if (ret != NULL) {
+    output("\n=> ");
+    output(ret->name);
+    freeCmd(ret);
+  }
+  printCmd(cmd); // DEBUG
 
   eval(cmd->nxt);
 }
