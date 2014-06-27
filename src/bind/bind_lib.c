@@ -1,4 +1,4 @@
-#include "bind.h"
+#include "bind_lib.h"
 
 void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "add", 0, bind_add);
