@@ -200,6 +200,12 @@ void output(const char* str) {
   }
 }
 
+Cmd* outputStr(const char* str) {
+  Cmd* cmd = newCmd();
+  strcpy(cmd->name, str);
+  return cmd;
+}
+
 // Return a pointer to the first non whitespace char of the string.
 char* trim(char* s) {
   char* c = s;
@@ -777,92 +783,91 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
   int lineNumber = 1;
   CFunc* f0 = NULL;
   CFunc* f = NULL;
-  if (s != NULL) {
-    char input[512] = "";
-    char debugInput[512] = "";
-    int inMultiComment = false;
-    int nested = 0;
-    int nestedP = 0;
-    int discardToEOL = false;
-    int discardToSemiColon = false;
-    while ((c = getc(s)) != EOF) {
-      if (c == '\n' || c == '\r') {
-        ++lineNumber;
-        if (lineNumber >= 98) {
-          debug();
-        }
-        debugInput[0] = '\0';
-      } else {
-        straddch(debugInput, c);
+  if (s == NULL) {
+    return outputStr("Invalid include file.");
+  }
+  char input[512] = "";
+  char debugInput[512] = "";
+  int inMultiComment = false;
+  int nested = 0;
+  int nestedP = 0;
+  int discardToEOL = false;
+  int discardToSemiColon = false;
+  while ((c = getc(s)) != EOF) {
+    if (c == '\n' || c == '\r') {
+      ++lineNumber;
+      if (lineNumber >= 98) {
+        debug();
       }
-      if (inMultiComment) {
-        if (p == '*' && c == '/') {
-          inMultiComment = false;
-        }
-      } else if (c == '{') {
-        ++nested;
-      } else if (nested > 0) {
-        if (c == '}') {
-          --nested;
-        }
-      } else if (c == '\r' || c == '\n') {
-        if (p != '\\' && nestedP == 0) {
-          if (strlen(input) > 0) {
-            if (strchr(input, '(')) {
-              if (f0 == NULL) {
-                f0 = parseCFunction(input);
-                f = f0;
-              } else {
-                f->nxt = parseCFunction(input);
-                f = f->nxt;
-              }
-            }
-            input[0] = '\0';
-          }
-          discardToEOL = false;
-        }
-      } else if ((c == ' ' || c == '\t') && strlen(input) <= 0) {
-        // Discard trailing whitespaces
-      } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
-        // Discard double whitespaces
-      } else if (discardToSemiColon) {
-        if (c == ';') {
-          discardToSemiColon = false;
-        }
-      } else if (discardToEOL) {
-        // Discard comments
-      } else if (c == '#') {
-        // Discard preprocessor
-        discardToEOL = true;
-      } else if (p == '/' && c == '/') {
-        discardToEOL = true;
-        strdelch(input);
-      } else if (p == '/' && c == '*') {
-        inMultiComment = true;
-        strdelch(input);
-      } else if (strncmp(input, "__", 2) == 0) {
-        discardToEOL = true;
-        input[0] = '\0';
-      //} else if (strncmp(input, "typedef", 7) == 0) { // case: __extension typedef...
-      } else if (strstr(input, "typedef") != NULL || strstr(input, "struct") != NULL) {
-        discardToSemiColon = true;
-        input[0] = '\0';
-      } else {
-        if (c == '(') {
-          ++nestedP;
-        } else if (c == ')') {
-          --nestedP;
-        }
-        if (c == '\t') {
-          straddch(input, ' ');
-        } else {
-          straddch(input, c);
-        }
-      }
-      p = c;
+      debugInput[0] = '\0';
+    } else {
+      straddch(debugInput, c);
     }
-  } else {
-    output("Invalid include file.");
+    if (inMultiComment) {
+      if (p == '*' && c == '/') {
+        inMultiComment = false;
+      }
+    } else if (c == '{') {
+      ++nested;
+    } else if (nested > 0) {
+      if (c == '}') {
+        --nested;
+      }
+    } else if (c == '\r' || c == '\n') {
+      if (p != '\\' && nestedP == 0) {
+        if (strlen(input) > 0) {
+          if (strchr(input, '(')) {
+            if (f0 == NULL) {
+              f0 = parseCFunction(input);
+              f = f0;
+            } else {
+              f->nxt = parseCFunction(input);
+              f = f->nxt;
+            }
+          }
+          input[0] = '\0';
+        }
+        discardToEOL = false;
+      }
+    } else if ((c == ' ' || c == '\t') && strlen(input) <= 0) {
+      // Discard trailing whitespaces
+    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
+      // Discard double whitespaces
+    } else if (discardToSemiColon) {
+      if (c == ';') {
+        discardToSemiColon = false;
+      }
+    } else if (discardToEOL) {
+      // Discard comments
+    } else if (c == '#') {
+      // Discard preprocessor
+      discardToEOL = true;
+    } else if (p == '/' && c == '/') {
+      discardToEOL = true;
+      strdelch(input);
+    } else if (p == '/' && c == '*') {
+      inMultiComment = true;
+      strdelch(input);
+    } else if (strncmp(input, "__", 2) == 0) {
+      discardToEOL = true;
+      input[0] = '\0';
+    //} else if (strncmp(input, "typedef", 7) == 0) { // case: __extension typedef...
+    } else if (strstr(input, "typedef") != NULL || strstr(input, "struct") != NULL) {
+      discardToSemiColon = true;
+      input[0] = '\0';
+    } else {
+      if (c == '(') {
+        ++nestedP;
+      } else if (c == ')') {
+        --nestedP;
+      }
+      if (c == '\t') {
+        straddch(input, ' ');
+      } else {
+        straddch(input, c);
+      }
+    }
+    p = c;
   }
   bindCFunctionsHeader(f0);
   bindCFunctionsSource(f0);
@@ -991,17 +996,12 @@ char* argVal(char* buf, Cmd* arg) {
   fscanf(fp, "%s", retVal);
   pclose(fp);
 }*/
-void run(Cmd* cmd) {
-  char retVal[1024];
-  //runCmd(retVal, cmd);
-  output(retVal);
-}
 
-void printVar(Cmd* cmd) {
+Cmd* printVar(Cmd* cmd) {
   if (cmd->args == NULL) {
     char b[1024] = "";
     catVar(b, varByName(cmd->name));
-    output(b);
+    return outputStr(b);
   } else {
 
   }
@@ -1063,8 +1063,7 @@ Cmd* listTypes(Cmd* cmd) {
       strcat(m, "\n");
     }
   }
-  output(m);
-  return NULL;
+  return outputStr(m);
 }
 
 Cmd* listVars(Cmd* cmd) {
@@ -1076,8 +1075,7 @@ Cmd* listVars(Cmd* cmd) {
       strcat(m, "\n");
     }
   }
-  output(m);
-  return NULL;
+  return outputStr(m);
 }
 Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
@@ -1085,7 +1083,7 @@ Cmd* listDefs(Cmd* cmd) {
     char m[1024] = "";
     strcat(m, d->name);
     strcat(m, "\n");
-    output(m);
+    output(m); // FIXME
   }
   return NULL;
 }
@@ -1097,13 +1095,12 @@ Cmd* listDefs(Cmd* cmd) {
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
   
-  output("\n=> ");
-
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
     Cmd* ret = loadedFuncByName(cmd->name)->ptr(cmd);
     if (ret != NULL) {
-      output("\n== ");
+      output("\n=> ");
       output(ret->name);
+      freeCmd(ret);
     }
   } else if (cmd->type == VAR) {
     printVar(cmd);
