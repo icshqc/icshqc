@@ -654,7 +654,7 @@ void bindCFunctionsHeader(CFunc* fs) {
   CFunc* f;
   Arg* a;
 
-  FILE* s = fopen("tmp/bind.h", "w");
+  FILE* s = fopen("src/bind/bind.h", "w");
 
   fprintf(s, "#ifndef BIND_H\n");
   fprintf(s, "#define BIND_H\n\n");
@@ -692,7 +692,7 @@ void bindCFunctionsSource(CFunc* fs) {
   CFunc* f;
   Arg* a;
 
-  FILE* s = fopen("tmp/bind.c", "w");
+  FILE* s = fopen("src/bind/bind.c", "w");
 
   fprintf(s, "#include \"bind.h\"\n\n");
 
@@ -725,7 +725,8 @@ void bindCFunctionsSource(CFunc* fs) {
       fprintf(s, "  %s %s0 = %s(&args);\n", a->type, a->name, argTypeFunc(argTypeFuncName));
     }
     if (strlen(f->ret) > 0) {
-      fprintf(s, "  %s ret = %s(", f->ret, f->name);
+      fprintf(s, "  char ret[52] = \"\";");
+      fprintf(s, "  retCmd(INT, catarg%s(%s(", f->ret, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
@@ -734,6 +735,9 @@ void bindCFunctionsSource(CFunc* fs) {
       if (a->nxt != NULL) {
         fprintf(s, ", ");
       }
+    }
+    if (strlen(f->ret) > 0) {
+      fprintf(s, "))");
     }
     fprintf(s, ");\n}\n\n");
   }
