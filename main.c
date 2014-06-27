@@ -665,7 +665,7 @@ void bindCFunctionsHeader(CFunc* fs) {
   fprintf(s, "#include <signal.h>\n");
   fprintf(s, "#include <string.h>\n\n");
   fprintf(s, "#include \"../../model.h\"\n");
-  fprintf(s, "#include \"../../glue.h\"\n\n");
+  fprintf(s, "#include \"glue.h\"\n\n");
 
   fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
 
