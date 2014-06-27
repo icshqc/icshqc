@@ -651,11 +651,13 @@ Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
 
 void debug() {}
 
-void bindCFunctionsHeader(CFunc* fs) {
+void bindCFunctionsHeader(char* fname, CFunc* fs) {
   CFunc* f;
   Arg* a;
 
-  FILE* s = fopen("src/bind/bind.h", "w");
+  char filename[52] = "";
+  sprintf(filename, "src/bind/bind_%s.h", fname);
+  FILE* s = fopen(filename, "w");
 
   fprintf(s, "#ifndef BIND_H\n");
   fprintf(s, "#define BIND_H\n\n");
@@ -689,11 +691,13 @@ char* argTypeFunc(char* name) {
   return name;
 }
 
-void bindCFunctionsSource(CFunc* fs) {
+void bindCFunctionsSource(char* fname, CFunc* fs) {
   CFunc* f;
   Arg* a;
 
-  FILE* s = fopen("src/bind/bind.c", "w");
+  char filename[52] = "";
+  sprintf(filename, "src/bind/bind_%s.c", fname);
+  FILE* s = fopen(filename, "w");
 
   fprintf(s, "#include \"bind.h\"\n\n");
 
@@ -782,7 +786,7 @@ CFunc* parseCFunction(char* s0) {
 }
 
 Cmd* parseCIncludeFile(Cmd* cmd) {
-  FILE* s = fopen(cmd->args->name, "r");
+  FILE* s = fopen(cmd->args->nxt->name, "r");
   char c;
   char p = EOF;
   int lineNumber = 1;
@@ -874,8 +878,8 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
     }
     p = c;
   }
-  bindCFunctionsHeader(f0);
-  bindCFunctionsSource(f0);
+  bindCFunctionsHeader(cmd->args->name, f0);
+  bindCFunctionsSource(cmd->args->name, f0);
   freeCFunc(f);
   return NULL;
 }
