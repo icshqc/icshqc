@@ -1123,10 +1123,34 @@ Cmd* listDefs(Cmd* cmd) {
   return NULL;
 }
 
+// Reduces a Cmd down to a primitive type.
+// If cmd->type == CFUNCTION, call it and replace the cmd by it's result
+// If cmd->type == FUNCTION, call it and replace the cmd by it's result
+// If cmd->type == VAR, get it's value and replace the cmd by it's result
 Cmd* cmdVal(Cmd* cmd) {
   Cmd* ret = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
-    ret = loadedFuncByName(cmd->name)->ptr(cmd);
+    Cmd* args = NULL;
+    Cmd* n = NULL;
+    Cmd* arg;
+    for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
+      if (n == NULL) {
+        args = cmdVal(arg); 
+        n = args;
+      } else {
+        n->nxt = cmdVal(arg);
+        if (n->nxt != NULL) {
+          n = n->nxt;
+        }
+      }
+    }
+    Cmd* nCmd = newCmd();
+    strcpy(nCmd->name, cmd->name);
+    nCmd->args = args;
+    nCmd->type = cmd->type;
+    // Do I copy the body???
+    ret = loadedFuncByName(cmd->name)->ptr(nCmd);
+    freeCmd(nCmd);
   } else if (cmd->type == VAR) {
     Var* v = varByName(cmd->name);
     if (v->val != NULL) {
@@ -1136,14 +1160,14 @@ Cmd* cmdVal(Cmd* cmd) {
     }
   } else if (cmd->type == UNKOWN) {
     // TODO: Handle error.
+  } else {
+    ret = newCmd();
+    strcpy(ret->name, cmd->name);
+    ret->type = cmd->type;
   }
   return ret;
 }
 
-// TODO:
-// If cmd->type == CFUNCTION, call it and replace the cmd by it's result
-// If cmd->type == FUNCTION, call it and replace the cmd by it's result
-// If cmd->type == VAR, get it's value and replace the cmd by it's result
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
