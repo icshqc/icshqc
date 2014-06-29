@@ -1057,14 +1057,21 @@ Cmd* printVar(Cmd* cmd) {
   return outputStr(b);
 }
 
-Cmd* createVar(Cmd* cmd) {
+Var* addNewVar(char* type, char* name) {
   Var* var = malloc(sizeof(Var));
-  strcpy(var->name, cmd->args->name);
-  var->type = typeByName(cmd->name);
+  strcpy(var->name, name);
+  var->type = typeByName(type);
+  var->val = NULL;
+
   Var* oldFirst = vars;
   vars = var;
   var->nxt = oldFirst;
-  var->val = NULL;
+
+  return var;
+}
+
+Cmd* createVar(Cmd* cmd) {
+  addNewVar(cmd->name, cmd->args->name);
   return NULL;
 }
 
@@ -1086,6 +1093,10 @@ Cmd* define(Cmd* cmd) {
 
 Cmd* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
+  if (v == NULL) {
+    v = addNewVar("int", cmd->args->name); // FIXME hardcoded type, but maybe var type is useless anyway.
+  }
+  if (v == NULL) return NULL;
   setVarVal(v, cmd->args->nxt);
   Cmd* c = newCmd();
   strcpy(c->name, v->val->name);
