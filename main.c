@@ -18,7 +18,6 @@
 
 // TODO: Assign values to variables. int, char and string
 // TODO: + :: {|int x, int y| add x y}
-// TODO: add x 2
 
 // MODEL
 
