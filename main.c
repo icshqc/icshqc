@@ -176,13 +176,12 @@ void setVarVal(Var* v, Cmd* val) {
   if (v == NULL) return;
   if (v->val != NULL) {
     freeCmd(v->val);
-  } else {
-    v->val = newCmd();
-    strcpy(v->val->name, val->name);
-    v->val->args = val->args;
-    v->val->nxt = val->nxt;
-    v->val->body = val->body;
   }
+  v->val = newCmd();
+  strcpy(v->val->name, val->name);
+  v->val->args = val->args;
+  v->val->nxt = val->nxt;
+  v->val->body = val->body;
 }
 
 // HELPER
@@ -1089,7 +1088,10 @@ Cmd* define(Cmd* cmd) {
 Cmd* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   setVarVal(v, cmd->args->nxt);
-  return NULL;
+  Cmd* c = newCmd();
+  strcpy(c->name, v->val->name);
+  c->type = v->val->type;
+  return c;
 }
 
 /*void edit(Func* func) {
