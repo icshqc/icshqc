@@ -1114,32 +1114,39 @@ Cmd* listDefs(Cmd* cmd) {
   return NULL;
 }
 
+Cmd* cmdVal(Cmd* cmd) {
+  Cmd* ret = NULL;
+  if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
+    ret = loadedFuncByName(cmd->name)->ptr(cmd);
+  } else if (cmd->type == VAR) {
+    Var* v = varByName(cmd->name);
+    ret = newCmd();
+    strcpy(ret->name, v->val->name);
+    ret->type = v->val->type;
+  } else if (cmd->type == UNKOWN) {
+    // TODO: Handle error.
+  }
+  return ret;
+}
+
 // TODO:
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
- 
-  Cmd* ret = NULL;
-  if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
-    ret = loadedFuncByName(cmd->name)->ptr(cmd);
-  } else if (cmd->type == VAR) {
-    Var* v = varByName(cmd->name);
-    ret = v->val;
-  } else if (cmd->type == UNKOWN) {
-    // TODO: Handle error.
-  } else {
+
+  Cmd* ret = cmdVal(cmd);
+  if (ret == NULL) {
     output("\n=> ");
     output(cmd->name);
-  }
-  if (ret != NULL) {
+  } else {
     output("\n=> ");
     output(ret->name);
     freeCmd(ret);
   }
   printCmd(cmd); // DEBUG
-
+ 
   eval(cmd->nxt);
 }
 
