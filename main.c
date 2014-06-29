@@ -10,6 +10,10 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
+// FIXME: The functions should return Cmd, not Cmd*.
+
+// TODO: int x, x = 2 sont des macros car on ne veut pas la valeur de la variable x, mais son nom.
+
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
 // TODO: Assign values to variables. int, char and string
@@ -262,6 +266,10 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "FLOAT");
   } else if (t == EDITOR) {
     strcat(b, "EDITOR");
+  } else if (t == MACRO) {
+    strcat(b, "MACRO");
+  } else if (t == MACRO_OP) {
+    strcat(b, "MACRO_OP");
   } else if (t == OPERATOR) {
     strcat(b, "OPERATOR");
   } else if (t == UNKOWN) {
@@ -385,7 +393,11 @@ Cmd* typeCmd(Cmd* cmd) {
     LoadedDef* f = loadedFuncByName(n);
     Var* v;
     if (f != NULL) {
-      c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+      if (f->isMacro == true) {
+        c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
+      } else {
+        c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+      }
     } else if ((v = varByName(n)) != NULL) {
       c->type = VAR;
     } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
@@ -490,7 +502,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
     }
   }
   typeCmd(cmds);
-  if (cmds->nxt != NULL && cmds->nxt->type == OPERATOR) {
+  if (cmds->nxt != NULL && (cmds->nxt->type == OPERATOR || cmds->nxt->type == MACRO_OP)) {
     cmd = cmds;
     cmds = cmds->nxt;
     cmds->args = cmd;
@@ -738,7 +750,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
 
   fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "  addLoadedDef(d, \"%s\", 0, bind_%s);\n", f->name, f->name);
+    fprintf(s, "  addLoadedDef(d, \"%s\", 0, 0, bind_%s);\n", f->name, f->name);
   }
   fprintf(s, "}\n\n");
 
@@ -1065,7 +1077,7 @@ Cmd* createType(Cmd* cmd) {
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
-  addLoadedDef(loadedDefs, type->name, 0, createVar);
+  addLoadedDef(loadedDefs, type->name, 1, 0, createVar);
   return NULL;
 }
 
@@ -1157,6 +1169,8 @@ Cmd* cmdVal(Cmd* cmd) {
     // Do I copy the body???
     ret = loadedFuncByName(cmd->name)->ptr(nCmd);
     freeCmd(nCmd);
+  } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
+    ret = loadedFuncByName(cmd->name)->ptr(cmd);
   } else if (cmd->type == VAR) {
     Var* v = varByName(cmd->name);
     if (v->val != NULL) {
@@ -1240,14 +1254,14 @@ static void finish(int sig)
 }
 
 void initLoadedDefs() {
-  loadedDefs = createLoadedDef("save", 0, save);
-  addLoadedDef(loadedDefs, "=", 1, assign); // Assigns a value to an existing variable.
-  addLoadedDef(loadedDefs, "::", 1, define); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "type", 0, createType);
-  addLoadedDef(loadedDefs, "$vars", 0, listVars);
-  addLoadedDef(loadedDefs, "$types", 0, listTypes);
-  addLoadedDef(loadedDefs, "$defs", 0, listDefs);
-  addLoadedDef(loadedDefs, "include", 0, parseCIncludeFile);
+  loadedDefs = createLoadedDef("save", 0, 0, save);
+  addLoadedDef(loadedDefs, "=", 1, 1, assign); // Assigns a value to an existing variable.
+  addLoadedDef(loadedDefs, "::", 0, 1, define); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, "type", 0, 0, createType);
+  addLoadedDef(loadedDefs, "$vars", 0, 0, listVars);
+  addLoadedDef(loadedDefs, "$types", 0, 0, listTypes);
+  addLoadedDef(loadedDefs, "$defs", 0, 0, listDefs);
+  addLoadedDef(loadedDefs, "include", 0, 0, parseCIncludeFile);
 }
 
 void main()

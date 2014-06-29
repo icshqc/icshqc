@@ -27,7 +27,8 @@ struct CFunc {
 };
 typedef struct CFunc CFunc;
 
-enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING, BOOL, CHAR, POINTER, FLOAT, ERROR};
+enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING,
+              BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP};
 typedef enum CmdType CmdType;
 
 // A Cmd can be:
@@ -46,6 +47,7 @@ typedef struct Cmd Cmd;
 struct LoadedDef {
   char name[52];
   int isOperator;
+  int isMacro;
   Cmd* (*ptr)(Cmd* cmd);
   struct LoadedDef* nxt;
 };
