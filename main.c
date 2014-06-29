@@ -35,10 +35,6 @@ static CStruct* structs = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
-int isCValue(Cmd* cmd) {
-  return cmd->name[0] == '#';
-}
-
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
 
