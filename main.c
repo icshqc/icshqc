@@ -16,10 +16,6 @@
 // TODO: + :: {|int x, int y| add x y}
 // TODO: add x 2
 
-// FIXME:
-// int x
-// x => seg fault
-
 // MODEL
 
 static const int MSG_CONSOLE_SIZE = 10;
@@ -37,7 +33,6 @@ static LoadedDef* loadedDefs = NULL;
 
 // A block is a Cmd with two args. The first is the args, the second is the body
 static const char BLOCK[] = "BLOCK";
-
 
 CStruct* newCStruct() {
   CStruct* arg0 = malloc(sizeof(CStruct));
