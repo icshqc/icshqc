@@ -10,9 +10,15 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
+// Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
+
 // TODO: Assign values to variables. int, char and string
 // TODO: + :: {|int x, int y| add x y}
 // TODO: add x 2
+
+// FIXME:
+// int x
+// x => seg fault
 
 // MODEL
 
@@ -222,8 +228,16 @@ void output(const char* str) {
   }
 }
 
+Cmd* errorStr(const char* str) {
+  Cmd* cmd = newCmd();
+  cmd->type = ERROR;
+  strcpy(cmd->name, str);
+  return cmd;
+}
+
 Cmd* outputStr(const char* str) {
   Cmd* cmd = newCmd();
+  cmd->type = STRING;
   strcpy(cmd->name, str);
   return cmd;
 }
@@ -262,8 +276,12 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "BOOL");
   } else if (t == CHAR) {
     strcat(b, "CHAR");
+  } else if (t == ERROR) {
+    strcat(b, "ERROR");
   } else if (t == POINTER) {
     strcat(b, "POINTER");
+  } else {
+    strcat(b, "UNKOWN_TYPE");
   }
 }
 
@@ -814,7 +832,7 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
   CFunc* f0 = NULL;
   CFunc* f = NULL;
   if (s == NULL) {
-    return outputStr("Invalid include file.");
+    return errorStr("Invalid include file.");
   }
   char input[512] = "";
   char debugInput[512] = "";
@@ -1120,9 +1138,11 @@ Cmd* cmdVal(Cmd* cmd) {
     ret = loadedFuncByName(cmd->name)->ptr(cmd);
   } else if (cmd->type == VAR) {
     Var* v = varByName(cmd->name);
-    ret = newCmd();
-    strcpy(ret->name, v->val->name);
-    ret->type = v->val->type;
+    if (v->val != NULL) {
+      ret = newCmd();
+      strcpy(ret->name, v->val->name);
+      ret->type = v->val->type;
+    }
   } else if (cmd->type == UNKOWN) {
     // TODO: Handle error.
   }
@@ -1140,6 +1160,9 @@ void eval(Cmd* cmd) {
   if (ret == NULL) {
     output("\n=> ");
     output(cmd->name);
+  } else if (ret->type == ERROR) {
+    output("\nError: ");
+    output(ret->name);
   } else {
     output("\n=> ");
     output(ret->name);
