@@ -149,6 +149,11 @@ void freeFunc(Func* f) {
   }
 }
 
+char* strVal(char* val, Cmd* cmd) {
+  strncpy(val, cmd->name + 1, strlen(cmd->name) - 2);
+  return val;
+}
+
 /*char* catArg(char* m, Arg* arg) {
   if (arg != NULL) {
     Arg* n = arg->nxt;
@@ -1055,7 +1060,8 @@ Cmd* createVar(Cmd* cmd) {
 
 Cmd* createType(Cmd* cmd) {
   Type* type = malloc(sizeof(Type));
-  strcpy(type->name, cmd->args->name);
+  char name[52] = "";
+  strcpy(type->name, strVal(name, cmd->args));
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
@@ -1158,8 +1164,6 @@ Cmd* cmdVal(Cmd* cmd) {
       strcpy(ret->name, v->val->name);
       ret->type = v->val->type;
     }
-  } else if (cmd->type == UNKOWN) {
-    // TODO: Handle error.
   } else {
     ret = newCmd();
     strcpy(ret->name, cmd->name);
