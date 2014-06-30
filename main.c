@@ -838,7 +838,6 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
     return errorStr("Invalid include file.");
   }
   char input[512] = "";
-  char debugInput[512] = "";
   int inMultiComment = false;
   int nested = 0;
   int nestedP = 0;
