@@ -694,8 +694,6 @@ Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
   return NULL;
 }
 
-void debug() {}
-
 void bindCFunctionsHeader(char* fname, CFunc* fs) {
   CFunc* f;
   Arg* a;
@@ -834,7 +832,6 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
   FILE* s = fopen(cmd->args->nxt->name, "r");
   char c;
   char p = EOF;
-  int lineNumber = 1;
   CFunc* f0 = NULL;
   CFunc* f = NULL;
   if (s == NULL) {
@@ -848,15 +845,6 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
   int discardToEOL = false;
   int discardToSemiColon = false;
   while ((c = getc(s)) != EOF) {
-    if (c == '\n' || c == '\r') {
-      ++lineNumber;
-      if (lineNumber >= 98) {
-        debug();
-      }
-      debugInput[0] = '\0';
-    } else {
-      straddch(debugInput, c);
-    }
     if (inMultiComment) {
       if (p == '*' && c == '/') {
         inMultiComment = false;
