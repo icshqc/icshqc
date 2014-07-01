@@ -765,7 +765,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   sprintf(filename, "src/bind/bind_%s.c", fname);
   FILE* s = fopen(filename, "w");
 
-  fprintf(s, "#include \"bind.h\"\n\n");
+  fprintf(s, "#include \"bind_%s.h\"\n\n", fname);
 
   fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
@@ -795,7 +795,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
       char argTypeFuncName[52] = "";
       char type[52] = "INT"; // FIXME
       strcpy(argTypeFuncName, a->type);
-      fprintf(s, "  if (!validArg(&args, %s)) return errorStr(\"Invalid arg %d: Expected type %s\")",
+      fprintf(s, "  if (!validArg(&args, %s)) return errorStr(\"Invalid arg %d: Expected type %s\");\n",
                  type, i, type);
       fprintf(s, "  %s %s0 = %s(&args);\n", a->type, a->name, argTypeFunc(argTypeFuncName));
     }
