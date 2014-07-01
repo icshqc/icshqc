@@ -18,6 +18,13 @@ Cmd* newCmd() {
   return arg0;
 }
 
+Cmd* errorStr(const char* str) {
+  Cmd* cmd = newCmd();
+  cmd->type = ERROR;
+  strcpy(cmd->name, str);
+  return cmd;
+}
+
 int validArg(Cmd** cmd, CmdType type) {
   if (*cmd == NULL || (*cmd)->type != type) return 0;
   return 1;

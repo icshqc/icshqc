@@ -14,6 +14,8 @@ char* cat_argint(char* b, int s);
 Cmd* newCmd();
 Cmd* retCmd(CmdType type, char* name);
 
+Cmd* errorStr(const char* str);
+
 int validArg(Cmd** cmd, CmdType type);
 
 LoadedDef* lastLoadedDef();

@@ -226,13 +226,6 @@ void output(const char* str) {
   }
 }
 
-Cmd* errorStr(const char* str) {
-  Cmd* cmd = newCmd();
-  cmd->type = ERROR;
-  strcpy(cmd->name, str);
-  return cmd;
-}
-
 Cmd* outputStr(const char* str) {
   Cmd* cmd = newCmd();
   cmd->type = STRING;
