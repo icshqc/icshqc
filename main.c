@@ -790,9 +790,13 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Cmd* bind_%s(Cmd* cmd) {\n", f->name);
     fprintf(s, "  Cmd* args = cmd->args;\n");
-    for (a = f->args; a != NULL; a = a->nxt) {
+    int i;
+    for (i = 1, a = f->args; a != NULL; a = a->nxt, i++) {
       char argTypeFuncName[52] = "";
+      char type[52] = "INT"; // FIXME
       strcpy(argTypeFuncName, a->type);
+      fprintf(s, "  if (!validArg(&args, %s)) return errorStr(\"Invalid arg %d: Expected type %s\")",
+                 type, i, type);
       fprintf(s, "  %s %s0 = %s(&args);\n", a->type, a->name, argTypeFunc(argTypeFuncName));
     }
     if (strlen(f->ret) > 0) {
