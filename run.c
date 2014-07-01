@@ -66,7 +66,7 @@ void main(int argc, char* argv[]) {
   if (debug_mode) {
     strcat(cmd, " && gdb build/debug");
   } else {
-    strcat(cmd, " && ./build/icsh");
+    strcat(cmd, " && screen ./build/icsh");
   }
   if (debug_command_mode) {
     printf("%s\n", cmd);

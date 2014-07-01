@@ -465,6 +465,25 @@ ParsePair parseBlock(char* command) {
   block->body = p.cmd;
   return parsePair(block, ++s);
 }
+ParsePair parseArray(char* command) {
+  Cmd* ary = newCmd();
+  Cmd* elem = newCmd();
+  ary->args = elem;
+  char *s = command;
+  while (*s != ']') {
+    if (*s == '\0') {
+      freeCmd(ary);
+      return parsePair(NULL, s);
+    } else if (*s == ',') {
+      elem->nxt = newCmd();
+      elem = elem->nxt;
+    } else {
+      straddch(elem->name, *s);
+    }
+    ++s;
+  }
+  return parsePair(ary, s);
+}
 ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
   Cmd* cmds = newCmd();
   Cmd* cmd = cmds;
@@ -472,7 +491,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
   while (*s != '\0') {
     char* i = s;
     while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' &&
-           *s != '{' && *s != '}' && *s != '\n') {
+           *s != '{' && *s != '}' && *s != '[' && *s != '\n') {
       ++s;
     }
     strncpy(cmd->name, i, s-i);
@@ -480,12 +499,19 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
     if (*s == ')') {
       ++s;
       break;
+    } else if (*s == '[') {
+      ParsePair p = parseArray(s+1);
+      s = p.ptr;
+      if (p.cmd != NULL) {
+        cmd->nxt = p.cmd;
+        cmd = cmd->nxt;
+      }
     } else if (*s == '}') {
       break;
     } else if (*s == '{') {
       ParsePair p = parseBlock(s+1);
+      s = p.ptr;
       if (p.cmd != NULL) {
-        s = p.ptr;
         cmd->nxt = p.cmd;
         cmd = cmd->nxt;
       }
