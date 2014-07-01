@@ -14,6 +14,8 @@ char* cat_argint(char* b, int s);
 Cmd* newCmd();
 Cmd* retCmd(CmdType type, char* name);
 
+int validArg(Cmd** cmd, CmdType type);
+
 LoadedDef* lastLoadedDef();
 LoadedDef* createLoadedDef(char* name, int isMacro, int isOp, Cmd* (*ptr)(Cmd* cmd));
 LoadedDef* addLoadedDef(LoadedDef* def, char* name, int isMacro, int priority, Cmd* (*ptr)(Cmd* cmd));

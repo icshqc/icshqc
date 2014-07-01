@@ -18,6 +18,11 @@ Cmd* newCmd() {
   return arg0;
 }
 
+int validArg(Cmd** cmd, CmdType type) {
+  if (*cmd == NULL || (*cmd)->type != type) return 0;
+  return 1;
+}
+
 char* cat_argstring(char* b, char* s) {
   strcat(b, s);
 }
@@ -45,7 +50,6 @@ char argchar(Cmd** cmd) {
 }
 int argint(Cmd** cmd) {
   Cmd* c = *cmd;
-  if (c == NULL) return -1;
   *cmd = c->nxt;
   //if (strlen(c->name) != 1) { error }
   char* num; // ???

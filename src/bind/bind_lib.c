@@ -14,7 +14,9 @@ int divide(int x, int y);
 
 Cmd* bind_add(Cmd* cmd) {
   Cmd* args = cmd->args;
+  if (!validArg(&args, INT)) return NULL; // TODO: Return error string.
   int x0 = argint(&args);
+  if (!validArg(&args, INT)) return NULL; // TODO: Return error string.
   int y0 = argint(&args);
   char ret[52] = "";
   retCmd(INT, cat_argint(ret, add(x0, y0)));
