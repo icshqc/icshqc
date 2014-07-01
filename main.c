@@ -760,8 +760,10 @@ void escapeName(char* str) {
 }*/
 
 Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
+  //for (f = funcs; f != NULL; f = f->nxt) {
+  //  FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
+  //}
   /*Func* f = NULL;
-  FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   char m[1024] = "";
   for (f = defs; f != NULL; f = f->nxt) {
     m[0] = '\0';
