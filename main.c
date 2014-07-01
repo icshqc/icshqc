@@ -438,6 +438,8 @@ ParsePair parse(char* command, char* allowedChars) {
     }
     if (found == 0) {
       return parsePair(cmd, trim(c));
+    } else {
+      straddch(cmd->name, *c);
     }
   }
   return parsePair(cmd, trim(c));
@@ -457,6 +459,9 @@ ParsePair parseBlock(char* command) {
   block->args = p.cmd;
   block->args->type = TYPE;
   ++s;
+  if (*s == '|') {
+    p = parse(command, ALLOWED_NAME_CHARS);
+  }
   if (*s != '}') {
     msg("Error parsing block. Missing end bracket.");
     freeCmd(block);
