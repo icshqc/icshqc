@@ -456,12 +456,13 @@ ParsePair parseBlock(char* command) {
   }
   block->args = p.cmd;
   block->args->type = TYPE;
-  if (*(s+1) != '}') {
+  ++s;
+  if (*s != '}') {
     msg("Error parsing block. Missing end bracket.");
     freeCmd(block);
     return parsePair(NULL, s);
   }
-  return parsePair(block, s+2);
+  return parsePair(block, s+1);
 }
 ParsePair parseArray(char* command) {
   Cmd* ary = newCmd();
