@@ -291,15 +291,19 @@ char* catCmdType(char* b, CmdType t) {
 
 char* catCmd(char* b, Cmd* cmd) {
   if (cmd != NULL) {
-    strcat(b,"(");
     catCmdType(b, cmd->type);
     strcat(b, " ");
     strcat(b,cmd->name);
-    catCmd(b, cmd->args);
-    strcat(b,")");
-    if (cmd->nxt != NULL) {
-      strcat(b, ", ");
-      catCmd(b, cmd->nxt);
+    if (cmd->args != NULL) {
+      strcat(b,"(");
+      Cmd* a;
+      for (a = cmd->args; a != NULL; a = a->nxt) {
+        catCmd(b, a);
+        if (a->nxt != NULL) {
+          strcat(b, ", ");
+        }
+      }
+      strcat(b,")");
     }
   }
   return b;
