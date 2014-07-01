@@ -10,6 +10,8 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
+// TODO: Make parse block work.
+
 // FIXME: The functions should return Cmd, not Cmd*.
 
 // TODO: int x, x = 2 sont des macros car on ne veut pas la valeur de la variable x, mais son nom.
@@ -17,7 +19,7 @@
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
 // TODO: Assign values to variables. int, char and string
-// TODO: + :: {|int x, int y| add x y}
+// TODO: + :: {int: |int x, int y| add x y}
 
 // MODEL
 
@@ -33,9 +35,6 @@ static CStruct* structs = NULL;
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
-
-// A block is a Cmd with two args. The first is the args, the second is the body
-static const char BLOCK[] = "BLOCK";
 
 CStruct* newCStruct() {
   CStruct* arg0 = malloc(sizeof(CStruct));
@@ -139,7 +138,6 @@ void freeCmd(Cmd* arg) {
   if (arg != NULL) {
     freeCmd(arg->nxt);
     freeCmd(arg->args);
-    freeCmd(arg->body);
   }
 }
 
@@ -180,7 +178,6 @@ void setVarVal(Var* v, Cmd* val) {
   strcpy(v->val->name, val->name);
   v->val->args = val->args;
   v->val->nxt = val->nxt;
-  v->val->body = val->body;
 }
 
 // HELPER
@@ -249,6 +246,10 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "INT");
   } else if (t == FUNCTION) {
     strcat(b, "FUNCTION");
+  } else if (t == TYPE) {
+    strcat(b, "TYPE");
+  } else if (t == BLOCK) {
+    strcat(b, "BLOCK");
   } else if (t == CFUNCTION) {
     strcat(b, "CFUNCTION");
   } else if (t == VAR) {
@@ -423,43 +424,44 @@ ParsePair parsePair(Cmd* cmd, char* ptr) {
   p.ptr = ptr;
   return p;
 }
+static char ALLOWED_NAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz_0123456789";
+ParsePair parse(char* command, char* allowedChars) {
+  Cmd* cmd = newCmd();
+  char* c;
+  char* ch;
+  for (c = command; *c != '\0'; ++c) {
+    int found = 0;
+    for (ch = allowedChars; *ch != '\0'; ++ch) {
+      if (*ch == *c) {
+        found = 1;
+      }
+    }
+    if (found == 0) {
+      return parsePair(cmd, trim(c));
+    }
+  }
+  return parsePair(cmd, trim(c));
+}
 ParsePair parseCmdR(char* command);
 ParsePair parseBlock(char* command) {
   char* s = trim(command);
   Cmd* block = newCmd();
-  Cmd* arg = NULL;
-  if (*s == '|') { // parse args
-    char* i = ++s;
-    while (true) {
-      if (*s == '\0') {
-        msg("Error parsing block. Missing end args pipe.");
-        freeCmd(block);
-        return parsePair(NULL, s);
-      } else if (*s == ',' || *s == '|') {
-        if (arg == NULL) {
-          block->args = newCmd();
-          arg = block->args;
-        } else {
-          arg->nxt = newCmd();
-          arg = arg->nxt;
-        }
-        strncpy(arg->name, i, s-i);
-        if (*s == '|') {
-          break;
-        }
-      }
-      ++s;
-    }
-  }
-  ParsePair p = parseCmdR(s);
+  block->type = BLOCK;
+  ParsePair p = parse(command, ALLOWED_NAME_CHARS);
   s = p.ptr;
-  if (*s != '}') {
+  if (*s != ':') {
+    msg("Error parsing block. Missing return type.");
+    freeCmd(block);
+    return parsePair(NULL, s);
+  }
+  block->args = p.cmd;
+  block->args->type = TYPE;
+  if (*(s+1) != '}') {
     msg("Error parsing block. Missing end bracket.");
     freeCmd(block);
     return parsePair(NULL, s);
   }
-  block->body = p.cmd;
-  return parsePair(block, ++s);
+  return parsePair(block, s+2);
 }
 ParsePair parseArray(char* command) {
   Cmd* ary = newCmd();
@@ -565,7 +567,7 @@ Cmd* getInput() {
       } else {
         break;
       }
-    } else {
+    } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
       if (ch == '{') {
         nested++;
       } else if (ch == '}') {

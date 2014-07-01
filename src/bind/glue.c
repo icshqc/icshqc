@@ -14,7 +14,6 @@ Cmd* newCmd() {
   arg0->type = UNKOWN;
   arg0->nxt = NULL;
   arg0->args = NULL;
-  arg0->body = NULL;
   return arg0;
 }
 

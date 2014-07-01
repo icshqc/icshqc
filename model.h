@@ -28,7 +28,7 @@ struct CFunc {
 typedef struct CFunc CFunc;
 
 enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING,
-              BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP, ARRAY};
+              BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE};
 typedef enum CmdType CmdType;
 
 // A Cmd can be:
@@ -38,7 +38,6 @@ typedef enum CmdType CmdType;
 struct Cmd { // x (y z) (a (b c d))
   CmdType type;
   char name[52]; // name of attribute should be value
-  struct Cmd* body; // If it is a block;
   struct Cmd* nxt;
   struct Cmd* args;
 };
