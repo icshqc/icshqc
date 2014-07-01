@@ -64,6 +64,7 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(f->name, '\0', sizeof(f->name));
+  memset(f->ret, '\0', sizeof(f->ret));
   f->cmd = NULL;
   f->args = NULL;
   f->isOperator = false;
@@ -1154,7 +1155,26 @@ Cmd* createType(Cmd* cmd) {
 }
 
 Cmd* define(Cmd* cmd) {
-  Func* f = malloc(sizeof(Func));
+  Func* f = newFunc();
+  strcpy(f->name, cmd->args->name);
+  strcpy(f->ret, cmd->args->nxt->name);
+  Cmd* arg = cmd->args->nxt->nxt;
+  Arg* a = NULL;
+  for(; arg != NULL && arg->nxt != NULL; arg = arg->nxt) {
+    if (a == NULL) {
+      f->args = newArg();
+      a = f->args;
+    } else {
+      a->nxt = newArg();
+      a = a->nxt;
+    }
+    strcpy(a->type, arg->args->name);
+    strcpy(a->name, arg->args->nxt->name);
+  }
+  f->cmd = arg;
+  Func* oldFirst = funcs;
+  funcs = f;
+  f->nxt = oldFirst;
   return NULL;
 }
 
@@ -1328,6 +1348,8 @@ static void finish(int sig)
   types = NULL;
   freeVar(vars);
   vars = NULL;
+  freeFunc(funcs);
+  funcs = NULL;
 
   exit(0);
 }
