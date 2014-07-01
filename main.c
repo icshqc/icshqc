@@ -491,12 +491,16 @@ ParsePair parseBlock(char* command) {
   block->args = p.cmd;
   block->args->type = TYPE;
   s = trim(s+1);
+  Cmd* arg = block->args;
   if (*s == '|') {
     p = parseArg(++s);
-    block->args->nxt = p.cmd;
+    arg->nxt = p.cmd;
+    arg = arg->nxt;
     s = p.ptr;
   }
-  s = trim(s);
+  p = parseCmdR(trim(s));
+  arg->nxt = p.cmd;
+  s = p.ptr;
   if (*s != '}') {
     msg("Error parsing block. Missing end bracket.");
     freeCmd(block);
