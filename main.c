@@ -246,6 +246,10 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "INT");
   } else if (t == FUNCTION) {
     strcat(b, "FUNCTION");
+  } else if (t == PAIR) {
+    strcat(b, "PAIR");
+  } else if (t == VAR_NAME) {
+    strcat(b, "VAR_NAME");
   } else if (t == TYPE) {
     strcat(b, "TYPE");
   } else if (t == BLOCK) {
@@ -429,7 +433,7 @@ ParsePair parse(char* command, char* allowedChars) {
   Cmd* cmd = newCmd();
   char* c;
   char* ch;
-  for (c = command; *c != '\0'; ++c) {
+  for (c = trim(command); *c != '\0'; ++c) {
     int found = 0;
     for (ch = allowedChars; *ch != '\0'; ++ch) {
       if (*ch == *c) {
@@ -437,12 +441,40 @@ ParsePair parse(char* command, char* allowedChars) {
       }
     }
     if (found == 0) {
-      return parsePair(cmd, trim(c));
+      return parsePair(cmd, c);
     } else {
       straddch(cmd->name, *c);
     }
   }
   return parsePair(cmd, trim(c));
+}
+ParsePair parseArg(char* command) {
+  Cmd* cmd = newCmd();
+  cmd->type = PAIR;
+  ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS);
+  if (*(p.ptr) != ' ') {
+    msg("Error parsing block. Missing arg type.");
+    freeCmd(cmd);
+    return parsePair(NULL, p.ptr);
+  }
+  cmd->args = p.cmd;
+  cmd->args->type = TYPE;
+  p = parse(trim(p.ptr), ALLOWED_NAME_CHARS);
+  if (*(p.ptr) == '|' || *(p.ptr) == ',') {
+    cmd->args->nxt = p.cmd;
+    cmd->args->nxt->type = VAR_NAME;
+    if (*(p.ptr) == ',') {
+      p = parseArg(p.ptr+1);
+      cmd->nxt = p.cmd;
+      return parsePair(cmd, p.ptr);
+    } else {
+      return parsePair(cmd, p.ptr+1);
+    }
+  } else {
+    msg("Error parsing block. Missing arg name.");
+    freeCmd(cmd);
+    return parsePair(NULL, p.ptr);
+  }
 }
 ParsePair parseCmdR(char* command);
 ParsePair parseBlock(char* command) {
@@ -458,10 +490,13 @@ ParsePair parseBlock(char* command) {
   }
   block->args = p.cmd;
   block->args->type = TYPE;
-  ++s;
+  s = trim(s+1);
   if (*s == '|') {
-    p = parse(command, ALLOWED_NAME_CHARS);
+    p = parseArg(++s);
+    block->args->nxt = p.cmd;
+    s = p.ptr;
   }
+  s = trim(s);
   if (*s != '}') {
     msg("Error parsing block. Missing end bracket.");
     freeCmd(block);
