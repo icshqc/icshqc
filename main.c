@@ -946,10 +946,6 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
   return NULL;
 }
 
-Cmd* debugCmd(Cmd* cmd) {
-  printCmd(cmd->args);
-}
-
 void eval(Cmd* cmd);
 
 void load() {
@@ -1295,7 +1291,6 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "$types", 0, 0, listTypes);
   addLoadedDef(loadedDefs, "$defs", 0, 0, listDefs);
   addLoadedDef(loadedDefs, "include", 0, 0, parseCIncludeFile);
-  addLoadedDef(loadedDefs, "debug", 0, 0, debugCmd);
 }
 
 void main()
