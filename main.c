@@ -246,6 +246,8 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "INT");
   } else if (t == FUNCTION) {
     strcat(b, "FUNCTION");
+  } else if (t == NIL) {
+    strcat(b, "NIL");
   } else if (t == PAIR) {
     strcat(b, "PAIR");
   } else if (t == VAR_NAME) {
@@ -387,30 +389,34 @@ Cmd* typeCmd(Cmd* cmd) {
   for (c = cmd; c != NULL; c = c->nxt) {
     typeCmd(c->args);
     if (c->type == UNKOWN) {
-      char* n = c->name;
-      LoadedDef* f = loadedFuncByName(n);
-      Var* v;
-      if (f != NULL) {
-        if (f->isMacro == true) {
-          c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
-        } else {
-          c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
-        }
-      } else if ((v = varByName(n)) != NULL) {
-        c->type = VAR;
-      } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
-        c->type = CHAR;
-      } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
-        c->type = STRING;
-      } else if (n[0] == ':') {
-        c->type = EDITOR;
-      } else if (isInteger(n)) {
-        c->type = INT;
-      } else if (isFloat(n)) {
-        c->type = FLOAT;
+      if (strlen(c->name) <= 0) {
+        c->type = NIL;
       } else {
-        // TODO: Check for int.
-        c->type = UNKOWN;
+        char* n = c->name;
+        LoadedDef* f = loadedFuncByName(n);
+        Var* v;
+        if (f != NULL) {
+          if (f->isMacro == true) {
+            c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
+          } else {
+            c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+          }
+        } else if ((v = varByName(n)) != NULL) {
+          c->type = VAR;
+        } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
+          c->type = CHAR;
+        } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
+          c->type = STRING;
+        } else if (n[0] == ':') {
+          c->type = EDITOR;
+        } else if (isInteger(n)) {
+          c->type = INT;
+        } else if (isFloat(n)) {
+          c->type = FLOAT;
+        } else {
+          // TODO: Check for int.
+          c->type = UNKOWN;
+        }
       }
     }
   }
