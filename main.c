@@ -280,10 +280,12 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "CHAR");
   } else if (t == ERROR) {
     strcat(b, "ERROR");
+  } else if (t == ARRAY) {
+    strcat(b, "ARRAY");
   } else if (t == POINTER) {
     strcat(b, "POINTER");
   } else {
-    strcat(b, "UNKOWN_TYPE");
+    strcat(b, "FIXME_UNKOWN_TYPE");
   }
 }
 
@@ -293,13 +295,7 @@ char* catCmd(char* b, Cmd* cmd) {
     catCmdType(b, cmd->type);
     strcat(b, " ");
     strcat(b,cmd->name);
-    Cmd* a;
-    for (a = cmd->args; a != NULL; a = a->nxt) {
-      catCmd(b, a);
-      if (a->nxt != NULL) {
-        strcat(b,", ");
-      }
-    }
+    catCmd(b, cmd->args);
     strcat(b,")");
     if (cmd->nxt != NULL) {
       strcat(b, ", ");
@@ -387,30 +383,33 @@ int isInteger(char* str) {
 Cmd* typeCmd(Cmd* cmd) {
   Cmd* c;
   for (c = cmd; c != NULL; c = c->nxt) {
-    char* n = c->name;
-    LoadedDef* f = loadedFuncByName(n);
-    Var* v;
-    if (f != NULL) {
-      if (f->isMacro == true) {
-        c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
+    typeCmd(c->args);
+    if (c->type == UNKOWN) {
+      char* n = c->name;
+      LoadedDef* f = loadedFuncByName(n);
+      Var* v;
+      if (f != NULL) {
+        if (f->isMacro == true) {
+          c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
+        } else {
+          c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+        }
+      } else if ((v = varByName(n)) != NULL) {
+        c->type = VAR;
+      } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
+        c->type = CHAR;
+      } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
+        c->type = STRING;
+      } else if (n[0] == ':') {
+        c->type = EDITOR;
+      } else if (isInteger(n)) {
+        c->type = INT;
+      } else if (isFloat(n)) {
+        c->type = FLOAT;
       } else {
-        c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+        // TODO: Check for int.
+        c->type = UNKOWN;
       }
-    } else if ((v = varByName(n)) != NULL) {
-      c->type = VAR;
-    } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
-      c->type = CHAR;
-    } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
-      c->type = STRING;
-    } else if (n[0] == ':') {
-      c->type = EDITOR;
-    } else if (isInteger(n)) {
-      c->type = INT;
-    } else if (isFloat(n)) {
-      c->type = FLOAT;
-    } else {
-      // TODO: Check for int.
-      c->type = UNKOWN;
     }
   }
   return cmd;
@@ -467,6 +466,7 @@ ParsePair parseBlock(char* command) {
 }
 ParsePair parseArray(char* command) {
   Cmd* ary = newCmd();
+  ary->type = ARRAY;
   Cmd* elem = newCmd();
   ary->args = elem;
   char *s = command;
@@ -477,12 +477,12 @@ ParsePair parseArray(char* command) {
     } else if (*s == ',') {
       elem->nxt = newCmd();
       elem = elem->nxt;
-    } else {
+    } else if(*s != ' ' || strlen(elem->name) > 0) {
       straddch(elem->name, *s);
     }
     ++s;
   }
-  return parsePair(ary, s);
+  return parsePair(ary, s+1);
 }
 ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
   Cmd* cmds = newCmd();
@@ -942,6 +942,10 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
   return NULL;
 }
 
+Cmd* debugCmd(Cmd* cmd) {
+  printCmd(cmd->args);
+}
+
 void eval(Cmd* cmd);
 
 void load() {
@@ -1287,6 +1291,7 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "$types", 0, 0, listTypes);
   addLoadedDef(loadedDefs, "$defs", 0, 0, listDefs);
   addLoadedDef(loadedDefs, "include", 0, 0, parseCIncludeFile);
+  addLoadedDef(loadedDefs, "debug", 0, 0, debugCmd);
 }
 
 void main()
