@@ -759,10 +759,44 @@ void escapeName(char* str) {
   strcat(s, "\n}");
 }*/
 
+char* catCmdExe(char* b, Cmd* cmd, int nested) {
+  if (cmd != NULL) {
+    if (cmd->args == NULL) {
+      strcat(b, cmd->name);
+    } else {
+      if (nested) strcat(b, "(");
+      strcat(b, cmd->name);
+      Cmd* a;
+      for (a = cmd->args; a != NULL; a = a->nxt) {
+        strcat(b, " ");
+        catCmdExe(a, 1);
+      }
+      if (nested) strcat(b, ")");
+    }
+  }
+  return b;
+}
+
 Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
-  //for (f = funcs; f != NULL; f = f->nxt) {
-  //  FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
-  //}
+  FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
+  Func* f;
+  for (f = funcs; f != NULL; f = f->nxt) {
+    fprintf(s, "%s :: {%s: ", f->name, f->ret);
+    if (f->args != NULL) {
+      fprintf(s, "|");
+      Arg* a;
+      for (a = f->args; a != NULL; a = a->nxt) {
+        fprintf(s, "%s %s", a->type, a->name);
+        if (a->nxt != NULL) {
+          fprintf(s, ", ");
+        }
+      }
+      fprintf(s, "|");
+    }
+    char cmdExe[256] = "";
+    catCmdExe(cmdExe, f->cmd, 0);
+    fprintf(s, "%s }\n", cmdExe);
+  }
   /*Func* f = NULL;
   char m[1024] = "";
   for (f = defs; f != NULL; f = f->nxt) {
@@ -1159,10 +1193,11 @@ Cmd* createType(Cmd* cmd) {
 Cmd* define(Cmd* cmd) {
   Func* f = newFunc();
   strcpy(f->name, cmd->args->name);
-  strcpy(f->ret, cmd->args->nxt->name);
-  Cmd* arg = cmd->args->nxt->nxt;
+  Cmd* block = cmd->args->nxt;
+  strcpy(f->ret, block->args->name);
+  Cmd* arg = block->args->nxt;
   Arg* a = NULL;
-  for(; arg != NULL && arg->nxt != NULL; arg = arg->nxt) {
+  for(; arg != NULL && arg->type == PAIR; arg = arg->nxt) {
     if (a == NULL) {
       f->args = newArg();
       a = f->args;
