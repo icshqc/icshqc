@@ -498,13 +498,13 @@ ParsePair parseBlock(char* command) {
   block->args = p.cmd;
   block->args->type = TYPE;
   s = trim(s+1);
-  Cmd* arg = block->args;
   if (*s == '|') {
     p = parseArg(++s);
-    arg->nxt = p.cmd;
-    arg = arg->nxt;
+    block->args->nxt = p.cmd;
     s = p.ptr;
   }
+  Cmd* arg;
+  for (arg = block->args; arg->nxt != NULL; arg = arg->nxt) {}
   p = parseCmdR(trim(s));
   arg->nxt = p.cmd;
   s = p.ptr;
@@ -769,7 +769,7 @@ char* catCmdExe(char* b, Cmd* cmd, int nested) {
       Cmd* a;
       for (a = cmd->args; a != NULL; a = a->nxt) {
         strcat(b, " ");
-        catCmdExe(a, 1);
+        catCmdExe(b, a, 1);
       }
       if (nested) strcat(b, ")");
     }
@@ -791,7 +791,7 @@ Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
           fprintf(s, ", ");
         }
       }
-      fprintf(s, "|");
+      fprintf(s, "| ");
     }
     char cmdExe[256] = "";
     catCmdExe(cmdExe, f->cmd, 0);
@@ -1197,7 +1197,7 @@ Cmd* define(Cmd* cmd) {
   strcpy(f->ret, block->args->name);
   Cmd* arg = block->args->nxt;
   Arg* a = NULL;
-  for(; arg != NULL && arg->type == PAIR; arg = arg->nxt) {
+  while(arg != NULL && arg->type == PAIR) {
     if (a == NULL) {
       f->args = newArg();
       a = f->args;
@@ -1207,6 +1207,7 @@ Cmd* define(Cmd* cmd) {
     }
     strcpy(a->type, arg->args->name);
     strcpy(a->name, arg->args->nxt->name);
+    arg = arg->nxt;
   }
   f->cmd = arg;
   Func* oldFirst = funcs;
