@@ -10,16 +10,9 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
-// TODO: Make parse block work.
-
-// FIXME: The functions should return Cmd, not Cmd*.
-
-// TODO: int x, x = 2 sont des macros car on ne veut pas la valeur de la variable x, mais son nom.
-
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
-// TODO: Assign values to variables. int, char and string
-// TODO: + :: {int: |int x, int y| add x y}
+// TODO: 4 + 4, where + ::: add {int: |int x, int y| add x y}
 
 // MODEL
 
