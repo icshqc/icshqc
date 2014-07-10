@@ -1,8 +1,3 @@
-Il n'y a pas de liste de fonctions. Juste une liste de variables. Une fonction
-est juste une variable de type comme un autre, mais de type fonction.
-
-TODO:
-
 Operator Priority list:
 = 10
 int 9
@@ -11,33 +6,13 @@ int 9
 - 5
 + 5
 
-printf "Hello world!"
-int x = #2 + 2 // The type #2 + 2 is infered by the type of the variable.
-
-Idealement, fuck off le #...bullshit...# Les fonctions C de bases serait simplement des fonctions C,
-parce que en QC, tu peux caller des fonctions C, c'est le but...
-
-(int x) = (2 + 4)
-
-cval x
-x = #1 + 2;#
-
-int x
-x
-$vars
-x := 2
-x := 4 + 3
-=> 7
-int x := 2
-int y := x + 3
-
 ---
 
 Rajouter une syntax pour que le contenu soit du C inchanger.
 
 Un lambda est un block. La seule forme est: Ce qui est pratique quand pas args.
-{|x y| return x + y}
-{printf "Hello world!"}
+{int: |x y| return x + y}
+{void: printf "Hello world!"}
 
 ---
 
