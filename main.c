@@ -1183,7 +1183,11 @@ Cmd* createType(Cmd* cmd) {
   return NULL;
 }
 
-Cmd* define(Cmd* cmd) {
+Cmd* runFunc(Cmd* cmd) {
+
+}
+
+Func* createFunc(Cmd* cmd) {
   Func* f = newFunc();
   strcpy(f->name, cmd->args->name);
   Cmd* block = cmd->args->nxt;
@@ -1206,6 +1210,17 @@ Cmd* define(Cmd* cmd) {
   Func* oldFirst = funcs;
   funcs = f;
   f->nxt = oldFirst;
+  return f;
+}
+Cmd* define(Cmd* cmd) {
+  Func* f = createFunc(cmd);
+  addLoadedDef(loadedDefs, f->name, 0, 0, runFunc); // FIXME: How about macro
+  return NULL;
+}
+Cmd* defineOp(Cmd* cmd) {
+  Func* f = createFunc(cmd);
+  f->isOperator = 1;
+  addLoadedDef(loadedDefs, f->name, 0, 1, runFunc);
   return NULL;
 }
 
@@ -1389,6 +1404,7 @@ void initLoadedDefs() {
   loadedDefs = createLoadedDef("save", 0, 0, save);
   addLoadedDef(loadedDefs, "=", 1, 1, assign); // Assigns a value to an existing variable.
   addLoadedDef(loadedDefs, "::", 0, 1, define); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, ":::", 0, 1, defineOp); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "type", 0, 0, createType);
   addLoadedDef(loadedDefs, "$vars", 0, 0, listVars);
   addLoadedDef(loadedDefs, "$types", 0, 0, listTypes);
