@@ -420,15 +420,7 @@ Cmd* typeCmd(Cmd* cmd) {
         LoadedDef* f = loadedFuncByName(n);
         Var* v;
         if (f != NULL) {
-          if (f->ptr != runFunc) {
-            c->type = CFUNCTION;
-          } else {
-            if (f->isMacro == true) {
-              c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
-            } else {
-              c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
-            }
-          }
+          c->type = f->type;
         } else if ((v = varByName(n)) != NULL) {
           c->type = VAR;
         } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
@@ -1151,7 +1143,7 @@ Cmd* createType(Cmd* cmd) {
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
-  addLoadedDef(loadedDefs, type->name, 1, 0, createVar);
+  addLoadedDef(loadedDefs, type->name, MACRO, createVar);
   return NULL;
 }
 
@@ -1182,13 +1174,13 @@ Func* createFunc(Cmd* cmd) {
 }
 Cmd* define(Cmd* cmd) {
   Func* f = createFunc(cmd);
-  addLoadedDef(loadedDefs, f->name, 0, 0, runFunc); // FIXME: How about macro
+  addLoadedDef(loadedDefs, f->name, FUNCTION, runFunc);
   return NULL;
 }
 Cmd* defineOp(Cmd* cmd) {
   Func* f = createFunc(cmd);
   f->isOperator = 1;
-  addLoadedDef(loadedDefs, f->name, 0, 1, runFunc);
+  addLoadedDef(loadedDefs, f->name, OPERATOR, runFunc);
   return NULL;
 }
 
@@ -1363,14 +1355,14 @@ static void finish(int sig)
 }
 
 void initLoadedDefs() {
-  loadedDefs = createLoadedDef("=", 1, 1, assign); // Assigns a value to an existing variable.
-  addLoadedDef(loadedDefs, "::", 1, 1, define); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, ":::", 1, 1, defineOp); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "type", 1, 0, createType);
-  addLoadedDef(loadedDefs, "$vars", 0, 0, listVars);
-  addLoadedDef(loadedDefs, "$types", 0, 0, listTypes);
-  addLoadedDef(loadedDefs, "$defs", 0, 0, listDefs);
-  addLoadedDef(loadedDefs, "include", 0, 0, parseCIncludeFile);
+  loadedDefs = createLoadedDef("=", MACRO_OP, assign); // Assigns a value to an existing variable.
+  addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, "type", MACRO, createType);
+  addLoadedDef(loadedDefs, "$vars", FUNCTION, listVars);
+  addLoadedDef(loadedDefs, "$types", FUNCTION, listTypes);
+  addLoadedDef(loadedDefs, "$defs", FUNCTION, listDefs);
+  addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFile);
 }
 
 void main()

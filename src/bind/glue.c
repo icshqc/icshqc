@@ -69,8 +69,8 @@ Cmd* retCmd(CmdType type, char* name) {
   return cmd;
 }
 
-LoadedDef* addLoadedDef(LoadedDef* p, char* name, int isMacro, int priority, Cmd* (*ptr)(Cmd* cmd)) {
-  LoadedDef* f = createLoadedDef(name, isMacro, priority, ptr);
+LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {
+  LoadedDef* f = createLoadedDef(name, type, ptr);
   lastLoadedDef(p)->nxt = f;
 }
 
@@ -84,11 +84,10 @@ LoadedDef* lastLoadedDef(LoadedDef* d) {
   }
 }
 
-LoadedDef* createLoadedDef(char* name, int isMacro, int isOp, Cmd* (*ptr)(Cmd* cmd)) {
+LoadedDef* createLoadedDef(char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {
   LoadedDef* d = malloc(sizeof(LoadedDef));
   strcpy(d->name, name);
-  d->isOperator = isOp;
-  d->isMacro = isMacro;
+  d->type = type;
   d->ptr = ptr;
   d->nxt = NULL;
   return d;

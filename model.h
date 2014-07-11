@@ -45,8 +45,7 @@ typedef struct Cmd Cmd;
 
 struct LoadedDef {
   char name[52];
-  int isOperator;
-  int isMacro;
+  CmdType type; // FUNCTION || OPERATOR || CFUNCTION || MACRO || MACRO_OP
   Cmd* (*ptr)(Cmd* cmd);
   struct LoadedDef* nxt;
 };

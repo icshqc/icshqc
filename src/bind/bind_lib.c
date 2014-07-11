@@ -1,10 +1,10 @@
 #include "bind_lib.h"
 
 void initCFunctions(LoadedDef* d) {
-  addLoadedDef(d, "add", 0, 0, bind_add);
-  addLoadedDef(d, "sus", 0, 0, bind_sus);
-  addLoadedDef(d, "mult", 0, 0, bind_mult);
-  addLoadedDef(d, "divide", 0, 0, bind_divide);
+  addLoadedDef(d, "add", CFUNCTION, bind_add);
+  addLoadedDef(d, "sus", CFUNCTION, bind_sus);
+  addLoadedDef(d, "mult", CFUNCTION, bind_mult);
+  addLoadedDef(d, "divide", CFUNCTION, bind_divide);
 }
 
 int add(int x, int y);
