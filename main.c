@@ -200,15 +200,23 @@ char* strdelch(char* str) {
 // TODO: debug(), fatal(), error(), warn(), log()
 
 int getX() {
+#ifdef CURSES_MODE
   int y, x;
   getyx(curscr, y, x);
   return x;
+#else
+  return 0;
+#endif
 }
 
 int getY() {
+#ifdef CURSES_MODE
   int y, x;
   getyx(curscr, y, x);
   return y;
+#else
+  return 0;
+#endif
 }
 
 static int silent = 0;
@@ -637,20 +645,53 @@ Cmd* parseCmd(char* command) {
   return parseCmdR(command).cmd;
 }
 
+void moveI(int y, int x) {
 #ifdef CURSES_MODE
+  move(y, x);
+#else
+#endif
+}
+
+void delchI() {
+#ifdef CURSES_MODE
+  delch();
+#else
+#endif
+}
+
+void addchI(char ch) {
+#ifdef CURSES_MODE
+  addch(ch);
+#else
+#endif
+}
+
+void refreshI() {
+#ifdef CURSES_MODE
+  refresh();
+#else
+#endif
+}
+
+int getchI() {
+#ifdef CURSES_MODE
+  return getch();
+#else
+#endif
+}
+
 Cmd* getInput() {  
   char input[256] = "";
   int y, x;
   int nested = 0;
   while (1) {
-    int ch = getch();
-    // FIXME: KEY_BACKSPACE and KEY_DC does not work.
-    if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
+    int ch = getchI();
+    if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
         strdelch(input);
-        getyx(curscr, y, x);
-        mvdelch(y, x-1);
-        refresh();
+        moveI(getY(), getX()-1);
+        delchI();
+        refreshI();
       }
     } else if (ch == '\n' || ch == '\r') {
       if (nested > 0) {
@@ -658,8 +699,8 @@ Cmd* getInput() {
         output("\n");
         int i;
         for (i = 0; i < nested; i++) {
-          addch(' ');
-          addch(' ');
+          addchI(' ');
+          addchI(' ');
         }
       } else {
         break;
@@ -670,8 +711,8 @@ Cmd* getInput() {
       } else if (ch == '}') {
         nested--;
       }
-      addch(ch);
-      refresh();
+      addchI(ch);
+      refreshI();
       straddch(input, ch);
     }
   }
@@ -681,11 +722,6 @@ Cmd* getInput() {
   }
   return parseCmd(input);
 }
-#else
-Cmd* getInput() {
-  return NULL;
-}
-#endif
 
 int isOperator(char* opName) {
   if (strcmp(opName, "::") == 0 ||
