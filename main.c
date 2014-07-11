@@ -6,13 +6,29 @@
 #include "model.h"
 #include "src/bind/glue.h"
 
-#define CURSES_MODE
+//#define CURSES_MODE
 #ifdef CURSES_MODE
 #include <ncurses.h>
 #else
 #include <SDL/SDL.h>
 static SDL_Surface* screen = NULL;
+
+void move(int y, int x) {
+}
+
+void delch() {
+}
+
+void addch(char ch) {
+}
+
+void refresh() {
+}
+
+int getch() {
+}
 #endif
+
 
 //#include "bind.h"
 #include "src/bind/bind.h"
@@ -645,53 +661,18 @@ Cmd* parseCmd(char* command) {
   return parseCmdR(command).cmd;
 }
 
-void moveI(int y, int x) {
-#ifdef CURSES_MODE
-  move(y, x);
-#else
-#endif
-}
-
-void delchI() {
-#ifdef CURSES_MODE
-  delch();
-#else
-#endif
-}
-
-void addchI(char ch) {
-#ifdef CURSES_MODE
-  addch(ch);
-#else
-#endif
-}
-
-void refreshI() {
-#ifdef CURSES_MODE
-  refresh();
-#else
-#endif
-}
-
-int getchI() {
-#ifdef CURSES_MODE
-  return getch();
-#else
-#endif
-}
-
 Cmd* getInput() {  
   char input[256] = "";
   int y, x;
   int nested = 0;
   while (1) {
-    int ch = getchI();
+    int ch = getch();
     if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
         strdelch(input);
-        moveI(getY(), getX()-1);
-        delchI();
-        refreshI();
+        move(getY(), getX()-1);
+        delch();
+        refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
       if (nested > 0) {
@@ -699,8 +680,8 @@ Cmd* getInput() {
         output("\n");
         int i;
         for (i = 0; i < nested; i++) {
-          addchI(' ');
-          addchI(' ');
+          addch(' ');
+          addch(' ');
         }
       } else {
         break;
@@ -711,8 +692,8 @@ Cmd* getInput() {
       } else if (ch == '}') {
         nested--;
       }
-      addchI(ch);
-      refreshI();
+      addch(ch);
+      refresh();
       straddch(input, ch);
     }
   }
