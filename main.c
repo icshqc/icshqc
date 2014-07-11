@@ -824,7 +824,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
 
   fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "  addLoadedDef(d, \"%s\", 0, 0, bind_%s);\n", f->name, f->name);
+    fprintf(s, "  addLoadedDef(d, \"%s\", CFUNCTION, bind_%s);\n", f->name, f->name);
   }
   fprintf(s, "}\n\n");
 
@@ -1332,8 +1332,7 @@ void loop()
       freeCmd(cmd);
     }
     getyx(curscr, y, x);
-    move(y+1, 0);
-    output(">> ");
+    output("\n>> ");
     refresh();
   }
 }
