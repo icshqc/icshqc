@@ -88,7 +88,7 @@ LoadedDef* createLoadedDef(char* name, int isMacro, int isOp, Cmd* (*ptr)(Cmd* c
   LoadedDef* d = malloc(sizeof(LoadedDef));
   strcpy(d->name, name);
   d->isOperator = isOp;
-  d->isMacro = isOp;
+  d->isMacro = isMacro;
   d->ptr = ptr;
   d->nxt = NULL;
   return d;

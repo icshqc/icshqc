@@ -1249,13 +1249,13 @@ Cmd* listDefs(Cmd* cmd) {
 Cmd* cmdVal(Cmd* cmd) {
   Cmd* ret = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
-    Cmd* args = NULL;
+    Cmd* nCmd = newCmd();
     Cmd* n = NULL;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
       if (n == NULL) {
-        args = cmdVal(arg); 
-        n = args;
+        nCmd->args = cmdVal(arg); 
+        n = nCmd->args;
       } else {
         n->nxt = cmdVal(arg);
         if (n->nxt != NULL) {
@@ -1263,9 +1263,7 @@ Cmd* cmdVal(Cmd* cmd) {
         }
       }
     }
-    Cmd* nCmd = newCmd();
     strcpy(nCmd->name, cmd->name);
-    nCmd->args = args;
     nCmd->type = cmd->type;
     // Do I copy the body???
     ret = loadedFuncByName(cmd->name)->ptr(nCmd);
@@ -1361,9 +1359,9 @@ static void finish(int sig)
 
 void initLoadedDefs() {
   loadedDefs = createLoadedDef("=", 1, 1, assign); // Assigns a value to an existing variable.
-  addLoadedDef(loadedDefs, "::", 0, 1, define); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, ":::", 0, 1, defineOp); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "type", 0, 0, createType);
+  addLoadedDef(loadedDefs, "::", 1, 1, define); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, ":::", 1, 1, defineOp); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, "type", 1, 0, createType);
   addLoadedDef(loadedDefs, "$vars", 0, 0, listVars);
   addLoadedDef(loadedDefs, "$types", 0, 0, listTypes);
   addLoadedDef(loadedDefs, "$defs", 0, 0, listDefs);

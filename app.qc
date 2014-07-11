@@ -1,2 +1,2 @@
-- ::: {int: |int x, int y| add x y }
+- ::: {int: |int x, int y| sus x y }
 + ::: {int: |int x, int y| add x y }
