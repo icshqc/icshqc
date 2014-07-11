@@ -1211,7 +1211,7 @@ Cmd* listDefs(Cmd* cmd) {
   for (d = loadedDefs; d != NULL; d = d->nxt) {
     char m[1024] = "";
     strcat(m, d->name);
-    strcat(m, "\n");
+    strcat(m, " ");
     output(m); // FIXME
   }
   return NULL;
