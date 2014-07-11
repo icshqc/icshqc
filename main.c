@@ -601,7 +601,7 @@ Cmd* getInput() {
           move(LINES-1,0);
           refresh();
         } else {
-          addch('\n');
+          output("\n");
         }
         int i;
         for (i = 0; i < nested; i++) {
