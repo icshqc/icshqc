@@ -1207,6 +1207,7 @@ Cmd* listVars(Cmd* cmd) {
 }
 Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
+  output("\n");
   for (d = loadedDefs; d != NULL; d = d->nxt) {
     char m[1024] = "";
     strcat(m, d->name);
@@ -1297,7 +1298,6 @@ void loop()
           return;
         } else if (strcmp(name, "h") == 0 ||
                    strcmp(name, "help") == 0) {
-          output("\n");
           listDefs(NULL);
         }
       } else if (cmd->type == UNKOWN) {
