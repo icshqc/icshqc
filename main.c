@@ -182,10 +182,19 @@ void refresh() {
 }
 
 int getch() {
+  int unicode;
   SDL_Event event;     
-  /* Poll for events */
-  while (SDL_PollEvent(&event)) {
+  while (1) {
+    SDL_WaitEvent(&event);
     switch (event.type) {
+    case SDL_KEYDOWN:
+      unicode = event.key.keysym.unicode;
+      if ((unicode & 0xFF80) == 0) {
+          return unicode & 0x7F;
+      }// else {
+      //  printf("An International Character.\n");
+      //}
+      break;
     case SDL_QUIT:
       finish(0);
       break;
@@ -1454,6 +1463,9 @@ void main()
   SDL_Init( SDL_INIT_EVERYTHING );
 
   screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
+
+  SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+  SDL_EnableUNICODE(1);
 #endif
 
   loop();
