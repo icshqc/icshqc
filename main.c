@@ -673,6 +673,18 @@ Cmd* getInput() {
   int y, x;
   int nested = 0;
   while (1) {
+#ifdef CURSES_MODE
+#else
+    SDL_Event event;     
+    /* Poll for events */
+    while( SDL_PollEvent( &event ) ){
+      switch( event.type ) {
+      case SDL_QUIT:
+        return NULL;
+        break;
+      }
+    }
+#endif
     int ch = getch();
     if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
@@ -1385,6 +1397,8 @@ void loop()
         eval(cmd);
       }
       freeCmd(cmd);
+    } else {
+      return;
     }
     output("\n>> ");
     refresh();
@@ -1442,9 +1456,7 @@ void main()
 #else
   SDL_Init( SDL_INIT_EVERYTHING );
 
-  screen = SDL_SetVideoMode( 640, 480, 32, SDL_SWSURFACE );
-
-  SDL_Delay( 2000 );
+  screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
 #endif
 
   loop();
