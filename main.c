@@ -320,6 +320,17 @@ void catVar(char* m, Var* v) {
   }
 }
 
+Func* funcByName(char* name) {
+  Func* f = funcs;
+  while (f != NULL) {
+    if (strcmp(f->name, name) == 0) {
+      return f;
+    }
+    f = f->nxt;
+  }
+  return NULL;
+}
+
 Var* varByName(char* name) {
   Var* t = vars;
   while (t != NULL) {
@@ -1184,7 +1195,9 @@ Cmd* createType(Cmd* cmd) {
 }
 
 Cmd* runFunc(Cmd* cmd) {
-
+  Func* f = funcByName(cmd->name);
+  LoadedDef* d = loadedFuncByName(f->cmd->name);
+  return (d != NULL) ? d->ptr(cmd) : NULL;
 }
 
 Func* createFunc(Cmd* cmd) {
