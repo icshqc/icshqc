@@ -1206,14 +1206,12 @@ Cmd* listVars(Cmd* cmd) {
 }
 Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
-  output("\n");
+  char m[1024] = "\n";
   for (d = loadedDefs; d != NULL; d = d->nxt) {
-    char m[1024] = "";
     strcat(m, d->name);
     strcat(m, " ");
-    output(m); // FIXME
   }
-  return NULL;
+  return outputStr(m);
 }
 
 // Reduces a Cmd down to a primitive type.
@@ -1297,7 +1295,7 @@ void loop()
           return;
         } else if (strcmp(name, "h") == 0 ||
                    strcmp(name, "help") == 0) {
-          listDefs(NULL);
+          output(listDefs(NULL)->name);
         } else if (strcmp(name, "s") == 0 ||
                    strcmp(name, "save") == 0) {
           save();
