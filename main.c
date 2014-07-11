@@ -6,9 +6,12 @@
 #include "model.h"
 #include "src/bind/glue.h"
 
-#define CURSES_MODE
+//#define CURSES_MODE
 #ifdef CURSES_MODE
 #include <ncurses.h>
+#else
+#include <SDL/SDL.h>
+static SDL_Surface* screen = NULL;
 #endif
 
 //#include "bind.h"
@@ -197,6 +200,7 @@ char* strdelch(char* str) {
 // TODO: debug(), fatal(), error(), warn(), log()
 
 static int silent = 0;
+#ifdef CURSES_MODE
 void output(const char* str) {
   if (silent) return;
 
@@ -219,6 +223,11 @@ void output(const char* str) {
   addstr(str);
   refresh();
 }
+#else
+void output(const char* str) {
+
+}
+#endif
 
 Cmd* outputStr(const char* str) {
   if (strlen(str) >= 52) return outputStr("Error, string too big.");
@@ -617,6 +626,7 @@ Cmd* parseCmd(char* command) {
   return parseCmdR(command).cmd;
 }
 
+#ifdef CURSES_MODE
 Cmd* getInput() {  
   char input[256] = "";
   int y, x;
@@ -660,6 +670,11 @@ Cmd* getInput() {
   }
   return parseCmd(input);
 }
+#else
+Cmd* getInput() {
+  return NULL;
+}
+#endif
 
 int isOperator(char* opName) {
   if (strcmp(opName, "::") == 0 ||
@@ -1343,7 +1358,11 @@ void loop()
 
 static void finish(int sig)
 {
+#ifdef CURSES_MODE
   endwin();
+#else
+  SDL_Quit();
+#endif
 
   freeLoadedDef(loadedDefs);
   loadedDefs = NULL;
@@ -1379,11 +1398,19 @@ void main()
   load();
   silent = 0;
 
+#ifdef CURSES_MODE
   initscr();
   keypad(stdscr, TRUE);
   nonl();         /* tell curses not to do NL->CR/NL on output */
   cbreak();       /* take input chars one at a time, no wait for \n */
   noecho();       /* dont echo the input char */
+#else
+  SDL_Init( SDL_INIT_EVERYTHING );
+
+  screen = SDL_SetVideoMode( 640, 480, 32, SDL_SWSURFACE );
+
+  SDL_Delay( 2000 );
+#endif
 
   loop();
 
