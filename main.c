@@ -12,8 +12,6 @@
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
-// TODO: 4 + 4, where + ::: add {int: |int x, int y| add x y}
-
 // MODEL
 
 static const int MSG_CONSOLE_SIZE = 10;
@@ -196,6 +194,21 @@ char* strdelch(char* str) {
 
 static int silent = false;
 void output(const char* str) {
+  const char* c = str;
+  int l, x;
+  getyx(curscr, l, x);
+  while (*c != '\0') {
+    if (*c == '\n') {
+      ++l;
+      if (l >= LINES) {
+        move(0,0);
+        deleteln();
+        move(LINES-1,0);
+        refresh();
+      }
+    }
+    ++c;
+  }
   if (!silent) {
     addstr(str);
     refresh();
@@ -594,15 +607,7 @@ Cmd* getInput() {
     } else if (ch == '\n' || ch == '\r') {
       if (nested > 0) {
         straddch(input, ' '); // Treat as whitespace maybe???
-        getyx(curscr, y, x);
-        if (y >= LINES - 1) {
-          move(0,0);
-          deleteln();
-          move(LINES-1,0);
-          refresh();
-        } else {
-          output("\n");
-        }
+        output("\n");
         int i;
         for (i = 0; i < nested; i++) {
           addch(' ');
@@ -629,44 +634,6 @@ Cmd* getInput() {
   return parseCmd(input);
 }
 
-/*Lambda* parseLambda(char* s) {
-  Lambda* l = malloc(sizeof(Lambda)); // newLambda...
-  if (l == NULL) {
-    abort();
-  }
-  l->args = NULL;
-  memset(l->body, '\0', (sizeof l->body));
-  char* c = trim(s);
-  if (*c != '\\' || strlen(c) < 3) {
-    msg("Unable to parse lambda");
-    return NULL;
-  }
-  c = trim(c+1);
-  char* i = c;
-  Arg* arg = NULL;
-  while (!(*c == '-' && *(c+1) == '>')) {
-    if (*(c+1) == '\0') {
-      msg("Unable to parse lambda. Missing value.");
-    } else if (*c == ' ') {
-      if (i == c) {
-        i++;
-      } else {
-        arg = appendNewArg(arg);
-        if (l->args == NULL) {
-          l->args = arg;
-        }
-        strncpy(arg->val, i, c - i);
-        i = c + 1;
-      }
-    } else if (*c < 'a' || *c > 'z') {
-      msg("Unable to parse lambda. Invalid arg name.");
-    }
-    c++;
-  }
-  strcpy(l->body, trim(c+2));
-  return l;
-}*/
-
 int isOperator(char* opName) {
   if (strcmp(opName, "::") == 0 ||
       strcmp(opName, "=") == 0) {
@@ -674,21 +641,6 @@ int isOperator(char* opName) {
   }
   return false;
 }
-
-/*ArgTree* sortCmd(Arg* arg) {
-  if (arg == NULL) return NULL;
-  ArgTree* t = newArgTree();
-  if (arg->nxt == NULL) {
-    t->arg = arg;
-  } else if (isOperator(arg->nxt->val)) {
-    t->arg = arg->nxt;
-    t->child = arg;
-    arg->nxt = arg->nxt->nxt;
-  } else {
-    t->arg = arg;
-  }
-  return t;
-}*/
 
 void escapeName(char* str) {
   char buf[128] = "";
@@ -1047,14 +999,6 @@ void load() {
   }
 }
 
-void runCFunction(Cmd* cmd) {
-  // TODO: Be able to run printf, only by including stdlib.h
-  // TODO: Run a function dynamically using assembler.
-  if (strcmp(cmd->name, "addstr")) {
-    addstr(cmd->args->name);
-  }
-}
-
 //void runCmd(char* retVal, Cmd* cmd);
 
 char* argVal(char* buf, Cmd* arg) {
@@ -1238,21 +1182,6 @@ Cmd* assign(Cmd* cmd) {
   return c;
 }
 
-/*void edit(Func* func) {
-  if (func != NULL) {
-    int y, x;
-    char m[256] = "";
-    char i[256] = "";
-    getyx(curscr, y, x);
-    move(y+1, 0);
-    addstr(catDef(m,func));
-    refresh();
-    move(y+2, 0);
-    getInput(i);
-    func->lambda = parseLambda(i);
-  }
-}*/
-
 Cmd* listTypes(Cmd* cmd) {
   Type* t;
   char m[1024] = "";
@@ -1355,7 +1284,7 @@ void loop()
 {
   int y, x;
   int continuer = true;
-  addstr(">> ");
+  output(">> ");
   while (continuer) {
     Cmd* cmd = getInput();
     if (cmd != NULL) {
@@ -1379,7 +1308,8 @@ void loop()
       freeCmd(cmd);
     }
     getyx(curscr, y, x);
-    mvaddstr(y+1, 0, ">> ");
+    move(y+1, 0);
+    output(">> ");
     refresh();
   }
 }
