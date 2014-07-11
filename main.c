@@ -143,25 +143,7 @@ void freeFunc(Func* f) {
 
 //#define CURSES_MODE
 
-static void finish(int sig)
-{
-#ifdef CURSES_MODE
-  endwin();
-#else
-  SDL_Quit();
-#endif
-
-  freeLoadedDef(loadedDefs);
-  loadedDefs = NULL;
-  freeType(types);
-  types = NULL;
-  freeVar(vars);
-  vars = NULL;
-  freeFunc(funcs);
-  funcs = NULL;
-
-  exit(0);
-}
+static void finish(int sig);
 
 #ifdef CURSES_MODE
 #include <ncurses.h>
@@ -169,6 +151,8 @@ static void finish(int sig)
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 static SDL_Surface* screen = NULL;
+static TTF_Font* font = NULL;
+static SDL_Rect position;
 
 void move(int y, int x) {
 }
@@ -177,6 +161,15 @@ void delch() {
 }
 
 void addch(char ch) {
+  SDL_Surface* texte;
+  SDL_Color blanc = {255, 255, 255};
+  char str[] = {ch, '\0'};
+  texte = TTF_RenderText_Blended(font, str, blanc);
+  SDL_BlitSurface(texte, NULL, screen, &position);
+  SDL_Flip(screen);
+  int w, h;
+  TTF_SizeText(font, str, &w, &h);
+  position.x = position.x + w;
 }
 
 void refresh() {
@@ -1443,6 +1436,28 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFile);
 }
 
+static void finish(int sig)
+{
+#ifdef CURSES_MODE
+  endwin();
+#else
+  SDL_Quit();
+  TTF_CloseFont(font);
+  TTF_Quit();
+#endif
+
+  freeLoadedDef(loadedDefs);
+  loadedDefs = NULL;
+  freeType(types);
+  types = NULL;
+  freeVar(vars);
+  vars = NULL;
+  freeFunc(funcs);
+  funcs = NULL;
+
+  exit(0);
+}
+
 void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
@@ -1463,6 +1478,14 @@ void main()
 #else
   SDL_Init( SDL_INIT_EVERYTHING );
   TTF_Init();
+  font = TTF_OpenFont("times.ttf", 22);
+
+  if (font == NULL) {
+    finish(-1);
+  }
+
+  position.x = 0;
+  position.y = 0;
 
   screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
 
