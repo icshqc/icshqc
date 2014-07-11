@@ -167,6 +167,7 @@ static void finish(int sig)
 #include <ncurses.h>
 #else
 #include <SDL/SDL.h>
+#include <SDL/SDL_ttf.h>
 static SDL_Surface* screen = NULL;
 
 void move(int y, int x) {
@@ -1461,6 +1462,7 @@ void main()
   noecho();       /* dont echo the input char */
 #else
   SDL_Init( SDL_INIT_EVERYTHING );
+  TTF_Init();
 
   screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
 
