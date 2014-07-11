@@ -721,11 +721,11 @@ char* catCmdExe(char* b, Cmd* cmd, int nested) {
   return b;
 }
 
-Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
+void save() { // .qc extension. Quick C, Quebec!!!
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   Func* f;
   for (f = funcs; f != NULL; f = f->nxt) {
-    fprintf(s, "%s :: {%s: ", f->name, f->ret);
+    fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", f->ret);
     if (f->args != NULL) {
       fprintf(s, "|");
       Arg* a;
@@ -748,7 +748,6 @@ Cmd* save(Cmd* cmd) { // .qc extension. Quick C, Quebec!!!
     fprintf(s, "\n%s", catFunc(m, f));
   }
   fclose(s);*/
-  return NULL;
 }
 
 void bindCFunctionsHeader(char* fname, CFunc* fs) {
@@ -1299,6 +1298,9 @@ void loop()
         } else if (strcmp(name, "h") == 0 ||
                    strcmp(name, "help") == 0) {
           listDefs(NULL);
+        } else if (strcmp(name, "s") == 0 ||
+                   strcmp(name, "save") == 0) {
+          save();
         }
       } else if (cmd->type == UNKOWN) {
         output("\nError. Unkown function.");
@@ -1331,8 +1333,7 @@ static void finish(int sig)
 }
 
 void initLoadedDefs() {
-  loadedDefs = createLoadedDef("save", 0, 0, save);
-  addLoadedDef(loadedDefs, "=", 1, 1, assign); // Assigns a value to an existing variable.
+  loadedDefs = createLoadedDef("=", 1, 1, assign); // Assigns a value to an existing variable.
   addLoadedDef(loadedDefs, "::", 0, 1, define); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, ":::", 0, 1, defineOp); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "type", 0, 0, createType);
