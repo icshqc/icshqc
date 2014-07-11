@@ -1308,7 +1308,6 @@ void eval(Cmd* cmd) {
 
 void loop()
 {
-  int y, x;
   int continuer = 1;
   output(">> ");
   while (continuer) {
@@ -1337,7 +1336,6 @@ void loop()
       }
       freeCmd(cmd);
     }
-    getyx(curscr, y, x);
     output("\n>> ");
     refresh();
   }
