@@ -193,21 +193,6 @@ char* strdelch(char* str) {
 // NCURSES HELPER
 
 // TODO: debug(), fatal(), error(), warn(), log()
-static int indent = 0;
-static int msgLine = 0;
-void msg(const char* str) {
-  int y, x, i;
-  int line = LINES - MSG_CONSOLE_SIZE + msgLine;
-  msgLine = (msgLine + 1) % MSG_CONSOLE_SIZE;
-  for (i=indent; i<COLS; i++) {
-    mvdelch(line,i);
-  }
-  getyx(curscr, y, x);
-  move(line, indent);
-  addstr(str);
-  move(y, x);
-  refresh();
-}
 
 static int silent = false;
 void output(const char* str) {
@@ -301,11 +286,6 @@ char* catCmd(char* b, Cmd* cmd) {
     }
   }
   return b;
-}
-void printCmd(Cmd* cmd) {
-  char b[1024] = "";
-  catCmd(b, cmd);
-  msg(b);
 }
 
 void catVar(char* m, Var* v) {
@@ -464,7 +444,7 @@ ParsePair parseArg(char* command) {
   cmd->type = PAIR;
   ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS);
   if (*(p.ptr) != ' ') {
-    msg("Error parsing block. Missing arg type.");
+    //msg("Error parsing block. Missing arg type.");
     freeCmd(cmd);
     return parsePair(NULL, p.ptr);
   }
@@ -482,7 +462,7 @@ ParsePair parseArg(char* command) {
       return parsePair(cmd, p.ptr+1);
     }
   } else {
-    msg("Error parsing block. Missing arg name.");
+    //msg("Error parsing block. Missing arg name.");
     freeCmd(cmd);
     return parsePair(NULL, p.ptr);
   }
@@ -495,7 +475,7 @@ ParsePair parseBlock(char* command) {
   ParsePair p = parse(command, ALLOWED_NAME_CHARS);
   s = p.ptr;
   if (*s != ':') {
-    msg("Error parsing block. Missing return type.");
+    //msg("Error parsing block. Missing return type.");
     freeCmd(block);
     return parsePair(NULL, s);
   }
@@ -513,7 +493,7 @@ ParsePair parseBlock(char* command) {
   arg->nxt = p.cmd;
   s = p.ptr;
   if (*s != '}') {
-    msg("Error parsing block. Missing end bracket.");
+    //msg("Error parsing block. Missing end bracket.");
     freeCmd(block);
     return parsePair(NULL, s);
   }
@@ -635,7 +615,7 @@ Cmd* getInput() {
     }
   }
   if (nested != 0) {
-    msg("Invalid block syntax.");
+    //msg("Invalid block syntax.");
     return NULL;
   }
   return parseCmd(input);
@@ -1359,7 +1339,6 @@ void eval(Cmd* cmd) {
     output(ret->name);
     freeCmd(ret);
   }
-  printCmd(cmd); // DEBUG
  
   eval(cmd->nxt);
 }
