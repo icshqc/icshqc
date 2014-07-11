@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <ncurses.h>
 #include <signal.h>
 #include <string.h>
 

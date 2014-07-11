@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <ncurses.h>
 #include <string.h>
 
 #include "glue.h"

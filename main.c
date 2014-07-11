@@ -1,11 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <ncurses.h>
 #include <signal.h>
 #include <string.h>
 
 #include "model.h"
 #include "src/bind/glue.h"
+
+#define CURSES_MODE
+#ifdef CURSES_MODE
+#include <ncurses.h>
+#endif
 
 //#include "bind.h"
 #include "src/bind/bind.h"
@@ -58,7 +62,7 @@ Func* newFunc() {
   memset(f->ret, '\0', sizeof(f->ret));
   f->cmd = NULL;
   f->args = NULL;
-  f->isOperator = false;
+  f->isOperator = 0;
   f->nxt = NULL;
   return f;
 }
@@ -192,7 +196,7 @@ char* strdelch(char* str) {
 
 // TODO: debug(), fatal(), error(), warn(), log()
 
-static int silent = false;
+static int silent = 0;
 void output(const char* str) {
   if (silent) return;
 
@@ -379,27 +383,27 @@ LoadedDef* loadedFuncByName(char* name) {
 
 int isFloat(char* str) {
   char* c;
-  int hasDecimal = false;
+  int hasDecimal = 0;
   for (c = str; *c != '\0'; ++c) {
     if (*c == '.' || *c == ',') {
       if (hasDecimal) {
-        return false;
+        return 0;
       }
-      hasDecimal = true;
+      hasDecimal = 1;
     } else if (*c < '0' || *c > '9') {
-      return false;
+      return 0;
     }
   }
-  return hasDecimal ? true : false;
+  return hasDecimal ? 1 : 0;
 }
 int isInteger(char* str) {
   char* c;
   for (c = str; *c != '\0'; ++c) {
     if (*c < '0' || *c > '9') {
-      return false;
+      return 0;
     }
   }
-  return true;
+  return 1;
 }
 
 Cmd* runFunc(Cmd* cmd) {
@@ -617,7 +621,7 @@ Cmd* getInput() {
   char input[256] = "";
   int y, x;
   int nested = 0;
-  while (true) {
+  while (1) {
     int ch = getch();
     // FIXME: KEY_BACKSPACE and KEY_DC does not work.
     if (ch == KEY_BACKSPACE || ch == KEY_DC || ch == 8 || ch == 127) {
@@ -660,9 +664,9 @@ Cmd* getInput() {
 int isOperator(char* opName) {
   if (strcmp(opName, "::") == 0 ||
       strcmp(opName, "=") == 0) {
-    return true; 
+    return 1; 
   }
-  return false;
+  return 0;
 }
 
 void escapeName(char* str) {
@@ -785,7 +789,6 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   fprintf(s, "#define BIND_H\n\n");
   fprintf(s, "#include <stdlib.h>\n"); // FIXME: Use include given
   fprintf(s, "#include <stdio.h>\n");
-  fprintf(s, "#include <ncurses.h>\n");
   fprintf(s, "#include <signal.h>\n");
   fprintf(s, "#include <string.h>\n\n");
   fprintf(s, "#include \"../../model.h\"\n");
@@ -921,15 +924,15 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
     return errorStr("Invalid include file.");
   }
   char input[512] = "";
-  int inMultiComment = false;
+  int inMultiComment = 0;
   int nested = 0;
   int nestedP = 0;
-  int discardToEOL = false;
-  int discardToSemiColon = false;
+  int discardToEOL = 0;
+  int discardToSemiColon = 0;
   while ((c = getc(s)) != EOF) {
     if (inMultiComment) {
       if (p == '*' && c == '/') {
-        inMultiComment = false;
+        inMultiComment = 0;
       }
     } else if (c == '{') {
       ++nested;
@@ -951,7 +954,7 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
           }
           input[0] = '\0';
         }
-        discardToEOL = false;
+        discardToEOL = 0;
       }
     } else if ((c == ' ' || c == '\t') && strlen(input) <= 0) {
       // Discard trailing whitespaces
@@ -959,25 +962,25 @@ Cmd* parseCIncludeFile(Cmd* cmd) {
       // Discard double whitespaces
     } else if (discardToSemiColon) {
       if (c == ';') {
-        discardToSemiColon = false;
+        discardToSemiColon = 0;
       }
     } else if (discardToEOL) {
       // Discard comments
     } else if (c == '#') {
       // Discard preprocessor
-      discardToEOL = true;
+      discardToEOL = 1;
     } else if (p == '/' && c == '/') {
-      discardToEOL = true;
+      discardToEOL = 1;
       strdelch(input);
     } else if (p == '/' && c == '*') {
-      inMultiComment = true;
+      inMultiComment = 1;
       strdelch(input);
     } else if (strncmp(input, "__", 2) == 0) {
-      discardToEOL = true;
+      discardToEOL = 1;
       input[0] = '\0';
     //} else if (strncmp(input, "typedef", 7) == 0) { // case: __extension typedef...
     } else if (strstr(input, "typedef") != NULL || strstr(input, "struct") != NULL) {
-      discardToSemiColon = true;
+      discardToSemiColon = 1;
       input[0] = '\0';
     } else {
       if (c == '(') {
@@ -1306,7 +1309,7 @@ void eval(Cmd* cmd) {
 void loop()
 {
   int y, x;
-  int continuer = true;
+  int continuer = 1;
   output(">> ");
   while (continuer) {
     Cmd* cmd = getInput();
@@ -1374,9 +1377,9 @@ void main()
   initLoadedDefs();
   initCFunctions(loadedDefs);
 
-  silent = true;
+  silent = 1;
   load();
-  silent = false;
+  silent = 0;
 
   initscr();
   keypad(stdscr, TRUE);
