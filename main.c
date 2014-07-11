@@ -27,7 +27,40 @@ void refresh() {
 
 int getch() {
 }
+
+void deleteln() {
+}
+
+void addstr(const char* str) {
+}
 #endif
+
+int getLines() {
+#ifdef CURSES_MODE
+  return LINES;
+#else
+#endif
+}
+
+int getX() {
+#ifdef CURSES_MODE
+  int y, x;
+  getyx(curscr, y, x);
+  return x;
+#else
+  return 0;
+#endif
+}
+
+int getY() {
+#ifdef CURSES_MODE
+  int y, x;
+  getyx(curscr, y, x);
+  return y;
+#else
+  return 0;
+#endif
+}
 
 
 //#include "bind.h"
@@ -215,28 +248,7 @@ char* strdelch(char* str) {
 
 // TODO: debug(), fatal(), error(), warn(), log()
 
-int getX() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return x;
-#else
-  return 0;
-#endif
-}
-
-int getY() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return y;
-#else
-  return 0;
-#endif
-}
-
 static int silent = 0;
-#ifdef CURSES_MODE
 void output(const char* str) {
   if (silent) return;
 
@@ -246,10 +258,10 @@ void output(const char* str) {
   while (*c != '\0') {
     if (*c == '\n') {
       ++l;
-      if (l >= LINES) {
+      if (l >= getLines()) {
         move(0,0);
         deleteln();
-        move(LINES-(++n),0);
+        move(getLines()-(++n),0);
         refresh();
       }
     }
@@ -258,11 +270,6 @@ void output(const char* str) {
   addstr(str);
   refresh();
 }
-#else
-void output(const char* str) {
-
-}
-#endif
 
 Cmd* outputStr(const char* str) {
   if (strlen(str) >= 52) return outputStr("Error, string too big.");
