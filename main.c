@@ -9,6 +9,8 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
+//#define CURSES_MODE
+
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
 // MODEL
@@ -141,8 +143,6 @@ void freeFunc(Func* f) {
   }
 }
 
-//#define CURSES_MODE
-
 static void finish(int sig);
 
 #ifdef CURSES_MODE
@@ -155,9 +155,6 @@ static TTF_Font* font = NULL;
 static SDL_Rect position;
 
 void move(int y, int x) {
-}
-
-void delch() {
 }
 
 void addch(char ch) {
@@ -239,6 +236,23 @@ int getY() {
   return y;
 #else
   return 0;
+#endif
+}
+
+void dellastch(char ch) {
+#ifdef CURSES_MODE
+  move(getY(), getX()-1);
+  delch();
+#else
+  int w, h;
+  char str[] = {ch, '\0'};
+  TTF_SizeText(font, str, &w, &h);
+  position.x = position.x - w;
+
+  SDL_Surface *s;
+  s = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+  SDL_FillRect(s, NULL, SDL_MapRGB(s->format, 0, 0, 0));
+  SDL_BlitSurface(s, NULL, screen, &position);
 #endif
 }
 
@@ -720,9 +734,8 @@ Cmd* getInput() {
     int ch = getch();
     if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
+        dellastch(input[strlen(input)-1]);
         strdelch(input);
-        move(getY(), getX()-1);
-        delch();
         refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
