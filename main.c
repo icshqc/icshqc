@@ -161,15 +161,23 @@ void delch() {
 }
 
 void addch(char ch) {
-  SDL_Surface* texte;
-  SDL_Color blanc = {255, 255, 255};
-  char str[] = {ch, '\0'};
-  texte = TTF_RenderText_Blended(font, str, blanc);
-  SDL_BlitSurface(texte, NULL, screen, &position);
-  SDL_Flip(screen);
   int w, h;
-  TTF_SizeText(font, str, &w, &h);
-  position.x = position.x + w;
+  if (ch == '\n' || ch == '\r') {
+    char str[] = {'w', '\0'};
+    TTF_SizeText(font, str, &w, &h);
+    position.y = position.y + h;
+    position.x = 0;
+  } else {
+    SDL_Surface* texte;
+    SDL_Color blanc = {255, 255, 255};
+    char str[] = {ch, '\0'};
+    texte = TTF_RenderText_Blended(font, str, blanc);
+    SDL_BlitSurface(texte, NULL, screen, &position);
+    SDL_Flip(screen);
+    int w, h;
+    TTF_SizeText(font, str, &w, &h);
+    position.x = position.x + w;
+  }
 }
 
 void refresh() {
@@ -200,6 +208,10 @@ void deleteln() {
 }
 
 void addstr(const char* str) {
+  while (*str != '\0') {
+    addch(*str);
+    ++str;
+  }
 }
 #endif
 
