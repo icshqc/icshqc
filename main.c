@@ -216,6 +216,7 @@ void output(const char* str) {
 }
 
 Cmd* outputStr(const char* str) {
+  if (strlen(str) >= 52) return outputStr("Error, string too big.");
   Cmd* cmd = newCmd();
   cmd->type = STRING;
   strcpy(cmd->name, str);
@@ -279,6 +280,24 @@ char* catCmdType(char* b, CmdType t) {
   } else {
     strcat(b, "FIXME_UNKOWN_TYPE");
   }
+}
+
+char* catPrintCmd(char* b, Cmd* cmd) {
+  if (cmd == NULL) return b;
+  Cmd* n;
+  if (cmd->type == ARRAY) {
+    strcat(b, "[");
+    for (n = cmd->args; n != NULL; n = n->nxt) {
+      catPrintCmd(b, n);
+      if (n->nxt != NULL) {
+        strcat(b, " ");
+      }
+    }
+    strcat(b, "]");
+  } else {
+    strcat(b, cmd->name);
+  }
+  return b;
 }
 
 char* catCmd(char* b, Cmd* cmd) {
@@ -1206,12 +1225,21 @@ Cmd* listVars(Cmd* cmd) {
 }
 Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
-  char m[1024] = "\n";
+  Cmd* arr = newCmd();
+  arr->type = ARRAY;
+  Cmd* n = NULL;
   for (d = loadedDefs; d != NULL; d = d->nxt) {
-    strcat(m, d->name);
-    strcat(m, " ");
+    if (n == NULL) {
+      arr->args = newCmd();
+      n = arr->args;
+    } else {
+      n->nxt = newCmd();
+      n = n->nxt;
+    }
+    strcpy(n->name, d->name);
+    n->type = STRING;
   }
-  return outputStr(m);
+  return arr;
 }
 
 // Reduces a Cmd down to a primitive type.
@@ -1271,7 +1299,8 @@ void eval(Cmd* cmd) {
     output(ret->name);
   } else {
     output("\n=> ");
-    output(ret->name);
+    char m[1024] = "";
+    output(catPrintCmd(m, ret));
     freeCmd(ret);
   }
  
