@@ -594,7 +594,15 @@ Cmd* getInput() {
     } else if (ch == '\n' || ch == '\r') {
       if (nested > 0) {
         straddch(input, ' '); // Treat as whitespace maybe???
-        addch('\n');
+        getyx(curscr, y, x);
+        if (y >= LINES - 1) {
+          move(0,0);
+          deleteln();
+          move(LINES-1,0);
+          refresh();
+        } else {
+          addch('\n');
+        }
         int i;
         for (i = 0; i < nested; i++) {
           addch(' ');
