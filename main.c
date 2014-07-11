@@ -173,7 +173,6 @@ void addch(char ch) {
     char str[] = {ch, '\0'};
     texte = TTF_RenderText_Blended(font, str, blanc);
     SDL_BlitSurface(texte, NULL, screen, &position);
-    SDL_Flip(screen);
     int w, h;
     TTF_SizeText(font, str, &w, &h);
     position.x = position.x + w;
@@ -181,6 +180,7 @@ void addch(char ch) {
 }
 
 void refresh() {
+  SDL_Flip(screen);
 }
 
 int getch() {
