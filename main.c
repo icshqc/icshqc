@@ -194,8 +194,11 @@ char* strdelch(char* str) {
 
 static int silent = false;
 void output(const char* str) {
+  if (silent) return;
+
   const char* c = str;
   int l, x;
+  int n = 0;
   getyx(curscr, l, x);
   while (*c != '\0') {
     if (*c == '\n') {
@@ -203,16 +206,14 @@ void output(const char* str) {
       if (l >= LINES) {
         move(0,0);
         deleteln();
-        move(LINES-1,0);
+        move(LINES-(++n),0);
         refresh();
       }
     }
     ++c;
   }
-  if (!silent) {
-    addstr(str);
-    refresh();
-  }
+  addstr(str);
+  refresh();
 }
 
 Cmd* outputStr(const char* str) {
@@ -1319,7 +1320,9 @@ void loop()
           return;
         } else if (strcmp(name, "h") == 0 ||
                    strcmp(name, "help") == 0) {
-          output(listDefs(NULL)->name);
+          char m[1024] = "";
+          output("\n");
+          output(catPrintCmd(m, listDefs(NULL)));
         } else if (strcmp(name, "s") == 0 ||
                    strcmp(name, "save") == 0) {
           save();
