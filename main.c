@@ -6,63 +6,6 @@
 #include "model.h"
 #include "src/bind/glue.h"
 
-//#define CURSES_MODE
-#ifdef CURSES_MODE
-#include <ncurses.h>
-#else
-#include <SDL/SDL.h>
-static SDL_Surface* screen = NULL;
-
-void move(int y, int x) {
-}
-
-void delch() {
-}
-
-void addch(char ch) {
-}
-
-void refresh() {
-}
-
-int getch() {
-}
-
-void deleteln() {
-}
-
-void addstr(const char* str) {
-}
-#endif
-
-int getLines() {
-#ifdef CURSES_MODE
-  return LINES;
-#else
-#endif
-}
-
-int getX() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return x;
-#else
-  return 0;
-#endif
-}
-
-int getY() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return y;
-#else
-  return 0;
-#endif
-}
-
-
 //#include "bind.h"
 #include "src/bind/bind.h"
 
@@ -196,6 +139,92 @@ void freeFunc(Func* f) {
     freeFunc(f->nxt);
     free(f);
   }
+}
+
+//#define CURSES_MODE
+
+static void finish(int sig)
+{
+#ifdef CURSES_MODE
+  endwin();
+#else
+  SDL_Quit();
+#endif
+
+  freeLoadedDef(loadedDefs);
+  loadedDefs = NULL;
+  freeType(types);
+  types = NULL;
+  freeVar(vars);
+  vars = NULL;
+  freeFunc(funcs);
+  funcs = NULL;
+
+  exit(0);
+}
+
+#ifdef CURSES_MODE
+#include <ncurses.h>
+#else
+#include <SDL/SDL.h>
+static SDL_Surface* screen = NULL;
+
+void move(int y, int x) {
+}
+
+void delch() {
+}
+
+void addch(char ch) {
+}
+
+void refresh() {
+}
+
+int getch() {
+  SDL_Event event;     
+  /* Poll for events */
+  while (SDL_PollEvent(&event)) {
+    switch (event.type) {
+    case SDL_QUIT:
+      finish(0);
+      break;
+    }
+  }
+}
+
+void deleteln() {
+}
+
+void addstr(const char* str) {
+}
+#endif
+
+int getLines() {
+#ifdef CURSES_MODE
+  return LINES;
+#else
+#endif
+}
+
+int getX() {
+#ifdef CURSES_MODE
+  int y, x;
+  getyx(curscr, y, x);
+  return x;
+#else
+  return 0;
+#endif
+}
+
+int getY() {
+#ifdef CURSES_MODE
+  int y, x;
+  getyx(curscr, y, x);
+  return y;
+#else
+  return 0;
+#endif
 }
 
 char* strVal(char* val, Cmd* cmd) {
@@ -673,18 +702,6 @@ Cmd* getInput() {
   int y, x;
   int nested = 0;
   while (1) {
-#ifdef CURSES_MODE
-#else
-    SDL_Event event;     
-    /* Poll for events */
-    while( SDL_PollEvent( &event ) ){
-      switch( event.type ) {
-      case SDL_QUIT:
-        return NULL;
-        break;
-      }
-    }
-#endif
     int ch = getch();
     if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
@@ -1403,26 +1420,6 @@ void loop()
     output("\n>> ");
     refresh();
   }
-}
-
-static void finish(int sig)
-{
-#ifdef CURSES_MODE
-  endwin();
-#else
-  SDL_Quit();
-#endif
-
-  freeLoadedDef(loadedDefs);
-  loadedDefs = NULL;
-  freeType(types);
-  types = NULL;
-  freeVar(vars);
-  vars = NULL;
-  freeFunc(funcs);
-  funcs = NULL;
-
-  exit(0);
 }
 
 void initLoadedDefs() {
