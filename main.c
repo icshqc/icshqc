@@ -401,6 +401,13 @@ int isInteger(char* str) {
   return true;
 }
 
+Cmd* runFunc(Cmd* cmd) {
+  // TODO, replace all of f->args in f->cmd by cmd->args
+  Func* f = funcByName(cmd->name);
+  LoadedDef* d = loadedFuncByName(f->cmd->name);
+  return (d != NULL) ? d->ptr(cmd) : NULL;
+}
+
 Cmd* typeCmd(Cmd* cmd) {
   Cmd* c;
   for (c = cmd; c != NULL; c = c->nxt) {
@@ -413,10 +420,14 @@ Cmd* typeCmd(Cmd* cmd) {
         LoadedDef* f = loadedFuncByName(n);
         Var* v;
         if (f != NULL) {
-          if (f->isMacro == true) {
-            c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
+          if (f->ptr != runFunc) {
+            c->type = CFUNCTION;
           } else {
-            c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+            if (f->isMacro == true) {
+              c->type = (f->isOperator == true) ? MACRO_OP : MACRO;
+            } else {
+              c->type = (f->isOperator == true) ? OPERATOR : FUNCTION;
+            }
           }
         } else if ((v = varByName(n)) != NULL) {
           c->type = VAR;
@@ -599,7 +610,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
     cmds->nxt = NULL;
-  } else if (cmds->type == FUNCTION || strlen(cmds->name) > 0) {
+  } else if (cmds->type == FUNCTION || cmds->type == MACRO || cmds->type == CFUNCTION || strlen(cmds->name) > 0) {
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
   }
@@ -1144,12 +1155,6 @@ Cmd* createType(Cmd* cmd) {
   return NULL;
 }
 
-Cmd* runFunc(Cmd* cmd) {
-  Func* f = funcByName(cmd->name);
-  LoadedDef* d = loadedFuncByName(f->cmd->name);
-  return (d != NULL) ? d->ptr(cmd) : NULL;
-}
-
 Func* createFunc(Cmd* cmd) {
   Func* f = newFunc();
   strcpy(f->name, cmd->args->name);
@@ -1248,7 +1253,7 @@ Cmd* listDefs(Cmd* cmd) {
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
 Cmd* cmdVal(Cmd* cmd) {
   Cmd* ret = NULL;
-  if (cmd->type == FUNCTION || cmd->type == OPERATOR) {
+  if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
     Cmd* nCmd = newCmd();
     Cmd* n = NULL;
     Cmd* arg;
