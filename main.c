@@ -6,7 +6,7 @@
 #include "model.h"
 #include "src/bind/glue.h"
 
-//#define CURSES_MODE
+#define CURSES_MODE
 #ifdef CURSES_MODE
 #include <ncurses.h>
 #else
@@ -199,15 +199,26 @@ char* strdelch(char* str) {
 
 // TODO: debug(), fatal(), error(), warn(), log()
 
+int getX() {
+  int y, x;
+  getyx(curscr, y, x);
+  return x;
+}
+
+int getY() {
+  int y, x;
+  getyx(curscr, y, x);
+  return y;
+}
+
 static int silent = 0;
 #ifdef CURSES_MODE
 void output(const char* str) {
   if (silent) return;
 
   const char* c = str;
-  int l, x;
+  int l = getY();
   int n = 0;
-  getyx(curscr, l, x);
   while (*c != '\0') {
     if (*c == '\n') {
       ++l;
