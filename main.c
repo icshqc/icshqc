@@ -10,7 +10,7 @@
 #include "src/bind/bind.h"
 
 //#define CURSES_MODE
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
