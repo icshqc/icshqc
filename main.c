@@ -10,6 +10,7 @@
 #include "src/bind/bind.h"
 
 //#define CURSES_MODE
+#define DEBUG_MODE
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 
@@ -1021,14 +1022,65 @@ CFunc* parseCFunction(char* s0) {
   return f;
 }
 
-char* getCLine(char* buf, FILE* s) {
-  char c, p;
-  p = EOF;
-  while ((c = getc(s)) != EOF && ((c != '\n' || c != '\r') && p != '\\')) {
-    *buf = c;
+// In order to know if the next char is part of the line or not,
+// it has to check the next char. This char is stored in overflow.
+char* getCLine(char* buf, FILE* s, char* overflow) {
+  *buf = '\0';
+  char* begin = buf;
+  if (*overflow != '\0') {
+    *buf = *overflow;
+    ++buf;
+  }
+  char* start = buf;
+
+  char c;
+  char p = EOF;
+  int inMultiComment = 0;
+  int nested = 0;
+  int nestedP = 0;
+  int discardToEOL = 0;
+  while ((c = getc(s)) != EOF) {
+    if (inMultiComment) {
+      if (p == '*' && c == '/') {
+        inMultiComment = 0;
+      }
+    } else if (c == '{') {
+      ++nested;
+    } else if (nested > 0) {
+      if (c == '}') {
+        --nested;
+      }
+    } else if (c == '\r' || c == '\n') {
+      if (p != '\\' && nestedP == 0) {
+        if (buf != begin) {
+          return begin;
+        }
+        discardToEOL = 0;
+      }
+    } else if ((c == ' ' || c == '\t') && buf == begin) {
+      // Discard trailing whitespaces
+    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
+      // Discard double whitespaces
+    } else if (discardToEOL) {
+      // Discard comments
+    } else if (p == '/' && c == '/') {
+      discardToEOL = 1;
+      strdelch(buf);
+    } else if (p == '/' && c == '*') {
+      inMultiComment = 1;
+      strdelch(buf);
+    } else {
+      if (c == '(') {
+        ++nestedP;
+      } else if (c == ')') {
+        --nestedP;
+      }
+      straddch(buf, (c == '\t') ? ' ' : c);
+      ++buf;
+    }
     p = c;
   }
-  if (c == EOF) return buf;
+
   return buf;
 }
 
@@ -1039,9 +1091,12 @@ Cmd* parseCIncludeFileI(Cmd* cmd) {
   }
 
   char line[5000] = "";
-  while (strlen(getCLine(line, s)) > 0) {
+  char overflow = '\0';
+  while (1) {
+    getCLine(line, s, &overflow);
   }
 }
+
 Cmd* parseCIncludeFile(Cmd* cmd) {
   FILE* s = fopen(cmd->args->nxt->name, "r");
   char c;
@@ -1504,6 +1559,23 @@ static void finish(int sig)
   exit(0);
 }
 
+#ifdef DEBUG_MODE
+void main(int argc, char* argv[])
+{
+  FILE* s = fopen("main.c", "r");
+  if (s == NULL) {
+    printf("Invalid include file.");
+    return;
+  }
+
+  char line[5000] = "";
+  char overflow = '\0';
+  while (strlen(getCLine(line, s, &overflow)) > 0) {
+    printf("%s    ---------------   \n", line);
+  }
+  return;
+}
+#else
 void main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
@@ -1543,3 +1615,4 @@ void main()
 
   finish(0);
 }
+#endif
