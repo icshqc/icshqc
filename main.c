@@ -1516,7 +1516,10 @@ void loop()
           save();
         }
       } else if (cmd->type == UNKOWN) {
-        output("\nError. Unkown function.");
+        char err[128] = "\n";
+        strcat(err, cmd->name);
+        strcat(err, ": undefined variable or function");
+        output(err);
       } else {
         eval(cmd);
       }
