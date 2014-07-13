@@ -1032,43 +1032,33 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
 
   char c;
   char p = EOF;
-  int inMultiComment = 0;
   int nested = 0;
   int nestedP = 0;
-  int discardToEOL = 0;
-  int inString = 0;
   while ((c = getc(s)) != EOF) {
-    if (inMultiComment) {
-      if (p == '*' && c == '/') {
-        inMultiComment = 0;
-      }
-    } else if (inString) {
-      straddch(buf, (c == '\t') ? ' ' : c);
-      if (p != '\\' && c == '"') {
-        inString = 0;
-      }
-    } else if (c == '\r' || c == '\n') {
-      if (p != '\\') {
-        if (nestedP == 0 && nested == 0) {
-          if (strlen(buf) > 0) {
-            return buf;
-          }
+    if ((c == '\r' || c == '\n') && p != '\\') {
+      if (nestedP == 0 && nested == 0) {
+        if (strlen(buf) > 0) {
+          return buf;
         }
-        discardToEOL = 0;
       }
-    } else if ((c == ' ' || c == '\t') && strlen(buf) <= 0) {
-      // Discard trailing whitespaces
-    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
-      // Discard double whitespaces
-    } else if (discardToEOL) {
-      // Discard comments
+    } else if ((c == ' ' || c == '\t') && strlen(buf) <= 0) { // Discard trailing whitespaces
+    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) { // Discard double whitespaces
     } else if (p == '/' && c == '/') {
-      discardToEOL = 1;
+      while ((c = getc(s)) != EOF) {
+        if ((c == '\r' || c == '\n') && p != '\\') break;
+        p = c;
+      }
       strdelch(buf);
     } else if (p == '/' && c == '*') {
-      inMultiComment = 1;
+      while ((c = getc(s)) != EOF) {
+        if (p == '*' && c == '/') break;
+        p = c;
+      }
       strdelch(buf);
     } else {
+      if (nested == 0 || (nested == 1 && c == '}')) { // FIXME: Tmp because cant cat big functions to buffer.
+        straddch(buf, (c == '\t') ? ' ' : c);
+      }
       if (c == '(') {
         ++nestedP;
       } else if (c == ')') {
@@ -1077,10 +1067,13 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
         ++nested;
       } else if (c == '}') {
         --nested;
-      } else if (p == '"') {
-        inString = 1;
+      } else if (p != '\\' && c == '"') {
+        while ((c = getc(s)) != EOF) {
+          straddch(buf, (c == '\t') ? ' ' : c);
+          if (p != '\\' && c == '"') break;
+          p = c;
+        }
       }
-      straddch(buf, (c == '\t') ? ' ' : c);
     }
     p = c;
   }
@@ -1094,11 +1087,13 @@ Cmd* parseCIncludeFileI(Cmd* cmd) {
     return errorStr("Invalid include file.");
   }
 
-  char line[5000] = "";
+  char* line = malloc(5000 * sizeof(char));
+  memset(line, '\0', sizeof(line));
   char overflow = '\0';
   while (1) {
     getCLine(line, s, &overflow);
   }
+  free(line);
 }
 
 Cmd* parseCIncludeFile(Cmd* cmd) {
@@ -1566,7 +1561,7 @@ static void finish(int sig)
 #ifdef DEBUG_MODE
 void main(int argc, char* argv[])
 {
-  FILE* s = fopen("tmp/test.c", "r");
+  FILE* s = fopen("main.c", "r");
   if (s == NULL) {
     printf("Invalid include file.");
     return;
