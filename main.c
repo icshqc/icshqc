@@ -1044,16 +1044,12 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
       if (p == '*' && c == '/') {
         inMultiComment = 0;
       }
-    } else if (c == '{') {
-      ++nested;
-    } else if (nested > 0) {
-      if (c == '}') {
-        --nested;
-      }
     } else if (c == '\r' || c == '\n') {
-      if (p != '\\' && nestedP == 0) {
-        if (buf != begin) {
-          return begin;
+      if (p != '\\') {
+        if (nestedP == 0 && nested == 0) {
+          if (buf != begin) {
+            return begin;
+          }
         }
         discardToEOL = 0;
       }
@@ -1074,6 +1070,10 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
         ++nestedP;
       } else if (c == ')') {
         --nestedP;
+      } else if (c == '{') {
+        ++nested;
+      } else if (c == '}') {
+        --nested;
       }
       straddch(buf, (c == '\t') ? ' ' : c);
       ++buf;
