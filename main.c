@@ -1599,7 +1599,7 @@ void main()
 #else
   SDL_Init( SDL_INIT_EVERYTHING );
   TTF_Init();
-  font = TTF_OpenFont("times.ttf", 22);
+  font = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 15);
 
   if (font == NULL) {
     finish(-1);
