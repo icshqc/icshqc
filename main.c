@@ -283,6 +283,7 @@ void setVarVal(Var* v, Cmd* val) {
   }
   v->val = newCmd();
   strcpy(v->val->name, val->name);
+  v->val->type = val->type;
   v->val->args = val->args;
   v->val->nxt = val->nxt;
 }
