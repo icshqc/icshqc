@@ -1021,6 +1021,27 @@ CFunc* parseCFunction(char* s0) {
   return f;
 }
 
+char* getCLine(char* buf, FILE* s) {
+  char c, p;
+  p = EOF;
+  while ((c = getc(s)) != EOF && ((c != '\n' || c != '\r') && p != '\\')) {
+    *buf = c;
+    p = c;
+  }
+  if (c == EOF) return buf;
+  return buf;
+}
+
+Cmd* parseCIncludeFileI(Cmd* cmd) {
+  FILE* s = fopen(cmd->args->nxt->name, "r");
+  if (s == NULL) {
+    return errorStr("Invalid include file.");
+  }
+
+  char line[5000] = "";
+  while (strlen(getCLine(line, s)) > 0) {
+  }
+}
 Cmd* parseCIncludeFile(Cmd* cmd) {
   FILE* s = fopen(cmd->args->nxt->name, "r");
   char c;
