@@ -1026,12 +1026,9 @@ CFunc* parseCFunction(char* s0) {
 // it has to check the next char. This char is stored in overflow.
 char* getCLine(char* buf, FILE* s, char* overflow) {
   *buf = '\0';
-  char* begin = buf;
   if (*overflow != '\0') {
     *buf = *overflow;
-    ++buf;
   }
-  char* start = buf;
 
   char c;
   char p = EOF;
@@ -1039,21 +1036,27 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
   int nested = 0;
   int nestedP = 0;
   int discardToEOL = 0;
+  int inString = 0;
   while ((c = getc(s)) != EOF) {
     if (inMultiComment) {
       if (p == '*' && c == '/') {
         inMultiComment = 0;
       }
+    } else if (inString) {
+      straddch(buf, (c == '\t') ? ' ' : c);
+      if (p != '\\' && c == '"') {
+        inString = 0;
+      }
     } else if (c == '\r' || c == '\n') {
       if (p != '\\') {
         if (nestedP == 0 && nested == 0) {
-          if (buf != begin) {
-            return begin;
+          if (strlen(buf) > 0) {
+            return buf;
           }
         }
         discardToEOL = 0;
       }
-    } else if ((c == ' ' || c == '\t') && buf == begin) {
+    } else if ((c == ' ' || c == '\t') && strlen(buf) <= 0) {
       // Discard trailing whitespaces
     } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
       // Discard double whitespaces
@@ -1074,9 +1077,10 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
         ++nested;
       } else if (c == '}') {
         --nested;
+      } else if (p == '"') {
+        inString = 1;
       }
       straddch(buf, (c == '\t') ? ' ' : c);
-      ++buf;
     }
     p = c;
   }
@@ -1562,7 +1566,7 @@ static void finish(int sig)
 #ifdef DEBUG_MODE
 void main(int argc, char* argv[])
 {
-  FILE* s = fopen("main.c", "r");
+  FILE* s = fopen("tmp/test.c", "r");
   if (s == NULL) {
     printf("Invalid include file.");
     return;
