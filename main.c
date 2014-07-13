@@ -1056,9 +1056,7 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
         p = c;
       }
     } else {
-      if (nested == 0 || (nested == 1 && c == '}')) { // FIXME: Tmp because cant cat big functions to buffer.
-        straddch(buf, (c == '\t') ? ' ' : c);
-      }
+      straddch(buf, (c == '\t') ? ' ' : c);
       if (c == '(') {
         ++nestedP;
       } else if (c == ')') {
@@ -1067,6 +1065,12 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
         ++nested;
       } else if (c == '}') {
         --nested;
+      } else if (p != '\\' && c == '\'') {
+        while ((c = getc(s)) != EOF) {
+          straddch(buf, (c == '\t') ? ' ' : c);
+          if (p != '\\' && c == '\'') break;
+          p = c;
+        }
       } else if (p != '\\' && c == '"') {
         while ((c = getc(s)) != EOF) {
           straddch(buf, (c == '\t') ? ' ' : c);
