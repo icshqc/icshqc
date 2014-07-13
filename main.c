@@ -1044,17 +1044,17 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
     } else if ((c == ' ' || c == '\t') && strlen(buf) <= 0) { // Discard trailing whitespaces
     } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) { // Discard double whitespaces
     } else if (p == '/' && c == '/') {
+      strdelch(buf);
       while ((c = getc(s)) != EOF) {
         if ((c == '\r' || c == '\n') && p != '\\') break;
         p = c;
       }
-      strdelch(buf);
     } else if (p == '/' && c == '*') {
+      strdelch(buf);
       while ((c = getc(s)) != EOF) {
         if (p == '*' && c == '/') break;
         p = c;
       }
-      strdelch(buf);
     } else {
       if (nested == 0 || (nested == 1 && c == '}')) { // FIXME: Tmp because cant cat big functions to buffer.
         straddch(buf, (c == '\t') ? ' ' : c);
@@ -1561,7 +1561,7 @@ static void finish(int sig)
 #ifdef DEBUG_MODE
 void main(int argc, char* argv[])
 {
-  FILE* s = fopen("main.c", "r");
+  FILE* s = fopen("tmp/test.c", "r");
   if (s == NULL) {
     printf("Invalid include file.");
     return;
