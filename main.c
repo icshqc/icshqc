@@ -437,8 +437,10 @@ char* catCmd(char* b, Cmd* cmd) {
 
 void catVar(char* m, Var* v) {
   if (v != NULL) {
-    strcat(m, v->type->name);
-    strcat(m, " ");
+    if (v->type != NULL) {
+      strcat(m, v->type->name);
+      strcat(m, " ");
+    }
     strcat(m, v->name);
     if (v->val != NULL) {
       strcat(m, " ");
@@ -1410,6 +1412,7 @@ Cmd* listVars(Cmd* cmd) {
   }
   return outputStr(m);
 }
+
 Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
   Cmd* arr = newCmd();
@@ -1507,10 +1510,17 @@ void loop()
           freeCmd(cmd);
           return;
         } else if (strcmp(name, "h") == 0 ||
+                   strcmp(name, "l") == 0 ||
+                   strcmp(name, "list") == 0 ||
                    strcmp(name, "help") == 0) {
           char m[1024] = "";
           output("\n");
           output(catPrintCmd(m, listDefs(NULL)));
+        } else if (strcmp(name, "v") == 0 ||
+                   strcmp(name, "vars") == 0) {
+          char m[1024] = "";
+          output("\n");
+          output(catPrintCmd(m, listVars(NULL)));
         } else if (strcmp(name, "s") == 0 ||
                    strcmp(name, "save") == 0) {
           save();
@@ -1537,9 +1547,6 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "type", MACRO, createType);
-  addLoadedDef(loadedDefs, "$vars", FUNCTION, listVars);
-  addLoadedDef(loadedDefs, "$types", FUNCTION, listTypes);
-  addLoadedDef(loadedDefs, "$defs", FUNCTION, listDefs);
   addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFile);
 }
 
