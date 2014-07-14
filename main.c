@@ -733,34 +733,34 @@ Cmd* parseCmd(char* command) {
 }
 
 int insertInputCh(char ch, char* input, int *nested) {
-    if (ch == 8 || ch == 127) {
-      if (strlen(input) > 0) {
-        dellastch(input[strlen(input)-1]);
-        strdelch(input);
-        refresh();
-      }
-    } else if (ch == '\n' || ch == '\r') {
-      if (*nested > 0) {
-        straddch(input, ' '); // Treat as whitespace maybe???
-        output("\n");
-        int i;
-        for (i = 0; i < *nested; i++) {
-          addch(' ');
-          addch(' ');
-        }
-      } else {
-        return 0;
-      }
-    } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
-      if (ch == '{') {
-        *nested = *nested + 1;
-      } else if (ch == '}') {
-        *nested = *nested - 1;
-      }
-      addch(ch);
+  if (ch == 8 || ch == 127) {
+    if (strlen(input) > 0) {
+      dellastch(input[strlen(input)-1]);
+      strdelch(input);
       refresh();
-      straddch(input, ch);
     }
+  } else if (ch == '\n' || ch == '\r') {
+    if (*nested > 0) {
+      straddch(input, ' '); // Treat as whitespace maybe???
+      output("\n");
+      int i;
+      for (i = 0; i < *nested; i++) {
+        addch(' ');
+        addch(' ');
+      }
+    } else {
+      return 0;
+    }
+  } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
+    if (ch == '{') {
+      *nested = *nested + 1;
+    } else if (ch == '}') {
+      *nested = *nested - 1;
+    }
+    addch(ch);
+    refresh();
+    straddch(input, ch);
+  }
   return 1;
 }
 
