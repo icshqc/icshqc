@@ -732,7 +732,7 @@ Cmd* parseCmd(char* command) {
   return parseCmdR(command).cmd;
 }
 
-int evalInputCh(char ch, char* input, int *nested) {
+int insertInputCh(char ch, char* input, int *nested) {
     if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
         dellastch(input[strlen(input)-1]);
@@ -767,7 +767,7 @@ int evalInputCh(char ch, char* input, int *nested) {
 Cmd* getInput() {  
   char input[256] = "";
   int nested = 0;
-  while (evalInputCh(getch(), input, &nested)) {}
+  while (insertInputCh(getch(), input, &nested)) {}
   if (nested != 0) {
     //msg("Invalid block syntax.");
     return NULL;
