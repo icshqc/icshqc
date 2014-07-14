@@ -298,6 +298,18 @@ char* straddch(char* str, char c) { //FIXME: Not buffer safe
   str[i+1] = '\0';
   return str;
 }
+
+void strinsertch(char* cursor, char c) { //FIXME: Not buffer safe
+  char* s = cursor;
+  char n = *s;
+  char n2;
+  while (n != '\0') {
+    n2 = *(s+1);
+    *(s+1) = n;
+    n = n2;
+  }
+  *cursor = c;
+}
 char* strdelch(char* str) {
   int i = strlen(str);
   if (i > 0) {
@@ -732,42 +744,57 @@ Cmd* parseCmd(char* command) {
   return parseCmdR(command).cmd;
 }
 
-int insertInputCh(char ch, char* input, int *nested) {
-  if (ch == 8 || ch == 127) {
-    if (strlen(input) > 0) {
-      dellastch(input[strlen(input)-1]);
-      strdelch(input);
-      refresh();
-    }
-  } else if (ch == '\n' || ch == '\r') {
-    if (*nested > 0) {
-      straddch(input, ' '); // Treat as whitespace maybe???
-      output("\n");
-      int i;
-      for (i = 0; i < *nested; i++) {
-        addch(' ');
-        addch(' ');
-      }
-    } else {
-      return 0;
-    }
-  } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
-    if (ch == '{') {
-      *nested = *nested + 1;
-    } else if (ch == '}') {
-      *nested = *nested - 1;
-    }
-    addch(ch);
-    refresh();
-    straddch(input, ch);
-  }
+int insertInputCh(char ch, char* input, char* cursor, int *nested) {
   return 1;
 }
 
 Cmd* getInput() {  
   char input[256] = "";
   int nested = 0;
-  while (insertInputCh(getch(), input, &nested)) {}
+  char *cursor = input;
+  while (1) {
+    char ch = getch();
+    if (ch == 8 || ch == 127) {
+      if (strlen(input) > 0) {
+        dellastch(input[strlen(input)-1]);
+        strdelch(input);
+        refresh();
+      }
+    } else if (ch == '\033') { // if the first value is esc
+      getch(); // skip the [
+      ch = getch(); // the real value
+      if (ch == 'A') { // code for arrow up. Last command.
+      } else if (ch == 'B') { // code for arrow down. Undo last command.
+      } else if (ch == 'C') { // code for arrow right
+      } else if (ch == 'D') { // code for arrow left
+        if (cursor > input) {
+          cursor--;
+        }
+      }
+    } else if (ch == '\n' || ch == '\r') {
+      if (nested > 0) {
+        straddch(input, ' '); // Treat as whitespace maybe???
+        output("\n");
+        int i;
+        for (i = 0; i < nested; i++) {
+          addch(' ');
+          addch(' ');
+        }
+      } else {
+        break;
+      }
+    } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
+      if (ch == '{') {
+        nested++;
+      } else if (ch == '}') {
+        nested--;
+      }
+      addch(ch);
+      refresh();
+      strinsertch(cursor, ch);
+      cursor++;
+    }
+  }
   if (nested != 0) {
     //msg("Invalid block syntax.");
     return NULL;
