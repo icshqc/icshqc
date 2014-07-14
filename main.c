@@ -732,12 +732,7 @@ Cmd* parseCmd(char* command) {
   return parseCmdR(command).cmd;
 }
 
-Cmd* getInput() {  
-  char input[256] = "";
-  int y, x;
-  int nested = 0;
-  while (1) {
-    int ch = getch();
+int evalInputCh(char ch, char* input, int *nested) {
     if (ch == 8 || ch == 127) {
       if (strlen(input) > 0) {
         dellastch(input[strlen(input)-1]);
@@ -745,28 +740,34 @@ Cmd* getInput() {
         refresh();
       }
     } else if (ch == '\n' || ch == '\r') {
-      if (nested > 0) {
+      if (*nested > 0) {
         straddch(input, ' '); // Treat as whitespace maybe???
         output("\n");
         int i;
-        for (i = 0; i < nested; i++) {
+        for (i = 0; i < *nested; i++) {
           addch(' ');
           addch(' ');
         }
       } else {
-        break;
+        return 0;
       }
     } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
       if (ch == '{') {
-        nested++;
+        *nested = *nested + 1;
       } else if (ch == '}') {
-        nested--;
+        *nested = *nested - 1;
       }
       addch(ch);
       refresh();
       straddch(input, ch);
     }
-  }
+  return 1;
+}
+
+Cmd* getInput() {  
+  char input[256] = "";
+  int nested = 0;
+  while (evalInputCh(getch(), input, &nested)) {}
   if (nested != 0) {
     //msg("Invalid block syntax.");
     return NULL;
