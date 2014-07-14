@@ -13,6 +13,8 @@
 //#define DEBUG_MODE
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
+// Version 0.2 == Deux screen. Une console et une qui affiche les variables et les fonctions.
+// TODO: Rouler l'application dans une autre fenetre que l'editeur. Vraiment separer app/editeur.
 
 // MODEL
 
