@@ -1088,17 +1088,21 @@ CLine* addLine(CLine* line1, CLine* line2) {
 
 // In order to know if the next char is part of the line or not,
 // it has to check the next char. This char is stored in overflow.
-CLine* getCLines(FILE* s) {
+CLine* getCLines(FILE* s, int nested) {
   CLine* line = newCLine();
   char c;
   char p = EOF;
-  int nested = 0;
   int nestedP = 0;
   while ((c = getc(s)) != EOF) {
-    if ((c == '\r' || c == '\n') && p != '\\') {
-      if (nestedP == 0 && nested == 0) {
+    if (c == '}') {
+      return addLine(line, getCLines(s, nested - 1));
+    } else if (c == '{') {
+      line->block = getCLines(s, nested + 1);
+      return line;
+    } else if ((c == '\r' || c == '\n') && p != '\\') {
+      if (nestedP == 0) {
         if (strlen(line->val) > 0) {
-          return addLine(line, getCLines(s));
+          return addLine(line, getCLines(s, nested));
         }
       }
     } else if ((c == ' ' || c == '\t') && strlen(line->val) <= 0) { // Discard trailing whitespaces
@@ -1121,10 +1125,6 @@ CLine* getCLines(FILE* s) {
         ++nestedP;
       } else if (c == ')') {
         --nestedP;
-      } else if (c == '{') {
-        ++nested;
-      } else if (c == '}') {
-        --nested;
       } else if (p != '\\' && c == '\'') {
         while ((c = getc(s)) != EOF) {
           straddch(line->val, (c == '\t') ? ' ' : c);
@@ -1151,7 +1151,7 @@ Cmd* parseCIncludeFileI(Cmd* cmd) {
     return errorStr("Invalid include file.");
   }
 
-  CLine* lines = getCLines(s);
+  CLine* lines = getCLines(s, 0);
   free(lines);
 }
 
@@ -1634,7 +1634,7 @@ void main(int argc, char* argv[])
     return;
   }
 
-  CLine* lines = getCLines(s);
+  CLine* lines = getCLines(s, 0);
   CLine* l;
   for (l = lines; l != NULL; l = l->nxt) {
     printf("%s    ---------------   \n", l->val);
