@@ -10,7 +10,7 @@
 #include "src/bind/bind.h"
 
 //#define CURSES_MODE
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 // Version 0.2 == Deux screen. Une console et une qui affiche les variables et les fonctions.
@@ -1055,14 +1055,41 @@ CFunc* parseCFunction(char* s0) {
   return f;
 }
 
+struct CLine {
+  char val[200];
+  struct CLine* nxt;
+  struct CLine* block;
+};
+typedef struct CLine CLine;
+
+CLine* newCLine() {
+  CLine* arg0 = malloc(sizeof(CLine));
+  if (arg0 == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(arg0->val, '\0', sizeof(arg0->val));
+  arg0->block = NULL;
+  arg0->nxt = NULL;
+  return arg0;
+}
+
+void freeCLine(CLine* s) {
+  if (s != NULL) {
+    freeCLine(s->nxt);
+    freeCLine(s->block);
+    free(s);
+  }
+}
+
+CLine* addLine(CLine* line1, CLine* line2) {
+  line1->nxt = line2;
+  return line1;
+}
+
 // In order to know if the next char is part of the line or not,
 // it has to check the next char. This char is stored in overflow.
-char* getCLine(char* buf, FILE* s, char* overflow) {
-  *buf = '\0';
-  if (*overflow != '\0') {
-    *buf = *overflow;
-  }
-
+CLine* getCLines(FILE* s) {
+  CLine* line = newCLine();
   char c;
   char p = EOF;
   int nested = 0;
@@ -1070,26 +1097,26 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
   while ((c = getc(s)) != EOF) {
     if ((c == '\r' || c == '\n') && p != '\\') {
       if (nestedP == 0 && nested == 0) {
-        if (strlen(buf) > 0) {
-          return buf;
+        if (strlen(line->val) > 0) {
+          return addLine(line, getCLines(s));
         }
       }
-    } else if ((c == ' ' || c == '\t') && strlen(buf) <= 0) { // Discard trailing whitespaces
+    } else if ((c == ' ' || c == '\t') && strlen(line->val) <= 0) { // Discard trailing whitespaces
     } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) { // Discard double whitespaces
     } else if (p == '/' && c == '/') {
-      strdelch(buf);
+      strdelch(line->val);
       while ((c = getc(s)) != EOF) {
         if ((c == '\r' || c == '\n') && p != '\\') break;
         p = c;
       }
     } else if (p == '/' && c == '*') {
-      strdelch(buf);
+      strdelch(line->val);
       while ((c = getc(s)) != EOF) {
         if (p == '*' && c == '/') break;
         p = c;
       }
     } else {
-      straddch(buf, (c == '\t') ? ' ' : c);
+      straddch(line->val, (c == '\t') ? ' ' : c);
       if (c == '(') {
         ++nestedP;
       } else if (c == ')') {
@@ -1100,13 +1127,13 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
         --nested;
       } else if (p != '\\' && c == '\'') {
         while ((c = getc(s)) != EOF) {
-          straddch(buf, (c == '\t') ? ' ' : c);
+          straddch(line->val, (c == '\t') ? ' ' : c);
           if (p != '\\' && c == '\'') break;
           p = c;
         }
       } else if (p != '\\' && c == '"') {
         while ((c = getc(s)) != EOF) {
-          straddch(buf, (c == '\t') ? ' ' : c);
+          straddch(line->val, (c == '\t') ? ' ' : c);
           if (p != '\\' && c == '"') break;
           p = c;
         }
@@ -1115,7 +1142,7 @@ char* getCLine(char* buf, FILE* s, char* overflow) {
     p = c;
   }
 
-  return buf;
+  return line;
 }
 
 Cmd* parseCIncludeFileI(Cmd* cmd) {
@@ -1124,13 +1151,8 @@ Cmd* parseCIncludeFileI(Cmd* cmd) {
     return errorStr("Invalid include file.");
   }
 
-  char* line = malloc(5000 * sizeof(char));
-  memset(line, '\0', sizeof(line));
-  char overflow = '\0';
-  while (1) {
-    getCLine(line, s, &overflow);
-  }
-  free(line);
+  CLine* lines = getCLines(s);
+  free(lines);
 }
 
 Cmd* parseCIncludeFile(Cmd* cmd) {
@@ -1612,10 +1634,10 @@ void main(int argc, char* argv[])
     return;
   }
 
-  char line[5000] = "";
-  char overflow = '\0';
-  while (strlen(getCLine(line, s, &overflow)) > 0) {
-    printf("%s    ---------------   \n", line);
+  CLine* lines = getCLines(s);
+  CLine* l;
+  for (l = lines; l != NULL; l = l->nxt) {
+    printf("%s    ---------------   \n", l->val);
   }
   return;
 }
