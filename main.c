@@ -1081,28 +1081,27 @@ void freeCLine(CLine* s) {
   }
 }
 
-CLine* addLine(CLine* line1, CLine* line2) {
-  line1->nxt = line2;
-  return line1;
-}
-
-// In order to know if the next char is part of the line or not,
-// it has to check the next char. This char is stored in overflow.
 CLine* getCLines(FILE* s, int nested) {
-  CLine* line = newCLine();
+  CLine* lines = newCLine();
+  CLine* line = lines;
   char c;
   char p = EOF;
   int nestedP = 0;
   while ((c = getc(s)) != EOF) {
     if (c == '}') {
-      return addLine(line, getCLines(s, nested - 1));
+      if (nested <= 0) {
+        printf("Unexpected end bracket.");
+        return NULL;
+      }
+      return lines;
     } else if (c == '{') {
       line->block = getCLines(s, nested + 1);
       return line;
     } else if ((c == '\r' || c == '\n') && p != '\\') {
       if (nestedP == 0) {
         if (strlen(line->val) > 0) {
-          return addLine(line, getCLines(s, nested));
+          line->nxt = newCLine();
+          line = line->nxt;
         }
       }
     } else if ((c == ' ' || c == '\t') && strlen(line->val) <= 0) { // Discard trailing whitespaces
