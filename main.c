@@ -1624,6 +1624,26 @@ static void finish(int sig)
   exit(0);
 }
 
+void printCLine(CLine* lines, int nested) {
+  CLine* l;
+  int i;
+  for (l = lines; l != NULL; l = l->nxt) {
+    for (i = 0; i < nested; i++) {printf("  ");}
+    printf("%s", l->val);
+    if (l->block != NULL) {
+      printf(" {\n");
+      printCLine(l->block, nested + 1);
+      printf("\n");
+      for (i = 0; i < nested; i++) {printf("  ");}
+      printf("}");
+    }
+    if (nested == 0) {
+      printf("\n");
+    }
+    //printf("    ---------------   \n");
+  }
+}
+
 #ifdef DEBUG_MODE
 void main(int argc, char* argv[])
 {
@@ -1633,11 +1653,7 @@ void main(int argc, char* argv[])
     return;
   }
 
-  CLine* lines = getCLines(s, 0);
-  CLine* l;
-  for (l = lines; l != NULL; l = l->nxt) {
-    printf("%s    ---------------   \n", l->val);
-  }
+  printCLine(getCLines(s, 0), 0);
   return;
 }
 #else
