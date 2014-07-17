@@ -1088,15 +1088,19 @@ CLine* getCLines(FILE* s, int nested) {
   char p = EOF;
   int nestedP = 0;
   while ((c = getc(s)) != EOF) {
+    if (c == '\'') {
+      int asd = 0;
+    }
     if (c == '}') {
       if (nested <= 0) {
-        printf("Unexpected end bracket.");
-        return NULL;
+        //printf("Unexpected end bracket.");
+        //return NULL;
       }
       return lines;
     } else if (c == '{') {
       line->block = getCLines(s, nested + 1);
-      return line;
+      line->nxt = newCLine();
+      line = line->nxt;
     } else if ((c == '\r' || c == '\n') && p != '\\') {
       if (nestedP == 0) {
         if (strlen(line->val) > 0) {
@@ -1141,7 +1145,11 @@ CLine* getCLines(FILE* s, int nested) {
     p = c;
   }
 
-  return line;
+  if (nested > 0) {
+    printf("Missing end bracket.");
+    return NULL;
+  }
+  return lines;
 }
 
 Cmd* parseCIncludeFileI(Cmd* cmd) {
@@ -1629,9 +1637,10 @@ void printCLine(CLine* lines, int nested) {
   int i;
   for (l = lines; l != NULL; l = l->nxt) {
     for (i = 0; i < nested; i++) {printf("  ");}
-    printf("%s", l->val);
+    printf("%s\n", l->val);
     if (l->block != NULL) {
-      printf(" {\n");
+      for (i = 0; i < nested; i++) {printf("  ");}
+      printf("{");
       printCLine(l->block, nested + 1);
       printf("\n");
       for (i = 0; i < nested; i++) {printf("  ");}
