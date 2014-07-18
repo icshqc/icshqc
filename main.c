@@ -596,6 +596,16 @@ Cmd* typeCmd(Cmd* cmd) {
   return cmd;
 }
 
+void addCmd(Cmd** list, Cmd* cmd) {
+  if (*list == NULL) {
+    *list = cmd;
+  } else {
+    Cmd* l;
+    for (l = *list; l->nxt != NULL; l = l->nxt) {}
+    l->nxt = cmd;
+  }
+}
+
 struct ParsePair {
   Cmd* cmd;
   char* ptr;
@@ -705,8 +715,7 @@ ParsePair parseArray(char* command) {
   return parsePair(ary, s+1);
 }
 ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
-  Cmd* cmds = newCmd();
-  Cmd* cmd = cmds;
+  Cmd* cmds = NULL;
   char* s = trim(command);
   while (*s != '\0') {
     char* i = s;
@@ -714,7 +723,11 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
            *s != '{' && *s != '}' && *s != '[' && *s != '\n') {
       ++s;
     }
-    strncpy(cmd->name, i, s-i);
+    if (s > i) {
+      Cmd* cmd = newCmd();
+      strncpy(cmd->name, i, s-i);
+      addCmd(&cmds, cmd);
+    }
     s = trim(s);
     if (*s == ')') {
       ++s;
@@ -723,8 +736,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
       ParsePair p = parseArray(s+1);
       s = p.ptr;
       if (p.cmd != NULL) {
-        cmd->nxt = p.cmd;
-        cmd = cmd->nxt;
+        addCmd(&cmds, p.cmd);
       }
     } else if (*s == '}') {
       break;
@@ -732,22 +744,18 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
       ParsePair p = parseBlock(s+1);
       s = p.ptr;
       if (p.cmd != NULL) {
-        cmd->nxt = p.cmd;
-        cmd = cmd->nxt;
+        addCmd(&cmds, p.cmd);
       }
     } else if (*s == '(') {
       ParsePair p = parseCmdR(s+1);
       s = p.ptr;
-      cmd->nxt = p.cmd;
-      cmd = cmd->nxt;
-    } else if (*s != '\0') {
-      cmd->nxt = newCmd();
-      cmd = cmd->nxt;
+      addCmd(&cmds, p.cmd);
     }
   }
+  if (cmds == NULL) return parsePair(cmds, s);
   typeCmd(cmds);
   if (cmds->nxt != NULL && (cmds->nxt->type == OPERATOR || cmds->nxt->type == MACRO_OP)) {
-    cmd = cmds;
+    Cmd* cmd = cmds;
     cmds = cmds->nxt;
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
