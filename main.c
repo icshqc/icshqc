@@ -289,15 +289,6 @@ char* strVal(char* val, Cmd* cmd) {
   return m;
 }*/
 
-void setVarVal(Var* v, Cmd* val) {
-  if (v == NULL) return;
-  if (v->val != NULL) {
-    freeCmd(v->val);
-  }
-  v->val = initCmd(val->type, val->name, val->args);
-  v->val->nxt = val->nxt;
-}
-
 // HELPER
 
 char* straddch(char* str, char c) { //FIXME: Not buffer safe
@@ -1488,10 +1479,13 @@ Cmd* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   if (v == NULL) {
     v = addNewVar("int", cmd->args->name); // FIXME hardcoded type, but maybe var type is useless anyway.
+  } else if (v->val != NULL) {
+    freeCmd(v->val);
   }
-  if (v == NULL) return NULL;
-  setVarVal(v, cmd->args->nxt);
-  return initCmd(v->val->type, v->val->name, NULL);
+  Cmd* val = cmd->args->nxt;
+  v->val = initCmd(val->type, val->name, val->args);
+  v->val->nxt = val->nxt;
+  return val;
 }
 
 Cmd* listTypes(Cmd* cmd) {
@@ -1574,12 +1568,7 @@ Cmd* cmdVal(Cmd* cmd) {
   } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
     ret = loadedFuncByName(cmd->name)->ptr(cmd);
   } else if (cmd->type == VAR) {
-    Var* v = varByName(cmd->name);
-    if (v->val != NULL) {
-      ret = newCmd();
-      strcpy(ret->name, v->val->name);
-      ret->type = v->val->type;
-    }
+    ret = varByName(cmd->name)->val;
   } else {
     ret = cmd;
   }
