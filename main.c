@@ -436,15 +436,15 @@ char* catCmdType(char* b, CmdType t) {
 char* catPrintCmd(char* b, Cmd* cmd) {
   if (cmd == NULL) return b;
   Cmd* n;
-  if (cmd->type == ARRAY) {
-    strcat(b, "[");
+  if (cmd->type == ARRAY || cmd->type == TUPLE) {
+    strcat(b, cmd->type == ARRAY ? "[" : "(");
     for (n = cmd->args; n != NULL; n = n->nxt) {
       catPrintCmd(b, n);
       if (n->nxt != NULL) {
         strcat(b, " ");
       }
     }
-    strcat(b, "]");
+    strcat(b, cmd->type == ARRAY ? "]" : ")");
   } else {
     strcat(b, cmd->name);
   }
