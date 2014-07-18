@@ -38,6 +38,7 @@ CStruct* newCStruct() {
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
   arg0->attrs = NULL;
+  arg0->nxt = NULL;
   return arg0;
 }
 
@@ -118,6 +119,7 @@ void freeArg(Arg* f) {
 void freeCStruct(CStruct* s) {
   if (s != NULL) {
     freeArg(s->attrs);
+    freeCStruct(s->nxt);
     free(s);
   }
 }
@@ -351,6 +353,20 @@ Cmd* outputStr(const char* str) {
   cmd->type = STRING;
   strcpy(cmd->name, str);
   return cmd;
+}
+
+char* trimEnd(char* s) {
+  char* init = s;
+  s = s + strlen(s) - 1;
+  while (s != init) {
+    if (*s == ' ' || *s == '\t') {
+      *s = '\0';
+    } else {
+      break;
+    }
+    --s;
+  }
+  return init;
 }
 
 // Return a pointer to the first non whitespace char of the string.
@@ -1176,7 +1192,33 @@ FILE* fopenWithExtension(char* extension, char* filename) {
   return fopen(buf, "r");
 }
 
-Cmd* parseCIncludeFileI(char* filename) {
+Arg* parseVarDefs(CLine* l) {
+  if (l != NULL) {
+    char* space = strrchr(trimEnd(l->val), ' ');
+    if (space == NULL) return NULL;
+    char* bracket = strchr(l->val, '[');
+    Arg* a = newArg();
+    strncpy(a->type, l->val, space - l->val);
+    if (bracket) {
+      strncpy(a->type + strlen(a->type), bracket, strlen(bracket) - 1);
+      strncpy(a->name, space + 1, bracket - space - 1);
+    } else {
+      strncpy(a->name, space + 1, strlen(space) - 2);
+    }
+    a->nxt = parseVarDefs(l->nxt);
+    return a;
+  }
+}
+
+CStruct* parseCStruct(CLine* l) {
+  char* s = l->val + strlen("struct ");
+  CStruct* t = newCStruct();
+  strcpy(t->name, trimEnd(s));
+  t->attrs = parseVarDefs(l->block);
+  return t;
+}
+
+Cmd* parseCIncludeFile(char* filename) {
   FILE* s = fopen(filename, "r");
   //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
   if (s == NULL) {
@@ -1188,12 +1230,14 @@ Cmd* parseCIncludeFileI(char* filename) {
   CLine* l;
   CFunc* f0 = NULL;
   CFunc* f = NULL;
+  CStruct* t0 = NULL;
+  CStruct* t = NULL;
   for (l = lines; l != NULL; l = l->nxt) {
     if (l->val[0] == '#') { // TODO: All preprocessor directives.
       if (startsWith("#include", l->val)) {
         char filename[64] = "";
         strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
-        parseCIncludeFileI(filename);
+        parseCIncludeFile(filename);
       }
     } else if (l->block != NULL) {
       if (strchr(l->val, '(')) { // It is a function.
@@ -1205,6 +1249,13 @@ Cmd* parseCIncludeFileI(char* filename) {
           f = f->nxt;
         }
       } else if (startsWith("struct", l->val)) {
+        if (t0 == NULL) {
+          t0 = parseCStruct(l);
+          t = t0;
+        } else {
+          t->nxt = parseCStruct(l);
+          t = t->nxt;
+        }
         printf("%s\n", l->val);
       }
     }
@@ -1212,98 +1263,11 @@ Cmd* parseCIncludeFileI(char* filename) {
   //bindCFunctionsHeader(cmd->args->name, f0);
   //bindCFunctionsSource(cmd->args->name, f0);
   freeCFunc(f0);
+  freeCStruct(t0);
   free(lines);
 }
 Cmd* parseCIncludeFileCmd(Cmd* cmd) {
-  parseCIncludeFileI(cmd->args->nxt->name);
-}
-
-Cmd* parseCIncludeFile(Cmd* cmd) {
-  FILE* s = fopen(cmd->args->nxt->name, "r");
-  char c;
-  char p = EOF;
-  CFunc* f0 = NULL;
-  CFunc* f = NULL;
-  if (s == NULL) {
-    return errorStr("Invalid include file.");
-  }
-  char input[512] = "";
-  int inMultiComment = 0;
-  int nested = 0;
-  int nestedP = 0;
-  int discardToEOL = 0;
-  int discardToSemiColon = 0;
-  while ((c = getc(s)) != EOF) {
-    if (inMultiComment) {
-      if (p == '*' && c == '/') {
-        inMultiComment = 0;
-      }
-    } else if (c == '{') {
-      ++nested;
-    } else if (nested > 0) {
-      if (c == '}') {
-        --nested;
-      }
-    } else if (c == '\r' || c == '\n') {
-      if (p != '\\' && nestedP == 0) {
-        if (strlen(input) > 0) {
-          if (strchr(input, '(')) {
-            if (f0 == NULL) {
-              f0 = parseCFunction(input);
-              f = f0;
-            } else {
-              f->nxt = parseCFunction(input);
-              f = f->nxt;
-            }
-          }
-          input[0] = '\0';
-        }
-        discardToEOL = 0;
-      }
-    } else if ((c == ' ' || c == '\t') && strlen(input) <= 0) {
-      // Discard trailing whitespaces
-    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) {
-      // Discard double whitespaces
-    } else if (discardToSemiColon) {
-      if (c == ';') {
-        discardToSemiColon = 0;
-      }
-    } else if (discardToEOL) {
-      // Discard comments
-    } else if (c == '#') {
-      // Discard preprocessor
-      discardToEOL = 1;
-    } else if (p == '/' && c == '/') {
-      discardToEOL = 1;
-      strdelch(input);
-    } else if (p == '/' && c == '*') {
-      inMultiComment = 1;
-      strdelch(input);
-    } else if (strncmp(input, "__", 2) == 0) {
-      discardToEOL = 1;
-      input[0] = '\0';
-    //} else if (strncmp(input, "typedef", 7) == 0) { // case: __extension typedef...
-    } else if (strstr(input, "typedef") != NULL || strstr(input, "struct") != NULL) {
-      discardToSemiColon = 1;
-      input[0] = '\0';
-    } else {
-      if (c == '(') {
-        ++nestedP;
-      } else if (c == ')') {
-        --nestedP;
-      }
-      if (c == '\t') {
-        straddch(input, ' ');
-      } else {
-        straddch(input, c);
-      }
-    }
-    p = c;
-  }
-  bindCFunctionsHeader(cmd->args->name, f0);
-  bindCFunctionsSource(cmd->args->name, f0);
-  freeCFunc(f);
-  return NULL;
+  parseCIncludeFile(cmd->args->nxt->name);
 }
 
 void eval(Cmd* cmd);
@@ -1663,7 +1627,7 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "type", MACRO, createType);
-  addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFile);
+  addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFileCmd);
 }
 
 static void finish(int sig)
@@ -1712,7 +1676,7 @@ void printCLine(CLine* lines, int nested) {
 #ifdef DEBUG_MODE
 void main(int argc, char* argv[])
 {
-  parseCIncludeFileI("tmp/test.c");
+  parseCIncludeFile("tmp/test.c");
 }
 #else
 void main()

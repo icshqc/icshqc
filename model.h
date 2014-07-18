@@ -16,6 +16,7 @@ typedef struct Arg Arg;
 struct CStruct {
   char name[52];
   Arg* attrs;
+  struct CStruct* nxt;
 };
 typedef struct CStruct CStruct;
 
