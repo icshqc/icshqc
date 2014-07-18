@@ -9,7 +9,7 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
-#define CURSES_MODE
+//#define CURSES_MODE
 //#define DEBUG_MODE
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
@@ -1465,6 +1465,9 @@ Cmd* defineOp(Cmd* cmd) {
   addLoadedDef(loadedDefs, f->name, OPERATOR, runFunc);
   return NULL;
 }
+Cmd* defineType(Cmd* cmd) {
+  int bp = 0;
+}
 
 Cmd* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
@@ -1636,6 +1639,7 @@ void initLoadedDefs() {
   loadedDefs = createLoadedDef("=", MACRO_OP, assign); // Assigns a value to an existing variable.
   addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, "#::", MACRO_OP, defineType); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "type", MACRO, createType);
   addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFileCmd);
 }
