@@ -1169,7 +1169,7 @@ int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual));
 }
 
-void parseCIncludeFileI(char* filename) {
+Cmd* parseCIncludeFileI(char* filename) {
   FILE* s = fopen(filename, "r");
   if (s == NULL) {
     return errorStr("Invalid include file.");
