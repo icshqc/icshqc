@@ -9,7 +9,7 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
-//#define CURSES_MODE
+#define CURSES_MODE
 //#define DEBUG_MODE
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
@@ -246,8 +246,9 @@ int getY() {
 
 void dellastch(char ch) {
 #ifdef CURSES_MODE
-  move(getY(), getX()-1);
-  delch();
+  int y, x;
+  getyx(curscr, y, x);
+  mvdelch(y, x-1);
 #else
   int w, h;
   char str[] = {ch, '\0'};
@@ -764,17 +765,26 @@ int insertInputCh(char ch, char* input, char* cursor, int *nested) {
   return 1;
 }
 
+#ifndef KEY_BACKSPACE
+#define KEY_BACKSPACE 8
+#endif
+
+#ifndef KEY_DL
+#define KEY_DL 127
+#endif
+
 Cmd* getInput() {  
   char input[256] = "";
   int nested = 0;
   char *cursor = input;
   while (1) {
-    char ch = getch();
-    if (ch == 8 || ch == 127) {
+    int ch = getch();
+    if (ch == 8 || ch == 127 || ch == KEY_BACKSPACE || ch == KEY_DL) {
       if (strlen(input) > 0) {
         dellastch(input[strlen(input)-1]);
         strdelch(input);
         refresh();
+        --cursor;
       }
     } else if (ch == '\033') { // if the first value is esc
       getch(); // skip the [
