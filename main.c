@@ -1081,6 +1081,27 @@ void freeCLine(CLine* s) {
   }
 }
 
+void appendChars(FILE* s, char* str, char* stopAt) {
+  char c;
+  char* at;
+  while ((c = getc(s)) != EOF) {
+    if (str != NULL) {
+      straddch(str, (c == '\t') ? ' ' : c);
+    }
+    if (c == '\\') {
+      c = getc(s);
+      if (str != NULL) {
+        straddch(str, (c == '\t') ? ' ' : c);
+      }
+      if (c == EOF) return;
+    } else {
+      for (at = stopAt; *at != '\0'; at++) {
+        if (c == *at) return;
+      }
+    }
+  }
+}
+
 CLine* getCLines(FILE* s, int nested) {
   CLine* lines = newCLine();
   CLine* line = lines;
@@ -1112,9 +1133,12 @@ CLine* getCLines(FILE* s, int nested) {
     } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) { // Discard double whitespaces
     } else if (p == '/' && c == '/') {
       strdelch(line->val);
-      while ((c = getc(s)) != EOF) {
-        if ((c == '\r' || c == '\n') && p != '\\') break;
-        p = c;
+      appendChars(s, NULL, "\r\n\0");
+      if (nestedP == 0) {
+        if (strlen(line->val) > 0) {
+          line->nxt = newCLine();
+          line = line->nxt;
+        }
       }
     } else if (p == '/' && c == '*') {
       strdelch(line->val);
@@ -1129,17 +1153,9 @@ CLine* getCLines(FILE* s, int nested) {
       } else if (c == ')') {
         --nestedP;
       } else if (p != '\\' && c == '\'') {
-        while ((c = getc(s)) != EOF) {
-          straddch(line->val, (c == '\t') ? ' ' : c);
-          if (p != '\\' && c == '\'') break;
-          p = c;
-        }
+        appendChars(s, line->val, "\'\0");
       } else if (p != '\\' && c == '"') {
-        while ((c = getc(s)) != EOF) {
-          straddch(line->val, (c == '\t') ? ' ' : c);
-          if (p != '\\' && c == '"') break;
-          p = c;
-        }
+        appendChars(s, line->val, "\"\0");
       }
     }
     p = c;
