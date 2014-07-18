@@ -1528,6 +1528,15 @@ Cmd* listDefs(Cmd* cmd) {
   return arr;
 }
 
+Cmd* cpyCmd(Cmd* cmd) {
+  if (cmd != NULL) {
+    Cmd* c = initCmd(cmd->type, cmd->name, NULL);
+    c->args = cpyCmd(cmd->args);
+    c->nxt = cpyCmd(cmd->nxt);
+    return c;
+  }
+}
+
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
@@ -1622,6 +1631,11 @@ void loop()
         } else if (strcmp(name, "s") == 0 ||
                    strcmp(name, "save") == 0) {
           save();
+        } else {
+          char err[128] = "\n";
+          strcat(err, cmd->name);
+          strcat(err, ": unkown command");
+          output(err);
         }
       } else if (cmd->type == UNKOWN) {
         char err[128] = "\n";
