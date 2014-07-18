@@ -31,6 +31,14 @@ static CStruct* structs = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
+Cmd* initCmd(CmdType type, char* val, Cmd* args) {
+  Cmd* c = newCmd();
+  strcpy(c->name, val);
+  c->type = type;
+  c->args = args;
+  return c;
+}
+
 CStruct* newCStruct() {
   CStruct* arg0 = malloc(sizeof(CStruct));
   if (arg0 == NULL) {
@@ -286,10 +294,7 @@ void setVarVal(Var* v, Cmd* val) {
   if (v->val != NULL) {
     freeCmd(v->val);
   }
-  v->val = newCmd();
-  strcpy(v->val->name, val->name);
-  v->val->type = val->type;
-  v->val->args = val->args;
+  v->val = initCmd(val->type, val->name, val->args);
   v->val->nxt = val->nxt;
 }
 
@@ -384,6 +389,8 @@ char* trim(char* s) {
 char* catCmdType(char* b, CmdType t) {
   if (t == INT) {
     strcat(b, "INT");
+  } else if (t == TUPLE) {
+    strcat(b, "TUPLE");
   } else if (t == FUNCTION) {
     strcat(b, "FUNCTION");
   } else if (t == NIL) {
@@ -751,9 +758,18 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
     cmds->nxt = NULL;
-  } else if (cmds->type == FUNCTION || cmds->type == MACRO || cmds->type == CFUNCTION || strlen(cmds->name) > 0) {
+  } else if (cmds->type == FUNCTION || cmds->type == MACRO || cmds->type == CFUNCTION) {
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
+  } else {
+    if (cmds->nxt != NULL) {
+      Cmd* tuple = newCmd();
+      tuple->type = TUPLE;
+      tuple->args = cmds;
+      return parsePair(tuple, s);
+    } else {
+      return parsePair(cmds, s);
+    }
   }
   return parsePair(cmds, s);
 }
@@ -1560,6 +1576,8 @@ Cmd* cmdVal(Cmd* cmd) {
       strcpy(ret->name, v->val->name);
       ret->type = v->val->type;
     }
+  } else if (cmd->type == TUPLE) {
+    // TODO
   } else {
     ret = newCmd();
     strcpy(ret->name, cmd->name);
