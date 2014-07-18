@@ -1169,8 +1169,16 @@ int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
 }
 
+FILE* fopenWithExtension(char* extension, char* filename) {
+  char buf[64] = "";
+  strcat(buf, extension);
+  strcat(buf, filename);
+  return fopen(buf, "r");
+}
+
 Cmd* parseCIncludeFileI(char* filename) {
   FILE* s = fopen(filename, "r");
+  //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
   if (s == NULL) {
     fprintf(stderr, "Invalid include file: %s\n", filename);
     return errorStr("Invalid include file.\n");
@@ -1186,7 +1194,10 @@ Cmd* parseCIncludeFileI(char* filename) {
         parseCIncludeFileI(filename);
       }
     } else if (l->block != NULL) {
-      printf("%s\n", l->val);
+      if (strchr(l->val, '(')) { // It is a function.
+      } else if (startsWith("struct", l->val)) {
+        printf("%s\n", l->val);
+      }
     }
   }
   free(lines);
