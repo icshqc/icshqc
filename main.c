@@ -1166,20 +1166,27 @@ CLine* getCLines(FILE* s, int nested) {
 }
 
 int startsWith(char* mustEqual, char* str1) {
-  return strncmp(mustEqual, str1, strlen(mustEqual));
+  return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
 }
 
 Cmd* parseCIncludeFileI(char* filename) {
   FILE* s = fopen(filename, "r");
   if (s == NULL) {
-    return errorStr("Invalid include file.");
+    fprintf(stderr, "Invalid include file: %s\n", filename);
+    return errorStr("Invalid include file.\n");
   }
 
   CLine* lines = getCLines(s, 0);
   CLine* l;
   for (l = lines; l != NULL; l = l->nxt) {
-    if (startsWith("#include", l->val)) {
-      int check = 0;
+    if (l->val[0] == '#') { // TODO: All preprocessor directives.
+      if (startsWith("#include", l->val)) {
+        char filename[64] = "";
+        strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
+        parseCIncludeFileI(filename);
+      }
+    } else if (l->block != NULL) {
+      printf("%s\n", l->val);
     }
   }
   free(lines);
@@ -1682,14 +1689,7 @@ void printCLine(CLine* lines, int nested) {
 #ifdef DEBUG_MODE
 void main(int argc, char* argv[])
 {
-  FILE* s = fopen("tmp/test.c", "r");
-  if (s == NULL) {
-    printf("Invalid include file.");
-    return;
-  }
-
-  printCLine(getCLines(s, 0), 0);
-  return;
+  parseCIncludeFileI("tmp/test.c");
 }
 #else
 void main()
