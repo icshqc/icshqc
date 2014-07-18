@@ -1186,6 +1186,8 @@ Cmd* parseCIncludeFileI(char* filename) {
 
   CLine* lines = getCLines(s, 0);
   CLine* l;
+  CFunc* f0 = NULL;
+  CFunc* f = NULL;
   for (l = lines; l != NULL; l = l->nxt) {
     if (l->val[0] == '#') { // TODO: All preprocessor directives.
       if (startsWith("#include", l->val)) {
@@ -1195,11 +1197,21 @@ Cmd* parseCIncludeFileI(char* filename) {
       }
     } else if (l->block != NULL) {
       if (strchr(l->val, '(')) { // It is a function.
+        if (f0 == NULL) {
+          f0 = parseCFunction(l->val);
+          f = f0;
+        } else {
+          f->nxt = parseCFunction(l->val);
+          f = f->nxt;
+        }
       } else if (startsWith("struct", l->val)) {
         printf("%s\n", l->val);
       }
     }
   }
+  //bindCFunctionsHeader(cmd->args->name, f0);
+  //bindCFunctionsSource(cmd->args->name, f0);
+  freeCFunc(f0);
   free(lines);
 }
 Cmd* parseCIncludeFileCmd(Cmd* cmd) {
