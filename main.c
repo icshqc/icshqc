@@ -33,7 +33,7 @@ static LoadedDef* loadedDefs = NULL;
 
 Cmd* initCmd(CmdType type, char* val, Cmd* args) {
   Cmd* c = newCmd();
-  strcpy(c->name, val);
+  if (val != NULL) strcpy(c->name, val);
   c->type = type;
   c->args = args;
   return c;
