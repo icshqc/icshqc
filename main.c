@@ -1109,9 +1109,6 @@ CLine* getCLines(FILE* s, int nested) {
   char p = EOF;
   int nestedP = 0;
   while ((c = getc(s)) != EOF) {
-    if (c == '\'') {
-      int asd = 0;
-    }
     if (c == '}') {
       if (nested <= 0) {
         //printf("Unexpected end bracket.");
@@ -1168,14 +1165,27 @@ CLine* getCLines(FILE* s, int nested) {
   return lines;
 }
 
-Cmd* parseCIncludeFileI(Cmd* cmd) {
-  FILE* s = fopen(cmd->args->nxt->name, "r");
+int startsWith(char* mustEqual, char* str1) {
+  return strncmp(mustEqual, str1, strlen(mustEqual));
+}
+
+void parseCIncludeFileI(char* filename) {
+  FILE* s = fopen(filename, "r");
   if (s == NULL) {
     return errorStr("Invalid include file.");
   }
 
   CLine* lines = getCLines(s, 0);
+  CLine* l;
+  for (l = lines; l != NULL; l = l->nxt) {
+    if (startsWith("#include", l->val)) {
+      int check = 0;
+    }
+  }
   free(lines);
+}
+Cmd* parseCIncludeFileCmd(Cmd* cmd) {
+  parseCIncludeFileI(cmd->args->nxt->name);
 }
 
 Cmd* parseCIncludeFile(Cmd* cmd) {
