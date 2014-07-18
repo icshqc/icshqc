@@ -6,6 +6,10 @@
 #include <signal.h>
 #include <string.h>
 
+enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING, PAIR, VAR_NAME, NIL,
+              BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE};
+typedef enum CmdType CmdType;
+
 struct Arg {
   char name[52];
   char type[52];
@@ -28,17 +32,9 @@ struct CFunc {
 };
 typedef struct CFunc CFunc;
 
-enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING, PAIR, VAR_NAME, NIL,
-              BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE};
-typedef enum CmdType CmdType;
-
-// A Cmd can be:
-// arg/var: x in f x y
-// function: f in f x y
-// a number: 2 in f 3 2
-struct Cmd { // x (y z) (a (b c d))
+struct Cmd {
   CmdType type;
-  char name[52]; // name of attribute should be value
+  char name[52];
   struct Cmd* nxt;
   struct Cmd* args;
 };
