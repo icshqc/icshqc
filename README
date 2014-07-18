@@ -1,3 +1,18 @@
+---
+Les types:
+
+Au lieu de ::: pour definir une macro, ca devrait etre que
+le type du parametre est de type macro.
+
+#:: :: |[Macro Macro] types| {
+  types[0][0] // Type
+  types[0][1] // Name
+}
+Func #:: String name // Defines a type Func
+#Func // Creates a Func
+
+---
+
 Operator Priority list:
 = 10
 int 9
