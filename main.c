@@ -31,7 +31,7 @@ static CStruct* structs = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
-Cmd* initCmd(CmdType type, char* val, Cmd* args) {
+Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
   Cmd* c = newCmd();
   if (val != NULL) strcpy(c->name, val);
   c->type = type;
@@ -355,10 +355,7 @@ void output(const char* str) {
 
 Cmd* outputStr(const char* str) {
   if (strlen(str) >= 52) return outputStr("Error, string too big.");
-  Cmd* cmd = newCmd();
-  cmd->type = STRING;
-  strcpy(cmd->name, str);
-  return cmd;
+  return initCmd(STRING, str, NULL);
 }
 
 char* trimEnd(char* s) {
@@ -631,8 +628,7 @@ ParsePair parse(char* command, char* allowedChars) {
   return parsePair(cmd, trim(c));
 }
 ParsePair parseArg(char* command) {
-  Cmd* cmd = newCmd();
-  cmd->type = PAIR;
+  Cmd* cmd = initCmd(PAIR, NULL, NULL);
   ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS);
   if (*(p.ptr) != ' ') {
     //msg("Error parsing block. Missing arg type.");
@@ -661,8 +657,7 @@ ParsePair parseArg(char* command) {
 ParsePair parseCmdR(char* command);
 ParsePair parseBlock(char* command) {
   char* s = trim(command);
-  Cmd* block = newCmd();
-  block->type = BLOCK;
+  Cmd* block = initCmd(BLOCK, NULL, NULL);
   ParsePair p = parse(command, ALLOWED_NAME_CHARS);
   s = p.ptr;
   if (*s != ':') {
@@ -691,8 +686,7 @@ ParsePair parseBlock(char* command) {
   return parsePair(block, s+1);
 }
 ParsePair parseArray(char* command) {
-  Cmd* ary = newCmd();
-  ary->type = ARRAY;
+  Cmd* ary = initCmd(ARRAY, NULL, NULL);
   Cmd* elem = newCmd();
   ary->args = elem;
   char *s = command;
@@ -763,10 +757,7 @@ ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
     cmds->nxt = NULL;
   } else {
     if (cmds->nxt != NULL) {
-      Cmd* tuple = newCmd();
-      tuple->type = TUPLE;
-      tuple->args = cmds;
-      return parsePair(tuple, s);
+      return parsePair(initCmd(TUPLE, NULL, cmds), s);
     } else {
       return parsePair(cmds, s);
     }
@@ -1492,10 +1483,7 @@ Cmd* assign(Cmd* cmd) {
   }
   if (v == NULL) return NULL;
   setVarVal(v, cmd->args->nxt);
-  Cmd* c = newCmd();
-  strcpy(c->name, v->val->name);
-  c->type = v->val->type;
-  return c;
+  return initCmd(v->val->type, v->val->name, NULL);
 }
 
 Cmd* listTypes(Cmd* cmd) {
@@ -1524,8 +1512,7 @@ Cmd* listVars(Cmd* cmd) {
 
 Cmd* listDefs(Cmd* cmd) {
   LoadedDef* d;
-  Cmd* arr = newCmd();
-  arr->type = ARRAY;
+  Cmd* arr = initCmd(ARRAY, NULL, NULL);
   Cmd* n = NULL;
   for (d = loadedDefs; d != NULL; d = d->nxt) {
     if (n == NULL) {
