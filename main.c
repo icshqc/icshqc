@@ -1572,12 +1572,8 @@ Cmd* cmdVal(Cmd* cmd) {
       strcpy(ret->name, v->val->name);
       ret->type = v->val->type;
     }
-  } else if (cmd->type == TUPLE) {
-    // TODO
   } else {
-    ret = newCmd();
-    strcpy(ret->name, cmd->name);
-    ret->type = cmd->type;
+    ret = cmd;
   }
   return ret;
 }
@@ -1596,8 +1592,8 @@ void eval(Cmd* cmd) {
     output("\n=> ");
     char m[1024] = "";
     output(catPrintCmd(m, ret));
-    freeCmd(ret);
   }
+  if (ret != cmd) freeCmd(ret);
  
   eval(cmd->nxt);
 }
