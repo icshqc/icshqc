@@ -19,9 +19,16 @@ typedef struct Arg Arg;
 
 struct Type;
 
+struct VarType {
+  struct Type* type;
+  int arraySize; // 0 if not array
+  int ptr; // 1 for pointer, 2 for pointer of a pointer...
+};
+typedef struct VarType VarType;
+
 struct Attr {
   char name[32];
-  struct Type* type;
+  struct VarType type;
   struct Attr* nxt;
 };
 typedef struct Attr Attr;
@@ -32,13 +39,6 @@ struct Type {
   struct Type* nxt;
 };
 typedef struct Type Type;
-
-struct CStruct { // Maybe just use Type instead of CStruct
-  char name[52];
-  Arg* attrs;
-  struct CStruct* nxt;
-};
-typedef struct CStruct CStruct;
 
 struct CFunc {
   char name[52];

@@ -25,7 +25,6 @@ static Type* types = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
 static Func* funcs = NULL;
-static CStruct* structs = NULL;
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
@@ -55,7 +54,9 @@ Attr* newAttr() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(a->name, '\0', sizeof(a->name));
-  a->type = NULL;
+  a->type.type = NULL;
+  a->type.arraySize = 0;
+  a->type.ptr = 0;
   a->nxt = NULL;
   return a;
 }
@@ -69,17 +70,6 @@ Type* newType() {
   a->attrs = NULL;
   a->nxt = NULL;
   return a;
-}
-
-CStruct* newCStruct() {
-  CStruct* arg0 = malloc(sizeof(CStruct));
-  if (arg0 == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(arg0->name, '\0', sizeof(arg0->name));
-  arg0->attrs = NULL;
-  arg0->nxt = NULL;
-  return arg0;
 }
 
 CFunc* newCFunc() {
@@ -145,8 +135,13 @@ void freeAttr(Attr* a) {
 void freeType(Type* t) {
   if (t != NULL) {
     freeAttr(t->attrs);
-    freeType(t->nxt);
     free(t);
+  }
+}
+void freeTypes(Type* t) {
+  if (t != NULL) {
+    freeType(t);
+    freeTypes(t->nxt);
   }
 }
 
@@ -161,14 +156,6 @@ void freeArg(Arg* f) {
   if (f != NULL) {
     freeArg(f->nxt);
     free(f);
-  }
-}
-
-void freeCStruct(CStruct* s) {
-  if (s != NULL) {
-    freeArg(s->attrs);
-    freeCStruct(s->nxt);
-    free(s);
   }
 }
 
@@ -389,6 +376,19 @@ Cmd* outputStr(const char* str) {
   return initCmd(STRING, str, NULL);
 }
 
+char* trimCEnd(char* s) {
+  char* init = s;
+  s = s + strlen(s) - 1;
+  while (s != init) {
+    if (*s == ' ' || *s == '\t' || *s == ';') {
+      *s = '\0';
+    } else {
+      break;
+    }
+    --s;
+  }
+  return init;
+}
 char* trimEnd(char* s) {
   char* init = s;
   s = s + strlen(s) - 1;
@@ -1142,6 +1142,34 @@ CFunc* parseCFunction(char* s0) {
   return f;
 }
 
+Cmd* construct(Cmd* cmd) {
+  Type* t = typeByName(cmd->name + 1);
+  if (t == NULL) {
+    return errorStr("Unkown constructor.");
+  }
+  Cmd* ret = initCmd(VALUE, NULL, NULL);
+  ret->valueType = t;
+  if (t->attrs != NULL) {
+    addCmd(&ret->args, cpyCmd(cmd->args));
+  }
+  return ret;
+}
+
+void typeConstructor(Type* type) {
+  if (type->attrs != NULL) {
+    char constructorName[52] = "#";
+    strcat(constructorName, type->name);
+    addLoadedDef(loadedDefs, constructorName, FUNCTION, construct);
+  }
+}
+
+void addType(Type* type) {
+  Type* oldFirst = types;
+  types = type;
+  type->nxt = oldFirst;
+  typeConstructor(type);
+}
+
 struct CLine {
   char val[200];
   struct CLine* nxt;
@@ -1263,29 +1291,61 @@ FILE* fopenWithExtension(char* extension, char* filename) {
   return fopen(buf, "r");
 }
 
-Arg* parseVarDefs(CLine* l) {
+Attr* parseVarDefs(CLine* l) {
   if (l != NULL) {
     char* space = strrchr(trimEnd(l->val), ' ');
     if (space == NULL) return NULL;
     char* bracket = strchr(l->val, '[');
-    Arg* a = newArg();
-    strncpy(a->type, l->val, space - l->val);
+    Attr* a = newAttr();
+    char type[32] = "";
+    char array[12] = "";
+    int arraySize = 0;
+    char* star = strchr(l->val, '*');
+    strncpy(type, l->val, star == NULL ? space - l->val : star - l->val);
     if (bracket) {
-      strncpy(a->type + strlen(a->type), bracket, strlen(bracket) - 1);
+      strncpy(array, bracket + 1, strlen(bracket) - 2);
+      char* num; // ???
+      arraySize = strtol(array, &num, 0);
       strncpy(a->name, space + 1, bracket - space - 1);
     } else {
       strncpy(a->name, space + 1, strlen(space) - 2);
+    }
+    a->type.arraySize = arraySize;
+    a->type.type = typeByName(type);
+    if (star != NULL) {
+      int nStar = 0;
+      while (*star == ' ' || *star == '*' || *star == '\t') {
+        if (*star == '*') {
+          nStar++;
+        }
+        star++;
+      }
+      a->type.ptr = nStar;
+    }
+    if (a->type.type == NULL) {
+      freeAttr(a);
+      return NULL;
     }
     a->nxt = parseVarDefs(l->nxt);
     return a;
   }
 }
 
-CStruct* parseCStruct(CLine* l) {
-  char* s = l->val + strlen("struct ");
-  CStruct* t = newCStruct();
-  strcpy(t->name, trimEnd(s));
-  t->attrs = parseVarDefs(l->block);
+Type* parseCStruct(CLine* l) {
+  Type* t = newType();
+  strcpy(t->name, trimCEnd(l->val));
+  Type* oldFirst = types;
+  types = t;
+  t->nxt = oldFirst;
+  if (l->block != NULL) {
+    t->attrs = parseVarDefs(l->block);
+    if (t->attrs == NULL) {
+      types = oldFirst;
+      freeType(t);
+      return NULL;
+    }
+    typeConstructor(t);
+  }
   return t;
 }
 
@@ -1294,52 +1354,50 @@ Cmd* parseCIncludeFile(char* filename) {
   //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
   if (s == NULL) {
     fprintf(stderr, "Invalid include file: %s\n", filename);
-    return errorStr("Invalid include file.\n");
+    //return errorStr("Invalid include file.\n"); FIXME: TMP commented because always gives error
+    return NULL;
   }
 
   CLine* lines = getCLines(s, 0);
   CLine* l;
   CFunc* f0 = NULL;
   CFunc* f = NULL;
-  CStruct* t0 = NULL;
-  CStruct* t = NULL;
   for (l = lines; l != NULL; l = l->nxt) {
     if (l->val[0] == '#') { // TODO: All preprocessor directives.
       if (startsWith("#include", l->val)) {
         char filename[64] = "";
         strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
-        parseCIncludeFile(filename);
+        Cmd* secRet = parseCIncludeFile(filename);
+        if (secRet != NULL && secRet->type == ERROR) {
+          freeCFunc(f0);
+          free(lines);
+          return secRet;
+        }
       }
-    } else if (l->block != NULL) {
-      if (strchr(l->val, '(')) { // It is a function.
-        if (f0 == NULL) {
-          f0 = parseCFunction(l->val);
-          f = f0;
-        } else {
-          f->nxt = parseCFunction(l->val);
-          f = f->nxt;
-        }
-      } else if (startsWith("struct", l->val)) {
-        if (t0 == NULL) {
-          t0 = parseCStruct(l);
-          t = t0;
-        } else {
-          t->nxt = parseCStruct(l);
-          t = t->nxt;
-        }
-        printf("%s\n", l->val);
+    } else if (strchr(l->val, '(')) { // It is a function.
+      if (f0 == NULL) {
+        f0 = parseCFunction(l->val);
+        f = f0;
+      } else {
+        f->nxt = parseCFunction(l->val);
+        f = f->nxt;
+      }
+    } else if (startsWith("struct", l->val)) {
+      printf("%s\n", l->val);
+      if (parseCStruct(l) == NULL) {
+        freeCFunc(f0);
+        free(lines);
+        return errorStr("Could not parse struct.");
       }
     }
   }
   //bindCFunctionsHeader(cmd->args->name, f0);
   //bindCFunctionsSource(cmd->args->name, f0);
   freeCFunc(f0);
-  freeCStruct(t0);
   free(lines);
 }
 Cmd* parseCIncludeFileCmd(Cmd* cmd) {
-  parseCIncludeFile(cmd->args->name);
-  return NULL;
+  return parseCIncludeFile(cmd->args->name);
 }
 
 void eval(Cmd* cmd);
@@ -1475,19 +1533,6 @@ Var* addNewVar(Type* type, char* name) {
   return var;
 }
 
-Cmd* construct(Cmd* cmd) {
-  Type* t = typeByName(cmd->name + 1);
-  if (t == NULL) {
-    return errorStr("Unkown constructor.");
-  }
-  Cmd* ret = initCmd(VALUE, NULL, NULL);
-  ret->valueType = t;
-  if (t->attrs != NULL) {
-    addCmd(&ret->args, cpyCmd(cmd->args));
-  }
-  return ret;
-}
-
 Func* createFunc(Cmd* cmd) {
   Func* f = newFunc();
   strcpy(f->name, cmd->args->name);
@@ -1542,17 +1587,10 @@ Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
       freeType(type);
       return errorStr("Unkown arg type.\n");
     }
-    a->type = t;
+    a->type.type = t;
     strcpy(a->name, c->args->nxt->name);
   }
-  Type* oldFirst = types;
-  types = type;
-  type->nxt = oldFirst;
-  if (cmd->args->nxt != NULL) {
-    char constructorName[52] = "#";
-    strcat(constructorName, type->name);
-    addLoadedDef(loadedDefs, constructorName, FUNCTION, construct);
-  }
+  addType(type);
   return NULL;
 }
 
@@ -1571,25 +1609,33 @@ Cmd* assign(Cmd* cmd) {
 
 Cmd* listTypes(Cmd* cmd) {
   Type* t;
-  char m[1024] = "";
+  Cmd* arr = initCmd(ARRAY, NULL, NULL);
+  Cmd* n = NULL;
   for (t = types; t != NULL; t = t->nxt) {
-    strcat(m, t->name);
+    if (n == NULL) {
+      arr->args = newCmd();
+      n = arr->args;
+    } else {
+      n->nxt = newCmd();
+      n = n->nxt;
+    }
+    strcat(n->name, t->name);
     Attr* a;
     if (t->attrs != NULL) {
-      strcat(m, " #:: ");
+      strcat(n->name, " #:: ");
     }
     for (a = t->attrs; a != NULL; a = a->nxt) {
-      strcat(m, "(");
-      strcat(m, a->type->name);
-      strcat(m, " ");
-      strcat(m, a->name);
-      strcat(m, ") ");
+      strcat(n->name, "(");
+      strcat(n->name, a->type.type->name);
+      strcat(n->name, " ");
+      strcat(n->name, a->name);
+      strcat(n->name, ") ");
     }
     if (t->nxt != NULL) {
-      strcat(m, "\n");
+      strcat(n->name, "\n");
     }
   }
-  return outputStr(m);
+  return arr;
 }
 
 Cmd* listVars(Cmd* cmd) {
@@ -1755,7 +1801,7 @@ static void finish(int sig)
 
   freeLoadedDef(loadedDefs);
   loadedDefs = NULL;
-  freeType(types);
+  freeTypes(types);
   types = NULL;
   freeVar(vars);
   vars = NULL;
