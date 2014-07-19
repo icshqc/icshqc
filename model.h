@@ -17,7 +17,7 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
-struct CStruct {
+struct CStruct { // Maybe just use Type instead of CStruct
   char name[52];
   Arg* attrs;
   struct CStruct* nxt;
@@ -48,8 +48,18 @@ struct LoadedDef {
 };
 typedef struct LoadedDef LoadedDef;
 
+struct Type;
+
+struct Attr {
+  char name[32];
+  struct Type* type;
+  struct Attr* nxt;
+};
+typedef struct Attr Attr;
+
 struct Type {
   char name[32];
+  Attr* attrs;
   struct Type* nxt;
 };
 typedef struct Type Type;

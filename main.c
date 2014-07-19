@@ -39,6 +39,28 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
   return c;
 }
 
+Attr* newAttr() {
+  Attr* a = malloc(sizeof(Attr));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(a->name, '\0', sizeof(a->name));
+  a->type = NULL;
+  a->nxt = NULL;
+  return a;
+}
+
+Type* newType() {
+  Type* a = malloc(sizeof(Type));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(a->name, '\0', sizeof(a->name));
+  a->attrs = NULL;
+  a->nxt = NULL;
+  return a;
+}
+
 CStruct* newCStruct() {
   CStruct* arg0 = malloc(sizeof(CStruct));
   if (arg0 == NULL) {
@@ -103,8 +125,16 @@ void freeVar(Var* t) {
   }
 }
 
+void freeAttr(Attr* a) {
+  if (a != NULL) {
+    freeAttr(a->nxt);
+    free(a);
+  }
+}
+
 void freeType(Type* t) {
   if (t != NULL) {
+    freeAttr(t->attrs);
     freeType(t->nxt);
     free(t);
   }
@@ -1419,19 +1449,8 @@ Var* addNewVar(char* type, char* name) {
   return var;
 }
 
-Cmd* createVar(Cmd* cmd) {
-  addNewVar(cmd->name, cmd->args->name);
-  return NULL;
-}
-
-Cmd* createType(Cmd* cmd) {
-  Type* type = malloc(sizeof(Type));
-  char name[52] = "";
-  strcpy(type->name, strVal(name, cmd->args));
-  Type* oldFirst = types;
-  types = type;
-  type->nxt = oldFirst;
-  addLoadedDef(loadedDefs, type->name, MACRO, createVar);
+Cmd* construct(Cmd* cmd) {
+  //addNewVar(cmd->name, cmd->args->name);
   return NULL;
 }
 
@@ -1471,8 +1490,36 @@ Cmd* defineOp(Cmd* cmd) {
   addLoadedDef(loadedDefs, f->name, OPERATOR, runFunc);
   return NULL;
 }
-Cmd* defineType(Cmd* cmd) {
-  int bp = 0;
+Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
+  Type* type = newType();
+  strcpy(type->name, cmd->args->name);
+  Cmd* c;
+  for (c = cmd->args->nxt; c != NULL; c = c->nxt) {
+    Attr* a;
+    if (type->attrs == NULL) {
+      type->attrs = newAttr();
+      a = type->attrs;
+    } else {
+      a->nxt = newAttr();
+      a = a->nxt;
+    }
+    Type* t = typeByName(c->args->name);
+    if (t == NULL) {
+      freeType(type);
+      return errorStr("Unkown arg type.\n");
+    }
+    a->type = t;
+    strcpy(a->name, c->args->nxt->name);
+  }
+  Type* oldFirst = types;
+  types = type;
+  type->nxt = oldFirst;
+  if (cmd->args->nxt != NULL) {
+    char constructorName[52] = "#";
+    strcat(constructorName, type->name);
+    addLoadedDef(loadedDefs, constructorName, MACRO, construct);
+  }
+  return NULL;
 }
 
 Cmd* assign(Cmd* cmd) {
@@ -1493,6 +1540,17 @@ Cmd* listTypes(Cmd* cmd) {
   char m[1024] = "";
   for (t = types; t != NULL; t = t->nxt) {
     strcat(m, t->name);
+    Attr* a;
+    if (t->attrs != NULL) {
+      strcat(m, " #:: ");
+    }
+    for (a = t->attrs; a != NULL; a = a->nxt) {
+      strcat(m, "(");
+      strcat(m, a->type->name);
+      strcat(m, " ");
+      strcat(m, a->name);
+      strcat(m, ") ");
+    }
     if (t->nxt != NULL) {
       strcat(m, "\n");
     }
@@ -1621,6 +1679,11 @@ void loop()
           char m[1024] = "";
           output("\n");
           output(catPrintCmd(m, listVars(NULL)));
+        } else if (strcmp(name, "t") == 0 ||
+                   strcmp(name, "types") == 0) {
+          char m[1024] = "";
+          output("\n");
+          output(catPrintCmd(m, listTypes(NULL)));
         } else if (strcmp(name, "s") == 0 ||
                    strcmp(name, "save") == 0) {
           save();
@@ -1652,7 +1715,6 @@ void initLoadedDefs() {
   addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, "#::", MACRO_OP, defineType); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "type", MACRO, createType);
   addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFileCmd);
 }
 
