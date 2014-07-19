@@ -17,6 +17,22 @@ struct Arg {
 };
 typedef struct Arg Arg;
 
+struct Type;
+
+struct Attr {
+  char name[32];
+  struct Type* type;
+  struct Attr* nxt;
+};
+typedef struct Attr Attr;
+
+struct Type {
+  char name[32];
+  Attr* attrs;
+  struct Type* nxt;
+};
+typedef struct Type Type;
+
 struct CStruct { // Maybe just use Type instead of CStruct
   char name[52];
   Arg* attrs;
@@ -34,6 +50,7 @@ typedef struct CFunc CFunc;
 
 struct Cmd {
   CmdType type;
+  Type* valueType;
   char name[52];
   struct Cmd* nxt;
   struct Cmd* args;
@@ -47,22 +64,6 @@ struct LoadedDef {
   struct LoadedDef* nxt;
 };
 typedef struct LoadedDef LoadedDef;
-
-struct Type;
-
-struct Attr {
-  char name[32];
-  struct Type* type;
-  struct Attr* nxt;
-};
-typedef struct Attr Attr;
-
-struct Type {
-  char name[32];
-  Attr* attrs;
-  struct Type* nxt;
-};
-typedef struct Type Type;
 
 struct Var {
   char name[32];

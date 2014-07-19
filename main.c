@@ -1450,6 +1450,7 @@ Var* addNewVar(char* type, char* name) {
 }
 
 Cmd* construct(Cmd* cmd) {
+  Type* t = typeByName(cmd->name + 1);
   //addNewVar(cmd->name, cmd->args->name);
   return NULL;
 }

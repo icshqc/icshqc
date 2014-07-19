@@ -11,6 +11,7 @@ Cmd* newCmd() {
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
   arg0->type = UNKOWN;
+  arg0->valueType = NULL;
   arg0->nxt = NULL;
   arg0->args = NULL;
   return arg0;
