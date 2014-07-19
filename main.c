@@ -208,7 +208,7 @@ void addch(char ch) {
     SDL_Surface* texte;
     SDL_Color blanc = {255, 255, 255};
     char str[] = {ch, '\0'};
-    texte = TTF_RenderText_Blended(font, str, blanc);
+    texte = TTF_RenderText_Blended(font, str, blanc); // FIXME: WTF...
     SDL_BlitSurface(texte, NULL, screen, &position);
     int w, h;
     TTF_SizeText(font, str, &w, &h);
@@ -474,7 +474,7 @@ char* catPrintCmd(char* b, Cmd* cmd) {
     for (n = cmd->args; n != NULL; n = n->nxt) {
       catPrintCmd(b, n);
       if (n->nxt != NULL) {
-        strcat(b, " ");
+        strcat(b, "  ---  ");
       }
     }
     strcat(b, cmd->type == ARRAY ? "]" : ")");
@@ -1331,6 +1331,28 @@ Attr* parseVarDefs(CLine* l) {
   }
 }
 
+Type* parseTypedef(CLine* l) {
+  Type* t = newType();
+  strcpy(t->name, trim(strrchr(trimCEnd(l->val), ' ')));
+  Type* oldFirst = types;
+  types = t;
+  t->nxt = oldFirst;
+  if (l->block != NULL) {
+  }
+  return t;
+}
+
+Type* parseEnum(CLine* l) {
+  Type* t = newType();
+  strcpy(t->name, trimCEnd(l->val));
+  Type* oldFirst = types;
+  types = t;
+  t->nxt = oldFirst;
+  if (l->block != NULL) {
+  }
+  return t;
+}
+
 Type* parseCStruct(CLine* l) {
   Type* t = newType();
   strcpy(t->name, trimCEnd(l->val));
@@ -1344,7 +1366,6 @@ Type* parseCStruct(CLine* l) {
       freeType(t);
       return NULL;
     }
-    typeConstructor(t);
   }
   return t;
 }
@@ -1353,7 +1374,6 @@ Cmd* parseCIncludeFile(char* filename) {
   FILE* s = fopen(filename, "r");
   //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
   if (s == NULL) {
-    fprintf(stderr, "Invalid include file: %s\n", filename);
     //return errorStr("Invalid include file.\n"); FIXME: TMP commented because always gives error
     return NULL;
   }
@@ -1382,8 +1402,11 @@ Cmd* parseCIncludeFile(char* filename) {
         f->nxt = parseCFunction(l->val);
         f = f->nxt;
       }
+    } else if (startsWith("typedef", l->val)) {
+      parseTypedef(l);
+    } else if (startsWith("enum", l->val)) {
+      parseEnum(l);
     } else if (startsWith("struct", l->val)) {
-      printf("%s\n", l->val);
       if (parseCStruct(l) == NULL) {
         freeCFunc(f0);
         free(lines);
@@ -1395,6 +1418,7 @@ Cmd* parseCIncludeFile(char* filename) {
   //bindCFunctionsSource(cmd->args->name, f0);
   freeCFunc(f0);
   free(lines);
+  return NULL;
 }
 Cmd* parseCIncludeFileCmd(Cmd* cmd) {
   return parseCIncludeFile(cmd->args->name);
@@ -1607,35 +1631,27 @@ Cmd* assign(Cmd* cmd) {
   return val;
 }
 
-Cmd* listTypes(Cmd* cmd) {
+void listTypes(Cmd* cmd) {
   Type* t;
-  Cmd* arr = initCmd(ARRAY, NULL, NULL);
-  Cmd* n = NULL;
+  char m[2056] = "";
   for (t = types; t != NULL; t = t->nxt) {
-    if (n == NULL) {
-      arr->args = newCmd();
-      n = arr->args;
-    } else {
-      n->nxt = newCmd();
-      n = n->nxt;
-    }
-    strcat(n->name, t->name);
-    Attr* a;
+    strcat(m, t->name);
     if (t->attrs != NULL) {
-      strcat(n->name, " #:: ");
+      strcat(m, " #:: ");
     }
+    Attr* a;
     for (a = t->attrs; a != NULL; a = a->nxt) {
-      strcat(n->name, "(");
-      strcat(n->name, a->type.type->name);
-      strcat(n->name, " ");
-      strcat(n->name, a->name);
-      strcat(n->name, ") ");
+      strcat(m, "(");
+      strcat(m, a->type.type->name);
+      strcat(m, " ");
+      strcat(m, a->name);
+      strcat(m, ") ");
     }
     if (t->nxt != NULL) {
-      strcat(n->name, "\n");
+      strcat(m, "\n");
     }
   }
-  return arr;
+  output(m);
 }
 
 Cmd* listVars(Cmd* cmd) {
@@ -1752,9 +1768,8 @@ void loop()
           output(catPrintCmd(m, listVars(NULL)));
         } else if (strcmp(name, "t") == 0 ||
                    strcmp(name, "types") == 0) {
-          char m[1024] = "";
           output("\n");
-          output(catPrintCmd(m, listTypes(NULL)));
+          listTypes(NULL);
         } else if (strcmp(name, "s") == 0 ||
                    strcmp(name, "save") == 0) {
           save();
