@@ -1338,7 +1338,8 @@ Cmd* parseCIncludeFile(char* filename) {
   free(lines);
 }
 Cmd* parseCIncludeFileCmd(Cmd* cmd) {
-  parseCIncludeFile(cmd->args->nxt->name);
+  parseCIncludeFile(cmd->args->name);
+  return NULL;
 }
 
 void eval(Cmd* cmd);
