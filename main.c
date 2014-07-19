@@ -1002,13 +1002,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
     catCmdExe(cmdExe, f->cmd, 0);
     fprintf(s, "%s }\n", cmdExe);
   }
-  /*Func* f = NULL;
-  char m[1024] = "";
-  for (f = defs; f != NULL; f = f->nxt) {
-    m[0] = '\0';
-    fprintf(s, "\n%s", catFunc(m, f));
-  }
-  fclose(s);*/
+  fclose(s);
 }
 
 void bindCFunctionsHeader(char* fname, CFunc* fs) {
