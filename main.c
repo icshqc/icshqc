@@ -39,6 +39,16 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
   return c;
 }
 
+Cmd* cpyCmd(Cmd* cmd) {
+  if (cmd != NULL) {
+    Cmd* c = initCmd(cmd->type, cmd->name, NULL);
+    c->args = cpyCmd(cmd->args);
+    c->nxt = cpyCmd(cmd->nxt);
+    c->valueType = cmd->valueType;
+    return c;
+  }
+}
+
 Attr* newAttr() {
   Attr* a = malloc(sizeof(Attr));
   if (a == NULL) {
@@ -407,6 +417,8 @@ char* trim(char* s) {
 char* catCmdType(char* b, CmdType t) {
   if (t == INT) {
     strcat(b, "INT");
+  } else if (t == VALUE) {
+    strcat(b, "VALUE");
   } else if (t == TUPLE) {
     strcat(b, "TUPLE");
   } else if (t == FUNCTION) {
@@ -466,6 +478,25 @@ char* catPrintCmd(char* b, Cmd* cmd) {
       }
     }
     strcat(b, cmd->type == ARRAY ? "]" : ")");
+  } else if (cmd->valueType != NULL) {
+    Type* t = cmd->valueType;
+    if (t->attrs == NULL) {
+      strcat(b, cmd->args->name);
+    } else {
+      strcat(b, "#");
+      strcat(b, t->name);
+      strcat(b, "{");
+      Attr* a;
+      for (a = t->attrs, n = cmd->args; n != NULL; n = n->nxt, a = a->nxt) {
+        strcat(b, a->name);
+        strcat(b, ": ");
+        catPrintCmd(b, n);
+        if (n->nxt != NULL) {
+          strcat(b, ", ");
+        }
+      }
+      strcat(b, "}");
+    }
   } else {
     strcat(b, cmd->name);
   }
@@ -1436,10 +1467,10 @@ Cmd* printVar(Cmd* cmd) {
   return outputStr(b);
 }
 
-Var* addNewVar(char* type, char* name) {
+Var* addNewVar(Type* type, char* name) {
   Var* var = malloc(sizeof(Var));
   strcpy(var->name, name);
-  var->type = typeByName(type);
+  var->type = type;
   var->val = NULL;
 
   Var* oldFirst = vars;
@@ -1451,8 +1482,15 @@ Var* addNewVar(char* type, char* name) {
 
 Cmd* construct(Cmd* cmd) {
   Type* t = typeByName(cmd->name + 1);
-  //addNewVar(cmd->name, cmd->args->name);
-  return NULL;
+  if (t == NULL) {
+    return errorStr("Unkown constructor.");
+  }
+  Cmd* ret = initCmd(VALUE, NULL, NULL);
+  ret->valueType = t;
+  if (t->attrs != NULL) {
+    addCmd(&ret->args, cpyCmd(cmd->args));
+  }
+  return ret;
 }
 
 Func* createFunc(Cmd* cmd) {
@@ -1518,7 +1556,7 @@ Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
   if (cmd->args->nxt != NULL) {
     char constructorName[52] = "#";
     strcat(constructorName, type->name);
-    addLoadedDef(loadedDefs, constructorName, MACRO, construct);
+    addLoadedDef(loadedDefs, constructorName, FUNCTION, construct);
   }
   return NULL;
 }
@@ -1526,7 +1564,7 @@ Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
 Cmd* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   if (v == NULL) {
-    v = addNewVar("int", cmd->args->name); // FIXME hardcoded type, but maybe var type is useless anyway.
+    v = addNewVar(NULL, cmd->args->name); // FIXME hardcoded type, but maybe var type is useless anyway.
   } else if (v->val != NULL) {
     freeCmd(v->val);
   }
@@ -1587,15 +1625,6 @@ Cmd* listDefs(Cmd* cmd) {
     n->type = STRING;
   }
   return arr;
-}
-
-Cmd* cpyCmd(Cmd* cmd) {
-  if (cmd != NULL) {
-    Cmd* c = initCmd(cmd->type, cmd->name, NULL);
-    c->args = cpyCmd(cmd->args);
-    c->nxt = cpyCmd(cmd->nxt);
-    return c;
-  }
 }
 
 // Reduces a Cmd down to a primitive type.
