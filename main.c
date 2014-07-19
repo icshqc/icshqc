@@ -1010,7 +1010,7 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   Arg* a;
 
   char filename[52] = "";
-  sprintf(filename, "src/bind/bind_%s.h", fname);
+  sprintf(filename, "src/bind/%s.h", fname);
   FILE* s = fopen(filename, "w");
 
   fprintf(s, "#ifndef BIND_H\n");
@@ -1049,10 +1049,10 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   Arg* a;
 
   char filename[52] = "";
-  sprintf(filename, "src/bind/bind_%s.c", fname);
+  sprintf(filename, "src/bind/%s.c", fname);
   FILE* s = fopen(filename, "w");
 
-  fprintf(s, "#include \"bind_%s.h\"\n\n", fname);
+  fprintf(s, "#include \"%s.h\"\n\n", fname);
 
   fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
@@ -1370,6 +1370,16 @@ Type* parseCStruct(CLine* l) {
   return t;
 }
 
+char* replace(char* str, char a, char b) {
+  char* s = str;
+  for (;*s != '\0'; ++s) {
+    if (*s == a) {
+      *s = b;
+    }
+  }
+  return str;
+}
+
 Cmd* parseCIncludeFile(char* filename) {
   FILE* s = fopen(filename, "r");
   //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
@@ -1414,8 +1424,17 @@ Cmd* parseCIncludeFile(char* filename) {
       }
     }
   }
-  //bindCFunctionsHeader(cmd->args->name, f0);
-  //bindCFunctionsSource(cmd->args->name, f0);
+  char bind_filename[52] = "bind_";
+  strcat(bind_filename, filename);
+  char* ext;
+  if ((ext = strchr(bind_filename, '.')) != NULL) {
+    *ext = '\0';
+  }
+  replace(bind_filename, '/', '_');
+  if (f0 != NULL) {
+    bindCFunctionsHeader(bind_filename, f0);
+    bindCFunctionsSource(bind_filename, f0);
+  }
   freeCFunc(f0);
   free(lines);
   return NULL;
