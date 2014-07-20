@@ -5,7 +5,6 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "sus", CFUNCTION, bind_sus);
   addLoadedDef(d, "mult", CFUNCTION, bind_mult);
   addLoadedDef(d, "divide", CFUNCTION, bind_divide);
-  addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
 int add(int x, int y);
