@@ -1288,18 +1288,16 @@ FILE* fopenWithExtension(char* extension, char* filename) {
   return fopen(buf, "r");
 }
 
-Attr* parseAttr(CLine* l) {
-  if (l == NULL) return NULL;
-
-  char* space = strrchr(trimEnd(l->val), ' ');
+Attr* parseAttr(char* val) {
+  char* space = strrchr(trimEnd(val), ' ');
   if (space == NULL) return NULL;
-  char* bracket = strchr(l->val, '[');
+  char* bracket = strchr(val, '[');
   Attr* a = newAttr();
   char type[32] = "";
   char array[12] = "";
   int arraySize = 0;
-  char* star = strchr(l->val, '*');
-  strncpy(type, l->val, star == NULL ? space - l->val : star - l->val);
+  char* star = strchr(val, '*');
+  strncpy(type, val, star == NULL ? space - val : star - val);
   if (bracket) {
     strncpy(array, bracket + 1, strlen(bracket) - 2);
     char* num; // ???
@@ -1324,7 +1322,6 @@ Attr* parseAttr(CLine* l) {
     freeAttr(a);
     return NULL;
   }
-  a->nxt = parseAttr(l->nxt);
   return a;
 }
 
@@ -1357,7 +1354,13 @@ Type* parseCStruct(CLine* l) {
   types = t;
   t->nxt = oldFirst;
   if (l->block != NULL) {
-    t->attrs = parseAttr(l->block);
+    t->attrs = parseAttr(l->block->val);
+    Attr* a = t->attrs;
+    CLine* li;
+    for (li = l->block->nxt; li != NULL; li = li->nxt) {
+      a->nxt = parseAttr(li->val);
+      a = a->nxt;
+    }
     if (t->attrs == NULL) {
       types = oldFirst;
       freeType(t);
