@@ -1072,29 +1072,37 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Cmd* bind_%s(Cmd* cmd) {\n", f->name);
     fprintf(s, "  Cmd* args = cmd->args;\n");
-    int i;
-    for (i = 1, a = f->args; a != NULL; a = a->nxt, i++) {
-      char argTypeFuncName[52] = "";
+    fprintf(s , "  char r[52] = \"\"; Cmd* m; CmdType t[] = {");
+    int nArgs = 0;
+    for (nArgs = 0, a = f->args; a != NULL; a = a->nxt, nArgs++) {
       char type[52] = "INT"; // FIXME
+      fprintf(s, "%s", type);
+      if (a->nxt != NULL) {
+        fprintf(s, ", ");
+      }
+    }
+    int i;
+    fprintf(s, "};\n");
+    fprintf(s, "  if ((m = checkSignature(cmd->args, t, %d)) != NULL) return m;\n", nArgs);
+    for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
+      char argTypeFuncName[52] = "";
       strcpy(argTypeFuncName, a->type);
-      fprintf(s, "  if (!validArg(&args, %s)) return errorStr(\"Invalid arg %d: Expected type %s\");\n",
-                 type, i, type);
-      fprintf(s, "  %s %s0 = %s(&args);\n", a->type, a->name, argTypeFunc(argTypeFuncName));
+      fprintf(s, "  %s %s_ = %s(%s);\n", a->type, a->name, argTypeFunc(argTypeFuncName),
+                 i == 0 ? "args" : "nxtCmd(&args)");
     }
     if (strlen(f->ret) > 0) {
-      fprintf(s, "  char ret[52] = \"\";\n");
-      fprintf(s, "  retCmd(INT, cat_arg%s(ret, %s(", f->ret, f->name);
+      fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", f->ret, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
     for (a = f->args; a != NULL; a = a->nxt) {
-      fprintf(s, "%s0", a->name);
+      fprintf(s, "%s_", a->name);
       if (a->nxt != NULL) {
         fprintf(s, ", ");
       }
     }
     if (strlen(f->ret) > 0) {
-      fprintf(s, "))");
+      fprintf(s, ")), NULL");
     }
     fprintf(s, ");\n}\n\n");
   }
