@@ -3,20 +3,23 @@
 
 #include "../../model.h"
 
-char* argstring(Cmd** cmd);
-char argchar(Cmd** cmd);
-int argint(Cmd** cmd);
+char* argstring(Cmd* cmd);
+char argchar(Cmd* cmd);
+int argint(Cmd* cmd);
 
 char* cat_argstring(char* b, char* s);
 char* cat_argchar(char* b, char s);
 char* cat_argint(char* b, int s);
 
 Cmd* newCmd();
-Cmd* retCmd(CmdType type, char* name);
+Cmd* initCmd(CmdType type, const char* val, Cmd* args);
 
 Cmd* errorStr(const char* str);
 
-int validArg(Cmd** cmd, CmdType type);
+Cmd* nxtCmd(Cmd** cmd);
+Cmd* checkSignature(Cmd* args, CmdType* types, int nArgs);
+
+int validArg(Cmd* cmd, CmdType type);
 
 LoadedDef* lastLoadedDef();
 LoadedDef* createLoadedDef(char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd));

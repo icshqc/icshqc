@@ -32,14 +32,6 @@ static Func* funcs = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
-Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
-  Cmd* c = newCmd();
-  if (val != NULL) strcpy(c->name, val);
-  c->type = type;
-  c->args = args;
-  return c;
-}
-
 Cmd* cpyCmd(Cmd* cmd) {
   if (cmd == NULL) return NULL;
   

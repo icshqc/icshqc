@@ -17,6 +17,28 @@ Cmd* newCmd() {
   return arg0;
 }
 
+Cmd* nxtCmd(Cmd** cmd) {
+  *cmd = (*cmd)->nxt;
+  return *cmd;
+}
+
+Cmd* checkSignature(Cmd* args, CmdType* types, int nArgs) {
+  CmdType* t;
+  Cmd* c;
+  int i;
+  for (i = 0, c = args, t = types; i < nArgs; i++, c = c->nxt, t++) {
+    if (c == NULL) {
+      return errorStr("Missing arg.");
+    } else if (c == NULL || c->type != *t) {
+      return errorStr("Invalid arg i: Expected type ...");
+    }
+  }
+  if (c != NULL) {
+    return errorStr("Supplied too many args.");
+  }
+  return NULL;
+}
+
 Cmd* errorStr(const char* str) {
   Cmd* cmd = newCmd();
   cmd->type = ERROR;
@@ -24,8 +46,8 @@ Cmd* errorStr(const char* str) {
   return cmd;
 }
 
-int validArg(Cmd** cmd, CmdType type) {
-  if (*cmd == NULL || (*cmd)->type != type) return 0;
+int validArg(Cmd* cmd, CmdType type) {
+  if (cmd == NULL || cmd->type != type) return 0;
   return 1;
 }
 
@@ -44,32 +66,23 @@ char* cat_argint(char* b, int s) {
   return b;
 }
 
-char* argstring(Cmd** cmd) {
-  Cmd* c = *cmd;
-  if (c == NULL) return NULL;
-  *cmd = c->nxt;
-  return c->name;
+char* argstring(Cmd* cmd) {
+  return cmd->name;
 }
-char argchar(Cmd** cmd) {
-  Cmd* c = *cmd;
-  if (c == NULL) return '\0';
-  *cmd = c->nxt;
-  //if (strlen(c->name) != 1) { error }
-  return c->name[0];
+char argchar(Cmd* cmd) {
+  return cmd->name[0];
 }
-int argint(Cmd** cmd) {
-  Cmd* c = *cmd;
-  *cmd = c->nxt;
-  //if (strlen(c->name) != 1) { error }
+int argint(Cmd* cmd) {
   char* num; // ???
-  return strtol(&c->name[0], &num, 0); // TODO: string to integer
+  return strtol(cmd->name, &num, 0);
 }
 
-Cmd* retCmd(CmdType type, char* name) {
-  Cmd* cmd = newCmd();
-  cmd->type = type;
-  strcpy(cmd->name, name);
-  return cmd;
+Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
+  Cmd* c = newCmd();
+  if (val != NULL) strcpy(c->name, val);
+  c->type = type;
+  c->args = args;
+  return c;
 }
 
 LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {
