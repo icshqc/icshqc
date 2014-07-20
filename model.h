@@ -19,13 +19,6 @@ struct VarType {
 };
 typedef struct VarType VarType;
 
-struct Arg {
-  char name[52];
-  VarType type;
-  struct Arg* nxt;
-};
-typedef struct Arg Arg;
-
 struct Attr {
   char name[32];
   struct VarType type;
@@ -43,7 +36,7 @@ typedef struct Type Type;
 struct CFunc {
   char name[52];
   VarType ret;
-  Arg* args;
+  Attr* args;
   struct CFunc* nxt;
 };
 typedef struct CFunc CFunc;
@@ -77,7 +70,7 @@ struct Func {
   char name[52];
   VarType ret;
   int isOperator;
-  Arg* args;
+  Attr* args;
   Cmd* cmd;
   struct Func* nxt;
 };

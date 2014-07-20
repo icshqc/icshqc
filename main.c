@@ -98,24 +98,11 @@ Func* newFunc() {
   return f;
 }
 
-Arg* newArg() {
-  Arg* arg0 = malloc(sizeof(Arg));
-  if (arg0 == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(arg0->name, '\0', sizeof(arg0->name));
-  arg0->type.type = NULL;
-  arg0->type.arraySize = 0;
-  arg0->type.ptr = 0;
-  arg0->nxt = NULL;
-  return arg0;
-}
-
-Arg* appendNewArg(Arg* arg) {
+Attr* appendNewAttr(Attr* arg) {
   if (arg == NULL) {
-    return newArg();
+    return newAttr();
   } else {
-    arg->nxt = newArg();
+    arg->nxt = newAttr();
     return arg->nxt;
   }
 }
@@ -154,16 +141,9 @@ void freeLoadedDef(LoadedDef* d) {
   }
 }
 
-void freeArg(Arg* f) {
-  if (f != NULL) {
-    freeArg(f->nxt);
-    free(f);
-  }
-}
-
 void freeCFunc(CFunc* f) {
   if (f != NULL) {
-    freeArg(f->args);
+    freeAttr(f->args);
     freeCFunc(f->nxt);
     free(f);
   }
@@ -179,7 +159,7 @@ void freeCmd(Cmd* arg) {
 void freeFunc(Func* f) {
   if (f != NULL) {
     freeCmd(f->cmd);
-    freeArg(f->args);
+    freeAttr(f->args);
     freeFunc(f->nxt);
     free(f);
   }
@@ -305,9 +285,9 @@ char* strVal(char* val, Cmd* cmd) {
   return val;
 }
 
-/*char* catArg(char* m, Arg* arg) {
+/*char* catAttr(char* m, Attr* arg) {
   if (arg != NULL) {
-    Arg* n = arg->nxt;
+    Attr* n = arg->nxt;
     strcat(m, arg->val);
     while (n != NULL) {
       strcat(m, " ");
@@ -695,7 +675,7 @@ ParsePair parse(char* command, char* allowedChars) {
   }
   return parsePair(cmd, trim(c));
 }
-ParsePair parseArg(char* command) {
+ParsePair parseAttr(char* command) {
   Cmd* cmd = initCmd(PAIR, NULL, NULL);
   ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS);
   if (*(p.ptr) != ' ') {
@@ -710,7 +690,7 @@ ParsePair parseArg(char* command) {
     cmd->args->nxt = p.cmd;
     cmd->args->nxt->type = VAR_NAME;
     if (*(p.ptr) == ',') {
-      p = parseArg(p.ptr+1);
+      p = parseAttr(p.ptr+1);
       cmd->nxt = p.cmd;
       return parsePair(cmd, p.ptr);
     } else {
@@ -737,7 +717,7 @@ ParsePair parseBlock(char* command) {
   block->args->type = TYPE;
   s = trim(s+1);
   if (*s == '|') {
-    p = parseArg(++s);
+    p = parseAttr(++s);
     block->args->nxt = p.cmd;
     s = p.ptr;
   }
@@ -935,9 +915,9 @@ void escapeName(char* str) {
 
 /*void compileFunc(char* s, Func* f) {
   char tmp[1024] = "";
-  Arg* ret;
-  Arg* arg;
-  Arg* arg2 = NULL;
+  Attr* ret;
+  Attr* arg;
+  Attr* arg2 = NULL;
   int n;
 
   for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
@@ -995,7 +975,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
     fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", f->ret.type->name);
     if (f->args != NULL) {
       fprintf(s, "|");
-      Arg* a;
+      Attr* a;
       for (a = f->args; a != NULL; a = a->nxt) {
         fprintf(s, "%s %s", a->type.type->name, a->name);
         if (a->nxt != NULL) {
@@ -1051,7 +1031,7 @@ char* argTypeFunc(char* name) {
 
 void bindCFunctionsSource(char* fname, CFunc* fs) {
   CFunc* f;
-  Arg* a;
+  Attr* a;
 
   char filename[52] = "";
   sprintf(filename, "src/bind/%s.c", fname);
@@ -1083,8 +1063,8 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     fprintf(s, "Cmd* bind_%s(Cmd* cmd) {\n", f->name);
     fprintf(s, "  Cmd* args = cmd->args;\n");
     fprintf(s , "  char r[52] = \"\"; Cmd* m; CmdType t[] = {");
-    int nArgs = 0;
-    for (nArgs = 0, a = f->args; a != NULL; a = a->nxt, nArgs++) {
+    int nAttrs = 0;
+    for (nAttrs = 0, a = f->args; a != NULL; a = a->nxt, nAttrs++) {
       char type[52] = "INT"; // FIXME
       fprintf(s, "%s", type);
       if (a->nxt != NULL) {
@@ -1093,7 +1073,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     }
     int i;
     fprintf(s, "};\n");
-    fprintf(s, "  if ((m = checkSignature(cmd->args, t, %d)) != NULL) return m;\n", nArgs);
+    fprintf(s, "  if ((m = checkSignature(cmd->args, t, %d)) != NULL) return m;\n", nAttrs);
     for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
       char argTypeFuncName[52] = "";
       strcpy(argTypeFuncName, a->type.type->name);
@@ -1123,13 +1103,13 @@ CFunc* parseCFunction(char* s0) {
   char* s = s0;
   CFunc* f = newCFunc();
   char* lastSpace = NULL;
-  char* lastArg = s0;
-  Arg* a = NULL;
+  char* lastAttr = s0;
+  Attr* a = NULL;
   int nested = 0;
   while (*s != '\0') {
-    if (*s == ' ' && lastArg == s) {
+    if (*s == ' ' && lastAttr == s) {
       // discard trailing spaces;
-      ++lastArg;
+      ++lastAttr;
     } else if (*s == ' ') {
       lastSpace = s;
     } else if (a == NULL && *s == '(') {
@@ -1137,20 +1117,20 @@ CFunc* parseCFunction(char* s0) {
       strncpy(ret, s0, lastSpace - s0);
       f->ret = parseVarType(ret);
       strncpy(f->name, lastSpace+1, s - (lastSpace+1));
-      lastArg = s+1;
-    } else if (*s == ',' || (nested == 1 && *s == ')' && lastArg != s && lastSpace > lastArg)) {
+      lastAttr = s+1;
+    } else if (*s == ',' || (nested == 1 && *s == ')' && lastAttr != s && lastSpace > lastAttr)) {
       if (a == NULL) {
-        f->args = newArg();
+        f->args = newAttr();
         a = f->args;
       } else {
-        a->nxt = newArg();
+        a->nxt = newAttr();
         a = a->nxt;
       }
       char aType[52] = "";
-      strncpy(aType, lastArg, lastSpace - lastArg);
+      strncpy(aType, lastAttr, lastSpace - lastAttr);
       a->type = parseVarType(aType);
       strncpy(a->name, lastSpace+1, s - (lastSpace+1));
-      lastArg = s+1;
+      lastAttr = s+1;
     }
     if (*s == '(') ++nested;
     if (*s == ')') --nested;
@@ -1500,8 +1480,8 @@ char* argVal(char* buf, Cmd* arg) {
   if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
 
   Cmd* c;
-  Arg* arg;
-  Arg* ret;
+  Attr* arg;
+  Attr* ret;
   int n;
   int i;
 
@@ -1568,7 +1548,7 @@ char* argVal(char* buf, Cmd* arg) {
     strcat(cmds, " "); 
     argVal(cmds, c);
   }
-  FILE *fp = popen(cmds, "r"); // TODO: Args
+  FILE *fp = popen(cmds, "r"); // TODO: Attrs
 
   fscanf(fp, "%s", retVal);
   pclose(fp);
@@ -1599,13 +1579,13 @@ Func* createFunc(Cmd* cmd) {
   Cmd* block = cmd->args->nxt;
   f->ret = parseVarType(block->args->name);
   Cmd* arg = block->args->nxt;
-  Arg* a = NULL;
+  Attr* a = NULL;
   while(arg != NULL && arg->type == PAIR) {
     if (a == NULL) {
-      f->args = newArg();
+      f->args = newAttr();
       a = f->args;
     } else {
-      a->nxt = newArg();
+      a->nxt = newAttr();
       a = a->nxt;
     }
     a->type = parseVarType(arg->args->name);
