@@ -41,13 +41,13 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
 }
 
 Cmd* cpyCmd(Cmd* cmd) {
-  if (cmd != NULL) {
-    Cmd* c = initCmd(cmd->type, cmd->name, NULL);
-    c->args = cpyCmd(cmd->args);
-    c->nxt = cpyCmd(cmd->nxt);
-    c->valueType = cmd->valueType;
-    return c;
-  }
+  if (cmd == NULL) return NULL;
+  
+  Cmd* c = initCmd(cmd->type, cmd->name, NULL);
+  c->args = cpyCmd(cmd->args);
+  c->nxt = cpyCmd(cmd->nxt);
+  c->valueType = cmd->valueType;
+  return c;
 }
 
 Attr* newAttr() {
@@ -258,6 +258,7 @@ int getLines() {
 #ifdef CURSES_MODE
   return LINES;
 #else
+  return 30;
 #endif
 }
 
@@ -466,6 +467,7 @@ char* catCmdType(char* b, CmdType t) {
   } else {
     strcat(b, "FIXME_UNKOWN_TYPE");
   }
+  return b;
 }
 
 char* catPrintCmd(char* b, Cmd* cmd) {
@@ -1009,7 +1011,6 @@ void save() { // .qc extension. Quick C, Quebec!!!
 
 void bindCFunctionsHeader(char* fname, CFunc* fs) {
   CFunc* f;
-  Arg* a;
 
   char filename[52] = "";
   sprintf(filename, "src/bind/%s.h", fname);
@@ -1294,43 +1295,43 @@ FILE* fopenWithExtension(char* extension, char* filename) {
 }
 
 Attr* parseVarDefs(CLine* l) {
-  if (l != NULL) {
-    char* space = strrchr(trimEnd(l->val), ' ');
-    if (space == NULL) return NULL;
-    char* bracket = strchr(l->val, '[');
-    Attr* a = newAttr();
-    char type[32] = "";
-    char array[12] = "";
-    int arraySize = 0;
-    char* star = strchr(l->val, '*');
-    strncpy(type, l->val, star == NULL ? space - l->val : star - l->val);
-    if (bracket) {
-      strncpy(array, bracket + 1, strlen(bracket) - 2);
-      char* num; // ???
-      arraySize = strtol(array, &num, 0);
-      strncpy(a->name, space + 1, bracket - space - 1);
-    } else {
-      strncpy(a->name, space + 1, strlen(space) - 2);
-    }
-    a->type.arraySize = arraySize;
-    a->type.type = typeByName(type);
-    if (star != NULL) {
-      int nStar = 0;
-      while (*star == ' ' || *star == '*' || *star == '\t') {
-        if (*star == '*') {
-          nStar++;
-        }
-        star++;
-      }
-      a->type.ptr = nStar;
-    }
-    if (a->type.type == NULL) {
-      freeAttr(a);
-      return NULL;
-    }
-    a->nxt = parseVarDefs(l->nxt);
-    return a;
+  if (l == NULL) return NULL;
+
+  char* space = strrchr(trimEnd(l->val), ' ');
+  if (space == NULL) return NULL;
+  char* bracket = strchr(l->val, '[');
+  Attr* a = newAttr();
+  char type[32] = "";
+  char array[12] = "";
+  int arraySize = 0;
+  char* star = strchr(l->val, '*');
+  strncpy(type, l->val, star == NULL ? space - l->val : star - l->val);
+  if (bracket) {
+    strncpy(array, bracket + 1, strlen(bracket) - 2);
+    char* num; // ???
+    arraySize = strtol(array, &num, 0);
+    strncpy(a->name, space + 1, bracket - space - 1);
+  } else {
+    strncpy(a->name, space + 1, strlen(space) - 2);
   }
+  a->type.arraySize = arraySize;
+  a->type.type = typeByName(type);
+  if (star != NULL) {
+    int nStar = 0;
+    while (*star == ' ' || *star == '*' || *star == '\t') {
+      if (*star == '*') {
+        nStar++;
+      }
+      star++;
+    }
+    a->type.ptr = nStar;
+  }
+  if (a->type.type == NULL) {
+    freeAttr(a);
+    return NULL;
+  }
+  a->nxt = parseVarDefs(l->nxt);
+  return a;
 }
 
 Type* parseTypedef(CLine* l) {
@@ -1449,7 +1450,6 @@ void eval(Cmd* cmd);
 
 void load() {
   int c;
-  size_t n = 0;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
   if (s != NULL) {
     char input[512] = "";
@@ -1477,6 +1477,7 @@ char* argVal(char* buf, Cmd* arg) {
   } else {
     strcat(buf, arg->name);
   }
+  return buf;
 }
 
 /*void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
@@ -1871,41 +1872,10 @@ void printCLine(CLine* lines, int nested) {
 #ifdef DEBUG_MODE
 int main(int argc, char* argv[])
 {
-  ffi_cif cif;
-  ffi_type *args[2];
-  void *values[2];
-  char b[52] = "";
-  char *s = b;
-  unsigned char c;
-  char* rc;
-  
-  /* Initialize the argument info vectors */
-  args[0] = &ffi_type_pointer;
-  args[1] = &ffi_type_uchar;
-  values[0] = &s;
-  values[1] = &c;
-  
-  /* Initialize the cif */
-  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 2, &ffi_type_pointer, args) == FFI_OK) {
-    strcpy(b, "Hello world!");
-    c = 'a';
-    ffi_call(&cif, straddch, &rc, values);
-    printf("%s", s);
-    /* rc now holds the result of the call to puts */
-                                                                                                                              
-    /* values holds a pointer to the function's arg, so to
-    call puts() again all we need to do is change the
-    value of s */
-    strcpy(b, "This is cool!");
-    c = 'b';
-    ffi_call(&cif, straddch, &rc, values);
-    printf("%s", s);
-  }
-    
   return 0;
 }
 #else
-void main()
+int main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
@@ -1943,5 +1913,6 @@ void main()
   loop();
 
   finish(0);
+  return 0;
 }
 #endif

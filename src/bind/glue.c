@@ -31,14 +31,17 @@ int validArg(Cmd** cmd, CmdType type) {
 
 char* cat_argstring(char* b, char* s) {
   strcat(b, s);
+  return b;
 }
 char* cat_argchar(char* b, char s) {
   *(b + strlen(b)) = s;
+  return b;
 }
 char* cat_argint(char* b, int s) {
   char buffer[52] = "";
   sprintf(buffer, "%d", s);
   strcat(b, buffer);
+  return b;
 }
 
 char* argstring(Cmd** cmd) {
@@ -72,16 +75,15 @@ Cmd* retCmd(CmdType type, char* name) {
 LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {
   LoadedDef* f = createLoadedDef(name, type, ptr);
   lastLoadedDef(p)->nxt = f;
+  return p;
 }
 
 LoadedDef* lastLoadedDef(LoadedDef* d) {
-  if (d == NULL) {
-    return NULL;
-  } else {
-    LoadedDef* f;
-    for (f = d; f->nxt != NULL; f = f->nxt) {}
-    return f;
-  }
+  if (d == NULL) return NULL;
+  
+  LoadedDef* f;
+  for (f = d; f->nxt != NULL; f = f->nxt) {}
+  return f;
 }
 
 LoadedDef* createLoadedDef(char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {

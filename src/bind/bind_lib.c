@@ -19,7 +19,7 @@ Cmd* bind_add(Cmd* cmd) {
   if (!validArg(&args, INT)) return errorStr("Invalid arg 2: Expected type INT");
   int y0 = argint(&args);
   char ret[52] = "";
-  retCmd(INT, cat_argint(ret, add(x0, y0)));
+  return retCmd(INT, cat_argint(ret, add(x0, y0)));
 }
 
 Cmd* bind_sus(Cmd* cmd) {
@@ -29,7 +29,7 @@ Cmd* bind_sus(Cmd* cmd) {
   if (!validArg(&args, INT)) return errorStr("Invalid arg 2: Expected type INT");
   int y0 = argint(&args);
   char ret[52] = "";
-  retCmd(INT, cat_argint(ret, sus(x0, y0)));
+  return retCmd(INT, cat_argint(ret, sus(x0, y0)));
 }
 
 Cmd* bind_mult(Cmd* cmd) {
@@ -39,7 +39,7 @@ Cmd* bind_mult(Cmd* cmd) {
   if (!validArg(&args, INT)) return errorStr("Invalid arg 2: Expected type INT");
   int y0 = argint(&args);
   char ret[52] = "";
-  retCmd(INT, cat_argint(ret, mult(x0, y0)));
+  return retCmd(INT, cat_argint(ret, mult(x0, y0)));
 }
 
 Cmd* bind_divide(Cmd* cmd) {
@@ -49,6 +49,6 @@ Cmd* bind_divide(Cmd* cmd) {
   if (!validArg(&args, INT)) return errorStr("Invalid arg 2: Expected type INT");
   int y0 = argint(&args);
   char ret[52] = "";
-  retCmd(INT, cat_argint(ret, divide(x0, y0)));
+  return retCmd(INT, cat_argint(ret, divide(x0, y0)));
 }
 
