@@ -86,7 +86,7 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(f->name, '\0', sizeof(f->name));
-  memset(f->ret, '\0', sizeof(f->ret));
+  f->ret.type = NULL;
   f->cmd = NULL;
   f->args = NULL;
   f->isOperator = 0;
@@ -977,7 +977,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   Func* f;
   for (f = funcs; f != NULL; f = f->nxt) {
-    fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", f->ret);
+    fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", f->ret.type->name);
     if (f->args != NULL) {
       fprintf(s, "|");
       Arg* a;
@@ -1574,11 +1574,20 @@ Var* addNewVar(Type* type, char* name) {
   return var;
 }
 
+// TODO: able to parse pointers and arrays and shit
+VarType parseVarType(char* str) { 
+  VarType v;
+  v.type = typeByName(str);
+  v.ptr = 0;
+  v.arraySize = 0;
+  return v;
+}
+
 Func* createFunc(Cmd* cmd) {
   Func* f = newFunc();
   strcpy(f->name, cmd->args->name);
   Cmd* block = cmd->args->nxt;
-  strcpy(f->ret, block->args->name);
+  f->ret = parseVarType(block->args->name);
   Cmd* arg = block->args->nxt;
   Arg* a = NULL;
   while(arg != NULL && arg->type == PAIR) {

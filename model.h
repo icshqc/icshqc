@@ -10,13 +10,6 @@ enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STR
               BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE, VALUE};
 typedef enum CmdType CmdType;
 
-struct Arg {
-  char name[52];
-  char type[52];
-  struct Arg* nxt;
-};
-typedef struct Arg Arg;
-
 struct Type;
 
 struct VarType {
@@ -25,6 +18,13 @@ struct VarType {
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
 };
 typedef struct VarType VarType;
+
+struct Arg {
+  char name[52];
+  char type[52];
+  struct Arg* nxt;
+};
+typedef struct Arg Arg;
 
 struct Attr {
   char name[32];
@@ -75,7 +75,7 @@ typedef struct Var Var;
 
 struct Func {
   char name[52];
-  char ret[52];
+  VarType ret;
   int isOperator;
   Arg* args;
   Cmd* cmd;
