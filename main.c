@@ -675,7 +675,7 @@ ParsePair parse(char* command, char* allowedChars) {
   }
   return parsePair(cmd, trim(c));
 }
-ParsePair parseAttr(char* command) {
+ParsePair parseBlockAttr(char* command) {
   Cmd* cmd = initCmd(PAIR, NULL, NULL);
   ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS);
   if (*(p.ptr) != ' ') {
@@ -690,7 +690,7 @@ ParsePair parseAttr(char* command) {
     cmd->args->nxt = p.cmd;
     cmd->args->nxt->type = VAR_NAME;
     if (*(p.ptr) == ',') {
-      p = parseAttr(p.ptr+1);
+      p = parseBlockAttr(p.ptr+1);
       cmd->nxt = p.cmd;
       return parsePair(cmd, p.ptr);
     } else {
@@ -717,7 +717,7 @@ ParsePair parseBlock(char* command) {
   block->args->type = TYPE;
   s = trim(s+1);
   if (*s == '|') {
-    p = parseAttr(++s);
+    p = parseBlockAttr(++s);
     block->args->nxt = p.cmd;
     s = p.ptr;
   }
@@ -1288,7 +1288,7 @@ FILE* fopenWithExtension(char* extension, char* filename) {
   return fopen(buf, "r");
 }
 
-Attr* parseVarDefs(CLine* l) {
+Attr* parseAttr(CLine* l) {
   if (l == NULL) return NULL;
 
   char* space = strrchr(trimEnd(l->val), ' ');
@@ -1324,7 +1324,7 @@ Attr* parseVarDefs(CLine* l) {
     freeAttr(a);
     return NULL;
   }
-  a->nxt = parseVarDefs(l->nxt);
+  a->nxt = parseAttr(l->nxt);
   return a;
 }
 
@@ -1357,7 +1357,7 @@ Type* parseCStruct(CLine* l) {
   types = t;
   t->nxt = oldFirst;
   if (l->block != NULL) {
-    t->attrs = parseVarDefs(l->block);
+    t->attrs = parseAttr(l->block);
     if (t->attrs == NULL) {
       types = oldFirst;
       freeType(t);
