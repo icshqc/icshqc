@@ -74,7 +74,9 @@ CFunc* newCFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
-  memset(arg0->ret, '\0', sizeof(arg0->ret));
+  arg0->ret.type = NULL;
+  arg0->ret.ptr = 0;
+  arg0->ret.arraySize = 0;
   arg0->args = NULL;
   arg0->nxt = NULL;
   return arg0;
@@ -87,6 +89,8 @@ Func* newFunc() {
   }
   memset(f->name, '\0', sizeof(f->name));
   f->ret.type = NULL;
+  f->ret.ptr = 0;
+  f->ret.arraySize = 0;
   f->cmd = NULL;
   f->args = NULL;
   f->isOperator = 0;
@@ -100,7 +104,9 @@ Arg* newArg() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
-  memset(arg0->type, '\0', sizeof(arg0->type));
+  arg0->type.type = NULL;
+  arg0->type.arraySize = 0;
+  arg0->type.ptr = 0;
   arg0->nxt = NULL;
   return arg0;
 }
@@ -597,6 +603,15 @@ int isInteger(char* str) {
   return 1;
 }
 
+// TODO: able to parse pointers and arrays and shit
+VarType parseVarType(char* str) { 
+  VarType v;
+  v.type = typeByName(str);
+  v.ptr = 0;
+  v.arraySize = 0;
+  return v;
+}
+
 Cmd* runFunc(Cmd* cmd) {
   // TODO, replace all of f->args in f->cmd by cmd->args
   Func* f = funcByName(cmd->name);
@@ -982,7 +997,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
       fprintf(s, "|");
       Arg* a;
       for (a = f->args; a != NULL; a = a->nxt) {
-        fprintf(s, "%s %s", a->type, a->name);
+        fprintf(s, "%s %s", a->type.type->name, a->name);
         if (a->nxt != NULL) {
           fprintf(s, ", ");
         }
@@ -1053,9 +1068,9 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   // In case the header was not defined, that it was just
   // a source file, define the prototype of the function.
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "%s %s(", f->ret, f->name);
+    fprintf(s, "%s %s(", f->ret.type->name, f->name);
     for (a = f->args; a != NULL; a = a->nxt) {
-      fprintf(s, "%s %s", a->type, a->name);
+      fprintf(s, "%s %s", a->type.type->name, a->name);
       if (a->nxt != NULL) {
         fprintf(s, ", ");
       }
@@ -1081,12 +1096,12 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     fprintf(s, "  if ((m = checkSignature(cmd->args, t, %d)) != NULL) return m;\n", nArgs);
     for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
       char argTypeFuncName[52] = "";
-      strcpy(argTypeFuncName, a->type);
-      fprintf(s, "  %s %s_ = %s(%s);\n", a->type, a->name, argTypeFunc(argTypeFuncName),
+      strcpy(argTypeFuncName, a->type.type->name);
+      fprintf(s, "  %s %s_ = %s(%s);\n", a->type.type->name, a->name, argTypeFunc(argTypeFuncName),
                  i == 0 ? "args" : "nxtCmd(&args)");
     }
-    if (strlen(f->ret) > 0) {
-      fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", f->ret, f->name);
+    if (f->ret.type != NULL) {
+      fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", f->ret.type->name, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
@@ -1096,7 +1111,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
         fprintf(s, ", ");
       }
     }
-    if (strlen(f->ret) > 0) {
+    if (f->ret.type != NULL) {
       fprintf(s, ")), NULL");
     }
     fprintf(s, ");\n}\n\n");
@@ -1118,7 +1133,9 @@ CFunc* parseCFunction(char* s0) {
     } else if (*s == ' ') {
       lastSpace = s;
     } else if (a == NULL && *s == '(') {
-      strncpy(f->ret, s0, lastSpace - s0);
+      char ret[52] = "";
+      strncpy(ret, s0, lastSpace - s0);
+      f->ret = parseVarType(ret);
       strncpy(f->name, lastSpace+1, s - (lastSpace+1));
       lastArg = s+1;
     } else if (*s == ',' || (nested == 1 && *s == ')' && lastArg != s && lastSpace > lastArg)) {
@@ -1129,7 +1146,9 @@ CFunc* parseCFunction(char* s0) {
         a->nxt = newArg();
         a = a->nxt;
       }
-      strncpy(a->type, lastArg, lastSpace - lastArg);
+      char aType[52] = "";
+      strncpy(aType, lastArg, lastSpace - lastArg);
+      a->type = parseVarType(aType);
       strncpy(a->name, lastSpace+1, s - (lastSpace+1));
       lastArg = s+1;
     }
@@ -1574,15 +1593,6 @@ Var* addNewVar(Type* type, char* name) {
   return var;
 }
 
-// TODO: able to parse pointers and arrays and shit
-VarType parseVarType(char* str) { 
-  VarType v;
-  v.type = typeByName(str);
-  v.ptr = 0;
-  v.arraySize = 0;
-  return v;
-}
-
 Func* createFunc(Cmd* cmd) {
   Func* f = newFunc();
   strcpy(f->name, cmd->args->name);
@@ -1598,7 +1608,7 @@ Func* createFunc(Cmd* cmd) {
       a->nxt = newArg();
       a = a->nxt;
     }
-    strcpy(a->type, arg->args->name);
+    a->type = parseVarType(arg->args->name);
     strcpy(a->name, arg->args->nxt->name);
     arg = arg->nxt;
   }

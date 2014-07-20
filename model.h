@@ -21,7 +21,7 @@ typedef struct VarType VarType;
 
 struct Arg {
   char name[52];
-  char type[52];
+  VarType type;
   struct Arg* nxt;
 };
 typedef struct Arg Arg;
@@ -42,7 +42,7 @@ typedef struct Type Type;
 
 struct CFunc {
   char name[52];
-  char ret[52];
+  VarType ret;
   Arg* args;
   struct CFunc* nxt;
 };
