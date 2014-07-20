@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <string.h>
 
+#include <ffi.h>
+
 #include "model.h"
 #include "src/bind/glue.h"
 
@@ -1867,9 +1869,40 @@ void printCLine(CLine* lines, int nested) {
 }
 
 #ifdef DEBUG_MODE
-void main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-  parseCIncludeFile("tmp/test.c");
+  ffi_cif cif;
+  ffi_type *args[2];
+  void *values[2];
+  char b[52] = "";
+  char *s = b;
+  unsigned char c;
+  char* rc;
+  
+  /* Initialize the argument info vectors */
+  args[0] = &ffi_type_pointer;
+  args[1] = &ffi_type_uchar;
+  values[0] = &s;
+  values[1] = &c;
+  
+  /* Initialize the cif */
+  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 2, &ffi_type_pointer, args) == FFI_OK) {
+    strcpy(b, "Hello world!");
+    c = 'a';
+    ffi_call(&cif, straddch, &rc, values);
+    printf("%s", s);
+    /* rc now holds the result of the call to puts */
+                                                                                                                              
+    /* values holds a pointer to the function's arg, so to
+    call puts() again all we need to do is change the
+    value of s */
+    strcpy(b, "This is cool!");
+    c = 'b';
+    ffi_call(&cif, straddch, &rc, values);
+    printf("%s", s);
+  }
+    
+  return 0;
 }
 #else
 void main()

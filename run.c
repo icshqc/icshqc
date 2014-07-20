@@ -51,7 +51,7 @@ void main(int argc, char* argv[]) {
     }
   }
 
-  char cmd[256] = "gcc -o ";
+  char cmd[256] = "gcc -Wall -o ";
   if (debug_mode) {
     strcat(cmd, "build/debug -g ");
   } else {
@@ -64,6 +64,7 @@ void main(int argc, char* argv[]) {
   strcat(cmd, " main.c");
   strcat(cmd, " -lncurses");
   strcat(cmd, " -lSDL");
+  strcat(cmd, " -lffi");
   strcat(cmd, " -lSDL_ttf");
   if (debug_mode) {
     strcat(cmd, " && gdb build/debug");
