@@ -15,4 +15,5 @@ Cmd* bind_add(Cmd* cmd);
 Cmd* bind_sus(Cmd* cmd);
 Cmd* bind_mult(Cmd* cmd);
 Cmd* bind_divide(Cmd* cmd);
+Cmd* bind_straddch(Cmd* cmd);
 #endif // BIND_H

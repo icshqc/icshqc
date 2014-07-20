@@ -5,12 +5,14 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "sus", CFUNCTION, bind_sus);
   addLoadedDef(d, "mult", CFUNCTION, bind_mult);
   addLoadedDef(d, "divide", CFUNCTION, bind_divide);
+  addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
 int add(int x, int y);
 int sus(int x, int y);
 int mult(int x, int y);
 int divide(int x, int y);
+char* straddch(char* str, char c);
 
 Cmd* bind_add(Cmd* cmd) {
   Cmd* args = cmd->args;
@@ -47,4 +49,3 @@ Cmd* bind_divide(Cmd* cmd) {
   int y_ = argint(nxtCmd(&args));
   return initCmd(INT, cat_argint(r, divide(x_, y_)), NULL);
 }
-

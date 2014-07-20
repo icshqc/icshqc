@@ -8,6 +8,8 @@
 #include "model.h"
 #include "src/bind/glue.h"
 
+#include "src/lib.h"
+
 //#include "bind.h"
 #include "src/bind/bind.h"
 
@@ -312,13 +314,6 @@ char* strVal(char* val, Cmd* cmd) {
 }*/
 
 // HELPER
-
-char* straddch(char* str, char c) { //FIXME: Not buffer safe
-  int i = strlen(str);
-  str[i] = c;
-  str[i+1] = '\0';
-  return str;
-}
 
 void strinsertch(char* cursor, char c) { //FIXME: Not buffer safe
   char* s = cursor;
