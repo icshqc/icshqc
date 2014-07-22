@@ -1477,86 +1477,6 @@ char* argVal(char* buf, Cmd* arg) {
   return buf;
 }
 
-/*void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
-  Func* f = funcByName(cmd->name);
-  if (f == NULL) return;
-  if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
-
-  Cmd* c;
-  Attr* arg;
-  Attr* ret;
-  int n;
-  int i;
-
-  // TODO: Move this part to a function
-  char escName[128] = "";
-  strcpy(escName, cmd->name);
-  escapeName(escName);
-  char filename[64] = "";
-  sprintf(filename, "tmp/%s.c", escName);
-  FILE* s = fopen(filename, "w"); // FIXME: Check if valid file. Not NULL.
-  fprintf(s, "#include <stdlib.h>\n");
-  fprintf(s, "#include <stdio.h>\n\n");
-
-  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
-  }
-  ret = arg;
-  
-  char fs[2056] = "";
-  compileFunc(fs, f);
-  fprintf(s, "%s", fs);
-
-  fprintf(s, "\n\nint main(int argc, char* argv[]) {\n");
-
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "  %s arg%d;\n", arg->val, n);
-  }
-
-  fprintf(s, "  if (argc != %d) {\n", n + 1);
-  fprintf(s, "    fprintf(stderr, \"Invalid amout of parameters.\\n\");\n");
-  fprintf(s, "    return -1;\n");
-  fprintf(s, "  }\n\n");
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
-  }
-  if (strcmp(ret->val, "void") == 0) {
-    fprintf(s, "  %s(", escName);
-  } else {
-    fprintf(s, "  %s r = %s(", ret->val, escName);
-  }
-  for (i = 0; i < n; i++) {
-    fprintf(s, "arg%d", i);
-    if (i < n-1) {
-      fprintf(s, ", ");
-    }
-  }
-  fprintf(s, ");\n");
-  if (strcmp(ret->val, "void") != 0) {
-    fprintf(s, "  printf(\"%%d\", r);\n"); // FIXME: Not always interger.
-  }
-  fprintf(s, "  return 0;\n");
-  fprintf(s, "}\n");
-  fclose(s);
-
-  char exeFilename[64] = "";
-  sprintf(exeFilename, "tmp/%s", escName);
-  char cmds[256] = "";
-  strcat(cmds, "gcc -o ");
-  strcat(cmds, exeFilename);
-  strcat(cmds, " ");
-  strcat(cmds, filename);
-  strcat(cmds, " && ./");
-  strcat(cmds, exeFilename);
-  for (c = cmd->args; c != NULL; c = c->nxt) {
-    strcat(cmds, " "); 
-    argVal(cmds, c);
-  }
-  FILE *fp = popen(cmds, "r"); // TODO: Attrs
-
-  fscanf(fp, "%s", retVal);
-  pclose(fp);
-}*/
-
 Cmd* printVar(Cmd* cmd) {
   char b[1024] = "";
   catVar(b, varByName(cmd->name));
@@ -1913,3 +1833,85 @@ int main()
   return 0;
 }
 #endif
+
+
+/*void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
+  Func* f = funcByName(cmd->name);
+  if (f == NULL) return;
+  if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
+
+  Cmd* c;
+  Attr* arg;
+  Attr* ret;
+  int n;
+  int i;
+
+  // TODO: Move this part to a function
+  char escName[128] = "";
+  strcpy(escName, cmd->name);
+  escapeName(escName);
+  char filename[64] = "";
+  sprintf(filename, "tmp/%s.c", escName);
+  FILE* s = fopen(filename, "w"); // FIXME: Check if valid file. Not NULL.
+  fprintf(s, "#include <stdlib.h>\n");
+  fprintf(s, "#include <stdio.h>\n\n");
+
+  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
+  }
+  ret = arg;
+  
+  char fs[2056] = "";
+  compileFunc(fs, f);
+  fprintf(s, "%s", fs);
+
+  fprintf(s, "\n\nint main(int argc, char* argv[]) {\n");
+
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "  %s arg%d;\n", arg->val, n);
+  }
+
+  fprintf(s, "  if (argc != %d) {\n", n + 1);
+  fprintf(s, "    fprintf(stderr, \"Invalid amout of parameters.\\n\");\n");
+  fprintf(s, "    return -1;\n");
+  fprintf(s, "  }\n\n");
+  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
+    fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
+  }
+  if (strcmp(ret->val, "void") == 0) {
+    fprintf(s, "  %s(", escName);
+  } else {
+    fprintf(s, "  %s r = %s(", ret->val, escName);
+  }
+  for (i = 0; i < n; i++) {
+    fprintf(s, "arg%d", i);
+    if (i < n-1) {
+      fprintf(s, ", ");
+    }
+  }
+  fprintf(s, ");\n");
+  if (strcmp(ret->val, "void") != 0) {
+    fprintf(s, "  printf(\"%%d\", r);\n"); // FIXME: Not always interger.
+  }
+  fprintf(s, "  return 0;\n");
+  fprintf(s, "}\n");
+  fclose(s);
+
+  char exeFilename[64] = "";
+  sprintf(exeFilename, "tmp/%s", escName);
+  char cmds[256] = "";
+  strcat(cmds, "gcc -o ");
+  strcat(cmds, exeFilename);
+  strcat(cmds, " ");
+  strcat(cmds, filename);
+  strcat(cmds, " && ./");
+  strcat(cmds, exeFilename);
+  for (c = cmd->args; c != NULL; c = c->nxt) {
+    strcat(cmds, " "); 
+    argVal(cmds, c);
+  }
+  FILE *fp = popen(cmds, "r"); // TODO: Attrs
+
+  fscanf(fp, "%s", retVal);
+  pclose(fp);
+}*/
+
