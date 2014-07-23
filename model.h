@@ -6,13 +6,19 @@
 #include <signal.h>
 #include <string.h>
 
-enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, INT, STRING, PAIR, VAR_NAME, NIL,
-              BOOL, CHAR, POINTER, FLOAT, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE, VALUE};
+enum CmdType {UNKOWN, VOID, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, VALUE, STRING, PAIR, VAR_NAME, NIL,
+              POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE};
 typedef enum CmdType CmdType;
 
 struct Type;
 
+enum PrimVarType {
+  INT, CHAR, FLOAT
+};
+typedef enum PrimVarType PrimVarType;
+
 struct VarType {
+  //PrimVarType type;
   struct Type* type;
   int arraySize; // 0 if not array
   int ptr; // 1 for pointer, 2 for pointer of a pointer...

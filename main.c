@@ -391,9 +391,7 @@ char* trim(char* s) {
 // APP
 
 char* catCmdType(char* b, CmdType t) {
-  if (t == INT) {
-    strcat(b, "INT");
-  } else if (t == VALUE) {
+  if (t == VALUE) {
     strcat(b, "VALUE");
   } else if (t == TUPLE) {
     strcat(b, "TUPLE");
@@ -413,8 +411,6 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "CFUNCTION");
   } else if (t == VAR) {
     strcat(b, "VAR");
-  } else if (t == FLOAT) {
-    strcat(b, "FLOAT");
   } else if (t == EDITOR) {
     strcat(b, "EDITOR");
   } else if (t == MACRO) {
@@ -427,10 +423,6 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "UNKOWN");
   } else if (t == STRING) {
     strcat(b, "STRING");
-  } else if (t == BOOL) {
-    strcat(b, "BOOL");
-  } else if (t == CHAR) {
-    strcat(b, "CHAR");
   } else if (t == ERROR) {
     strcat(b, "ERROR");
   } else if (t == ARRAY) {
