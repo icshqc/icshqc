@@ -847,7 +847,62 @@ ParsePair parseCmdR(char* command) {
   return parsePair(cmds, s);
 }
 
-void eval(Cmd* cmd);
+// Reduces a Cmd down to a primitive type.
+// If cmd->type == CFUNCTION, call it and replace the cmd by it's result
+// If cmd->type == FUNCTION, call it and replace the cmd by it's result
+// If cmd->type == VAR, get it's value and replace the cmd by it's result
+Cmd* cmdVal(Cmd* cmd) {
+  Cmd* ret = NULL;
+  if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
+    Cmd* nCmd = newCmd();
+    Cmd* n = NULL;
+    Cmd* arg;
+    for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
+      if (n == NULL) {
+        nCmd->args = cmdVal(arg); 
+        n = nCmd->args;
+      } else {
+        n->nxt = cmdVal(arg);
+        if (n->nxt != NULL) {
+          n = n->nxt;
+        }
+      }
+    }
+    strcpy(nCmd->name, cmd->name);
+    nCmd->type = cmd->type;
+    // Do I copy the body???
+    ret = loadedFuncByName(cmd->name)->ptr(nCmd);
+    freeCmd(nCmd);
+  } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
+    ret = loadedFuncByName(cmd->name)->ptr(cmd);
+  } else if (cmd->type == VAR) {
+    ret = varByName(cmd->name)->val;
+  } else {
+    ret = cmd;
+  }
+  return ret;
+}
+
+void eval(Cmd* cmd) {
+  if (cmd == NULL) return;
+
+  Cmd* ret = cmdVal(cmd);
+  if (ret == NULL) {
+    output("\n=> ");
+    output(cmd->name);
+  } else if (ret->type == ERROR) {
+    output("\nError: ");
+    output(ret->name);
+  } else {
+    output("\n=> ");
+    char m[1024] = "";
+    output(catPrintCmd(m, ret));
+  }
+  if (ret != cmd) freeCmd(ret);
+ 
+  eval(cmd->nxt);
+}
+
 
 int evalCmd(char* command, char* err) {
   Cmd* cmd = parseCmdR(command).cmd;
@@ -1710,62 +1765,6 @@ Val* cmdToVal(Cmd* cmd) {
 
 Cmd* valToCmd(Val* v) {
   return NULL;
-}
-
-// Reduces a Cmd down to a primitive type.
-// If cmd->type == CFUNCTION, call it and replace the cmd by it's result
-// If cmd->type == FUNCTION, call it and replace the cmd by it's result
-// If cmd->type == VAR, get it's value and replace the cmd by it's result
-Cmd* cmdVal(Cmd* cmd) {
-  Cmd* ret = NULL;
-  if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
-    Cmd* nCmd = newCmd();
-    Cmd* n = NULL;
-    Cmd* arg;
-    for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
-      if (n == NULL) {
-        nCmd->args = cmdVal(arg); 
-        n = nCmd->args;
-      } else {
-        n->nxt = cmdVal(arg);
-        if (n->nxt != NULL) {
-          n = n->nxt;
-        }
-      }
-    }
-    strcpy(nCmd->name, cmd->name);
-    nCmd->type = cmd->type;
-    // Do I copy the body???
-    ret = loadedFuncByName(cmd->name)->ptr(nCmd);
-    freeCmd(nCmd);
-  } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
-    ret = loadedFuncByName(cmd->name)->ptr(cmd);
-  } else if (cmd->type == VAR) {
-    ret = varByName(cmd->name)->val;
-  } else {
-    ret = cmd;
-  }
-  return ret;
-}
-
-void eval(Cmd* cmd) {
-  if (cmd == NULL) return;
-
-  Cmd* ret = cmdVal(cmd);
-  if (ret == NULL) {
-    output("\n=> ");
-    output(cmd->name);
-  } else if (ret->type == ERROR) {
-    output("\nError: ");
-    output(ret->name);
-  } else {
-    output("\n=> ");
-    char m[1024] = "";
-    output(catPrintCmd(m, ret));
-  }
-  if (ret != cmd) freeCmd(ret);
- 
-  eval(cmd->nxt);
 }
 
 void loop()
