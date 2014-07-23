@@ -13,6 +13,8 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
+void initCFunctions(LoadedDef* d);
+
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
@@ -844,8 +846,24 @@ ParsePair parseCmdR(char* command) {
   }
   return parsePair(cmds, s);
 }
-Cmd* parseCmd(char* command) {
-  return parseCmdR(command).cmd;
+
+void eval(Cmd* cmd);
+
+int parseCmd(char* command, char* err) {
+  Cmd* cmd = parseCmdR(command).cmd;
+  if (cmd == NULL) {
+    strcat(err, "\nNull cmd.");
+    return 0;
+  }
+  if (cmd->type == UNKOWN) {
+    strcat(err, "\n");
+    strcat(err, cmd->name);
+    strcat(err, ": undefined variable or function");
+  } else {
+    eval(cmd);
+  }
+  freeCmd(cmd);
+  return 1;
 }
 
 int insertInputCh(char ch, char* input, char* cursor, int *nested) {
@@ -1496,8 +1514,6 @@ Cmd* parseCIncludeFileCmd(Cmd* cmd) {
   return parseCIncludeFile(cmd->args->name);
 }
 
-void eval(Cmd* cmd);
-
 void load() {
   int c;
   FILE* s = fopen("app.qc", "r"); // FIXME: Check if valid file. Not NULL.
@@ -1505,10 +1521,12 @@ void load() {
     char input[512] = "";
     while ((c = getc(s)) != EOF) {
       if (c == '\r' || c == '\n') {
-        Cmd* cmd = parseCmd(input);
-        eval(cmd);
-        freeCmd(cmd);
-        input[0] = '\0';
+        char err[52] = "";
+        if (parseCmd(input, err)) {
+          input[0] = '\0';
+        } else {
+          // FIXME: Throw error.
+        }
       } else {
         straddch(input, c);
       }
@@ -1789,22 +1807,17 @@ void loop()
         output(err);
       }
     }
-    Cmd* cmd = parseCmd(input);
-    if (cmd != NULL) {
-      if (cmd->type == UNKOWN) {
-        char err[128] = "\n";
-        strcat(err, cmd->name);
-        strcat(err, ": undefined variable or function");
+    char err[128] = "";
+    if (parseCmd(input, err)) {
+      if (strlen(err) > 0) {
         output(err);
       } else {
-        eval(cmd);
+        output("\n>> ");
+        refresh();
       }
-      freeCmd(cmd);
     } else {
       return;
     }
-    output("\n>> ");
-    refresh();
   }
 }
 
