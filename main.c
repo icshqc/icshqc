@@ -630,7 +630,7 @@ char* catVarType(char* b, VarType t) {
   return b;
 }
 
-Cmd* runFunc(Cmd* cmd) {
+Val* runFunc(Cmd* cmd) {
   // TODO, replace all of f->args in f->cmd by cmd->args
   Func* f = funcByName(cmd->name);
   LoadedDef* d = loadedFuncByName(f->cmd->name);
@@ -657,7 +657,7 @@ Cmd* typeCmd(Cmd* cmd) {
         } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
           c->type = STRING;
         } else if (isInteger(n)) {
-          c->type = INT;
+          c->type = OLD_INT;
         } else if (isFloat(n)) {
           c->type = FLOAT;
         } else {
@@ -847,22 +847,63 @@ ParsePair parseCmdR(char* command) {
   return parsePair(cmds, s);
 }
 
+char* catVal(char* b, Val* v) {
+  if (v == NULL) {
+    strcat(b, "NULL");
+  } else if (v->type.type == ERR || (v->type.type == CHAR && v->type.ptr == 1)) {
+    strcat(b, (char*)v->addr);
+  }
+  return b;
+}
+
+Val* cmdToVal(Cmd* cmd) {
+  if (cmd == NULL) return NULL;
+  if (cmd->type == OLD_INT) {
+    int x = argint(cmd);
+    return initVal(varType(INT, 0, 0), &x);
+  } else {
+    return initVal(varType(CHAR, 1, 0), cmd->name);
+  }
+}
+
+Cmd* valToCmd(Val* v) {
+  if (v == NULL) return NULL;
+  if (v->type.type == CHAR && v->type.ptr == 1) {
+    Cmd* cmd = newCmd();
+    cmd->type = STRING;
+    strcpy(cmd->name, (char*)v->addr);
+    return cmd;
+  } else if (v->type.type == INT) {
+    char r[52] = "";
+    cat_argint(r, *(int*)v->addr);
+    return initCmd(OLD_INT, r, NULL);
+  } else {
+    return NULL;
+  }
+}
+
+// FIXME: Free val!!!!
+
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
-Cmd* cmdVal(Cmd* cmd) {
-  Cmd* ret = NULL;
+Val* cmdVal(Cmd* cmd) {
+  Val* ret = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
     Cmd* nCmd = newCmd();
     Cmd* n = NULL;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
       if (n == NULL) {
-        nCmd->args = cmdVal(arg); 
+        Val* v = cmdVal(arg);
+        nCmd->args = valToCmd(v); 
+        freeVal(v);
         n = nCmd->args;
       } else {
-        n->nxt = cmdVal(arg);
+        Val* v = cmdVal(arg);
+        n->nxt = valToCmd(v);
+        freeVal(v);
         if (n->nxt != NULL) {
           n = n->nxt;
         }
@@ -876,9 +917,9 @@ Cmd* cmdVal(Cmd* cmd) {
   } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
     ret = loadedFuncByName(cmd->name)->ptr(cmd);
   } else if (cmd->type == VAR) {
-    ret = varByName(cmd->name)->val;
+    ret = cmdToVal(varByName(cmd->name)->val);
   } else {
-    ret = cmd;
+    ret = cmdToVal(cmd);
   }
   return ret;
 }
@@ -886,19 +927,22 @@ Cmd* cmdVal(Cmd* cmd) {
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
-  Cmd* ret = cmdVal(cmd);
-  if (ret == NULL) {
-    output("\n=> ");
-    output(cmd->name);
-  } else if (ret->type == ERROR) {
+  Val* v = cmdVal(cmd);
+  if (v == NULL) {
+    output("\n=> FIXME");
+  } else if (v->type.type == ERR) {
     output("\nError: ");
-    output(ret->name);
+    char out[52] = "";
+    catVal(out, v);
+    output(out);
   } else {
+    Cmd* ret = valToCmd(v);
     output("\n=> ");
     char m[1024] = "";
     output(catPrintCmd(m, ret));
+    if (ret != cmd) freeCmd(ret);
   }
-  if (ret != cmd) freeCmd(ret);
+  if (v != NULL) freeVal(v);
  
   eval(cmd->nxt);
 }
@@ -1217,7 +1261,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     if (f->ret.type != VOID) {
       char paType[52] = "";
       catArgTypeFname(paType, f->ret);
-      fprintf(s, "  return initCmd(INT, cat_%s(r, %s(", paType, f->name);
+      fprintf(s, "  return initCmd(OLD_INT, cat_%s(r, %s(", paType, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
@@ -1275,7 +1319,7 @@ CFunc* parseCFunction(char* s0) {
   return f;
 }
 
-Cmd* construct(Cmd* cmd) {
+Val* construct(Cmd* cmd) {
   Type* t = typeByName(cmd->name + 1);
   if (t == NULL) {
     return errorStr("Unkown constructor.");
@@ -1285,7 +1329,7 @@ Cmd* construct(Cmd* cmd) {
   if (t->attrs != NULL) {
     addCmd(&ret->args, cpyCmd(cmd->args));
   }
-  return ret;
+  return cmdToVal(ret);
 }
 
 void typeConstructor(Type* type) {
@@ -1506,7 +1550,7 @@ Type* parseCStruct(CLine* l) {
   return t;
 }
 
-Cmd* parseCIncludeFile(char* filename) {
+Val* parseCIncludeFile(char* filename) {
   FILE* s = fopen(filename, "r");
   //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
   if (s == NULL) {
@@ -1523,8 +1567,8 @@ Cmd* parseCIncludeFile(char* filename) {
       if (startsWith("#include", l->val)) {
         char filename[64] = "";
         strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
-        Cmd* secRet = parseCIncludeFile(filename);
-        if (secRet != NULL && secRet->type == ERROR) {
+        Val* secRet = parseCIncludeFile(filename);
+        if (secRet != NULL && secRet->type.type == ERR) {
           freeCFunc(f0);
           free(lines);
           return secRet;
@@ -1565,7 +1609,7 @@ Cmd* parseCIncludeFile(char* filename) {
   free(lines);
   return NULL;
 }
-Cmd* parseCIncludeFileCmd(Cmd* cmd) {
+Val* parseCIncludeFileCmd(Cmd* cmd) {
   return parseCIncludeFile(cmd->args->name);
 }
 
@@ -1647,18 +1691,18 @@ Func* createFunc(Cmd* cmd) {
   f->nxt = oldFirst;
   return f;
 }
-Cmd* define(Cmd* cmd) {
+Val* define(Cmd* cmd) {
   Func* f = createFunc(cmd);
   addLoadedDef(loadedDefs, f->name, FUNCTION, runFunc);
   return NULL;
 }
-Cmd* defineOp(Cmd* cmd) {
+Val* defineOp(Cmd* cmd) {
   Func* f = createFunc(cmd);
   f->isOperator = 1;
   addLoadedDef(loadedDefs, f->name, OPERATOR, runFunc);
   return NULL;
 }
-Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
+Val* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
   Type* type = newType();
   strcpy(type->name, cmd->args->name);
   Cmd* c;
@@ -1683,7 +1727,7 @@ Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
   return NULL;
 }
 
-Cmd* assign(Cmd* cmd) {
+Val* assign(Cmd* cmd) {
   Var* v = varByName(cmd->args->name);
   if (v == NULL) {
     v = addNewVar(NULL, cmd->args->name); // FIXME hardcoded type, but maybe var type is useless anyway.
@@ -1693,7 +1737,7 @@ Cmd* assign(Cmd* cmd) {
   Cmd* val = cmd->args->nxt;
   v->val = initCmd(val->type, val->name, val->args);
   v->val->nxt = val->nxt;
-  return val;
+  return cmdToVal(val);
 }
 
 void listTypes(Cmd* cmd) {
@@ -1749,24 +1793,6 @@ Cmd* listDefs(Cmd* cmd) {
   return arr;
 }
 
-Val* initVal(VarType t, void* a) {
-  Val* v = malloc(sizeof(Val));
-  v->type = t;
-  v->addr = a; 
-  return v;
-}
-
-Val* cmdToVal(Cmd* cmd) {
-  if (cmd->type == VALUE) {
-
-  }
-  return NULL;
-}
-
-Cmd* valToCmd(Val* v) {
-  return NULL;
-}
-
 void loop()
 {
   int continuer = 1;
@@ -1805,18 +1831,18 @@ void loop()
         strcat(err, ": unkown command");
         output(err);
       }
-    }
-    char err[128] = "";
-    if (evalCmd(input, err)) {
-      if (strlen(err) > 0) {
-        output(err);
-      } else {
-        output("\n>> ");
-        refresh();
-      }
     } else {
-      return;
+      char err[128] = "";
+      if (evalCmd(input, err)) {
+        if (strlen(err) > 0) {
+          output(err);
+        }
+      } else {
+        return;
+      }
     }
+    output("\n>> ");
+    refresh();
   }
 }
 

@@ -11,7 +11,7 @@
 
 void initCFunctions(LoadedDef* d);
 
-Cmd* bind_add(Cmd* cmd);
+Val* bind_add(Cmd* cmd);
 Cmd* bind_sus(Cmd* cmd);
 Cmd* bind_mult(Cmd* cmd);
 Cmd* bind_divide(Cmd* cmd);

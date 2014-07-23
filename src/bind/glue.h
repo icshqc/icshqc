@@ -16,15 +16,20 @@ char* cat_argptr(char* b, char* s);
 Cmd* newCmd();
 Cmd* initCmd(CmdType type, const char* val, Cmd* args);
 
-Cmd* errorStr(const char* str);
+Val* errorStr(char* str);
+
+VarType varType(PrimVarType p, int ptr, int arraySize);
+
+Val* initVal(VarType t, void* addr);
+void freeVal(Val* v);
 
 Cmd* nxtCmd(Cmd** cmd);
-Cmd* checkSignature(Cmd* args, CmdType* types, int nArgs);
+Val* checkSignature(Cmd* args, CmdType* types, int nArgs);
 
 int validArg(Cmd* cmd, CmdType type);
 
 LoadedDef* lastLoadedDef();
-LoadedDef* createLoadedDef(char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd));
-LoadedDef* addLoadedDef(LoadedDef* def, char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd));
+LoadedDef* createLoadedDef(char* name, CmdType type, Val* (*ptr)(Cmd* cmd));
+LoadedDef* addLoadedDef(LoadedDef* def, char* name, CmdType type, Val* (*ptr)(Cmd* cmd));
 
 #endif // GLUE_H

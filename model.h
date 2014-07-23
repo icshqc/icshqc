@@ -7,13 +7,13 @@
 #include <string.h>
 
 enum CmdType {UNKOWN, VAR, OPERATOR, CFUNCTION, FUNCTION, VALUE, STRING, PAIR, VAR_NAME, NIL,
-              POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE};
+              POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE, OLD_INT};
 typedef enum CmdType CmdType;
 
 struct Type;
 
 enum PrimVarType {
-  INT, CHAR, FLOAT, UNDEFINED, VOID
+  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR
 };
 typedef enum PrimVarType PrimVarType;
 
@@ -64,7 +64,7 @@ typedef struct Cmd Cmd;
 struct LoadedDef {
   char name[52];
   CmdType type; // FUNCTION || OPERATOR || CFUNCTION || MACRO || MACRO_OP
-  Cmd* (*ptr)(Cmd* cmd);
+  Val* (*ptr)(Cmd* cmd);
   struct LoadedDef* nxt;
 };
 typedef struct LoadedDef LoadedDef;

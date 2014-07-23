@@ -4,6 +4,41 @@
 
 #include "glue.h"
 
+VarType varType(PrimVarType p, int ptr, int arraySize) {
+  VarType t;
+  t.type = p;
+  t.ptr = ptr;
+  t.arraySize = arraySize;
+  return t;
+}
+
+Val* initVal(VarType t, void* addr) {
+  Val* v = malloc(sizeof(Val));
+  v->type = t;
+  if (t.type == ERR) {
+    char* err = malloc(sizeof(char) * 52);
+    strcpy(err, (char*)addr);
+    v->addr = err;
+  } else if (t.type == INT) {
+    int* vx = malloc(sizeof(int));
+    *vx = *(int*)addr;
+    v->addr = vx;
+  } else if (t.type == CHAR && t.ptr == 1) {
+    char* m = malloc(sizeof(char) * 52);
+    strcpy(m, (char*)addr);
+    v->addr = m;
+  }
+  return v;
+}
+void freeVal(Val* v) {
+  if (v != NULL) {
+    if (v->addr != NULL) {
+      free(v->addr);
+    }
+    free(v);
+  }
+}
+
 Cmd* newCmd() {
   Cmd* arg0 = malloc(sizeof(Cmd));
   if (arg0 == NULL) {
@@ -22,7 +57,7 @@ Cmd* nxtCmd(Cmd** cmd) {
   return *cmd;
 }
 
-Cmd* checkSignature(Cmd* args, CmdType* types, int nArgs) {
+Val* checkSignature(Cmd* args, CmdType* types, int nArgs) {
   CmdType* t;
   Cmd* c;
   int i;
@@ -39,11 +74,8 @@ Cmd* checkSignature(Cmd* args, CmdType* types, int nArgs) {
   return NULL;
 }
 
-Cmd* errorStr(const char* str) {
-  Cmd* cmd = newCmd();
-  cmd->type = ERROR;
-  strcpy(cmd->name, str);
-  return cmd;
+Val* errorStr(char* str) {
+  return initVal(varType(ERR, 1, 0), str);
 }
 
 int validArg(Cmd* cmd, CmdType type) {
@@ -92,7 +124,7 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
   return c;
 }
 
-LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {
+LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Val* (*ptr)(Cmd* cmd)) {
   LoadedDef* f = createLoadedDef(name, type, ptr);
   lastLoadedDef(p)->nxt = f;
   return p;
@@ -106,7 +138,7 @@ LoadedDef* lastLoadedDef(LoadedDef* d) {
   return f;
 }
 
-LoadedDef* createLoadedDef(char* name, CmdType type, Cmd* (*ptr)(Cmd* cmd)) {
+LoadedDef* createLoadedDef(char* name, CmdType type, Val* (*ptr)(Cmd* cmd)) {
   LoadedDef* d = malloc(sizeof(LoadedDef));
   strcpy(d->name, name);
   d->type = type;
