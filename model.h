@@ -27,6 +27,7 @@ typedef struct VarType VarType;
 struct Val {
   VarType type;
   void* addr;
+  struct Val* nxt;
 };
 typedef struct Val Val;
 

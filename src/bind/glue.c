@@ -28,10 +28,12 @@ Val* initVal(VarType t, void* addr) {
     strcpy(m, (char*)addr);
     v->addr = m;
   }
+  v->nxt = NULL;
   return v;
 }
 void freeVal(Val* v) {
   if (v != NULL) {
+    freeVal(v->nxt);
     if (v->addr != NULL) {
       free(v->addr);
     }
