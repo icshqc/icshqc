@@ -18,6 +18,8 @@ void initCFunctions(LoadedDef* d);
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
+// TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
+
 // TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
