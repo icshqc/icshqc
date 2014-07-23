@@ -849,7 +849,7 @@ ParsePair parseCmdR(char* command) {
 
 void eval(Cmd* cmd);
 
-int parseCmd(char* command, char* err) {
+int evalCmd(char* command, char* err) {
   Cmd* cmd = parseCmdR(command).cmd;
   if (cmd == NULL) {
     strcat(err, "\nNull cmd.");
@@ -1522,7 +1522,7 @@ void load() {
     while ((c = getc(s)) != EOF) {
       if (c == '\r' || c == '\n') {
         char err[52] = "";
-        if (parseCmd(input, err)) {
+        if (evalCmd(input, err)) {
           input[0] = '\0';
         } else {
           // FIXME: Throw error.
@@ -1808,7 +1808,7 @@ void loop()
       }
     }
     char err[128] = "";
-    if (parseCmd(input, err)) {
+    if (evalCmd(input, err)) {
       if (strlen(err) > 0) {
         output(err);
       } else {
