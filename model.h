@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <string.h>
 
-enum CmdType {UNKOWN, VAR, EDITOR, OPERATOR, CFUNCTION, FUNCTION, VALUE, STRING, PAIR, VAR_NAME, NIL,
+enum CmdType {UNKOWN, VAR, OPERATOR, CFUNCTION, FUNCTION, VALUE, STRING, PAIR, VAR_NAME, NIL,
               POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, TUPLE};
 typedef enum CmdType CmdType;
 

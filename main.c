@@ -407,8 +407,6 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "CFUNCTION");
   } else if (t == VAR) {
     strcat(b, "VAR");
-  } else if (t == EDITOR) {
-    strcat(b, "EDITOR");
   } else if (t == MACRO) {
     strcat(b, "MACRO");
   } else if (t == MACRO_OP) {
@@ -656,8 +654,6 @@ Cmd* typeCmd(Cmd* cmd) {
           c->type = CHAR;
         } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
           c->type = STRING;
-        } else if (n[0] == ':') {
-          c->type = EDITOR;
         } else if (isInteger(n)) {
           c->type = INT;
         } else if (isFloat(n)) {
@@ -1691,9 +1687,11 @@ Val* cmdToVal(Cmd* cmd) {
   if (cmd->type == VALUE) {
 
   }
+  return NULL;
 }
 
 Cmd* valToCmd(Val* v) {
+  return NULL;
 }
 
 // Reduces a Cmd down to a primitive type.
