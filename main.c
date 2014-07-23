@@ -49,10 +49,8 @@ Attr* newAttr() {
   if (a == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
+  a->type.type = UNDEFINED;
   memset(a->name, '\0', sizeof(a->name));
-  a->type.type = NULL;
-  a->type.arraySize = 0;
-  a->type.ptr = 0;
   a->nxt = NULL;
   return a;
 }
@@ -74,9 +72,7 @@ CFunc* newCFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
-  arg0->ret.type = NULL;
-  arg0->ret.ptr = 0;
-  arg0->ret.arraySize = 0;
+  arg0->ret.type = UNDEFINED;
   arg0->args = NULL;
   arg0->nxt = NULL;
   return arg0;
@@ -88,9 +84,7 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(f->name, '\0', sizeof(f->name));
-  f->ret.type = NULL;
-  f->ret.ptr = 0;
-  f->ret.arraySize = 0;
+  f->ret.type = UNDEFINED;
   f->cmd = NULL;
   f->args = NULL;
   f->isOperator = 0;
@@ -600,14 +594,33 @@ VarType parseVarType(char* str) {
     ++s;
   }
   VarType v;
-  v.type = typeByName(typeName);
+  if (strcmp(typeName, "int") == 0) {
+    v.type = INT;
+  } else if (strcmp(typeName, "char") == 0) {
+    v.type = CHAR;
+  } else if (strcmp(typeName, "float") == 0) {
+    v.type = FLOAT;
+  } else {
+    v.type = UNDEFINED;
+  }
   v.ptr = ptr;
   v.arraySize = 0;
   return v;
 }
 
+char* catPrimVarType(char* b, PrimVarType t) {
+  if (t == INT) {
+    strcat(b, "int");
+  } else if (t == FLOAT) {
+    strcat(b, "float");
+  } else if (t == CHAR) {
+    strcat(b, "char");
+  }
+  return b;
+}
+
 char* catVarType(char* b, VarType t) {
-  strcat(b, t.type->name);
+  catPrimVarType(b, t.type);
   int i;
   for (i = 0; i < t.ptr; i++) {
     strcat(b, "*");
@@ -995,12 +1008,16 @@ void save() { // .qc extension. Quick C, Quebec!!!
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   Func* f;
   for (f = funcs; f != NULL; f = f->nxt) {
-    fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", f->ret.type->name);
+    char vType[52] = "";
+    catVarType(vType, f->ret);
+    fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", vType);
     if (f->args != NULL) {
       fprintf(s, "|");
       Attr* a;
       for (a = f->args; a != NULL; a = a->nxt) {
-        fprintf(s, "%s %s", a->type.type->name, a->name);
+        char aType[52] = "";
+        catVarType(aType, f->ret);
+        fprintf(s, "%s %s", aType, a->name);
         if (a->nxt != NULL) {
           fprintf(s, ", ");
         }
@@ -1043,7 +1060,7 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
 char* catArgTypeGetter(char* b, Attr* a, int i) {
   int j;
   strcat(b, "  ");
-  strcat(b, a->type.type->name);
+  catVarType(b, a->type);
   for (j = 0; j < a->type.ptr; j++) {
     strcat(b, "*");
   }
@@ -1054,7 +1071,7 @@ char* catArgTypeGetter(char* b, Attr* a, int i) {
     strcat(b, "ptr");
   } else {
     char typeFuncName[52] = "";
-    strcpy(typeFuncName, a->type.type->name);
+    catPrimVarType(typeFuncName, a->type.type);
     replace(typeFuncName, ' ', '_');
     strcat(b, typeFuncName);
   }
@@ -1120,8 +1137,10 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
       catArgTypeGetter(argTypeG, a, i);
       fprintf(s, "%s", argTypeG);
     }
-    if (f->ret.type != NULL) {
-      fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", f->ret.type->name, f->name);
+    if (f->ret.type != VOID) {
+      char paType[52] = "";
+      catPrimVarType(paType, a->type.type);
+      fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", paType, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
@@ -1131,7 +1150,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
         fprintf(s, ", ");
       }
     }
-    if (f->ret.type != NULL) {
+    if (f->ret.type != VOID) {
       fprintf(s, ")), NULL");
     }
     fprintf(s, ");\n}\n\n");
@@ -1347,7 +1366,7 @@ Attr* parseAttr(char* val) {
     strncpy(a->name, space + 1, strlen(space) - 2);
   }
   a->type.arraySize = arraySize;
-  a->type.type = typeByName(type);
+  a->type = parseVarType(type);
   if (star != NULL) {
     int nStar = 0;
     while (*star == ' ' || *star == '*' || *star == '\t') {
@@ -1358,7 +1377,7 @@ Attr* parseAttr(char* val) {
     }
     a->type.ptr = nStar;
   }
-  if (a->type.type == NULL) {
+  if (a->type.type == UNDEFINED) {
     freeAttr(a);
     return NULL;
   }
@@ -1580,7 +1599,7 @@ Cmd* defineType(Cmd* cmd) { // Type #:: (type name) (type name)
       freeType(type);
       return errorStr("Unkown arg type.\n");
     }
-    a->type.type = t;
+    a->type = parseVarType(c->args->name);
     strcpy(a->name, c->args->nxt->name);
   }
   addType(type);
@@ -1611,7 +1630,7 @@ void listTypes(Cmd* cmd) {
     Attr* a;
     for (a = t->attrs; a != NULL; a = a->nxt) {
       strcat(m, "(");
-      strcat(m, a->type.type->name);
+      catVarType(m, a->type);
       strcat(m, " ");
       strcat(m, a->name);
       strcat(m, ") ");
