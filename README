@@ -8,6 +8,14 @@ Possibilité d'argent pour faire mes rêves.
 Être plus en santé.
 
 ---
+Une reference est un pointeur qui ne peut pas setter, juste getter.
+
+J'aime pas les classes parce qu'elles cachent les variables. C'est
+mieux quand ca peut juste etre local ou une static.
+
+Mieux definir les attributs. Possibilite de pointeur non null.
+
+---
 Les types:
 
 Au lieu de ::: pour definir une macro, ca devrait etre que
