@@ -51,6 +51,10 @@ int validArg(Cmd* cmd, CmdType type) {
   return 1;
 }
 
+char* cat_argptr(char* b, char* s) {
+  return b;
+}
+
 char* cat_argstring(char* b, char* s) {
   strcat(b, s);
   return b;
@@ -75,6 +79,9 @@ char argchar(Cmd* cmd) {
 int argint(Cmd* cmd) {
   char* num; // ???
   return strtol(cmd->name, &num, 0);
+}
+void* argptr(Cmd* cmd) {
+  return NULL;
 }
 
 Cmd* initCmd(CmdType type, const char* val, Cmd* args) {

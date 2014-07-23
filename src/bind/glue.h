@@ -6,10 +6,12 @@
 char* argstring(Cmd* cmd);
 char argchar(Cmd* cmd);
 int argint(Cmd* cmd);
+void* argptr(Cmd* cmd);
 
 char* cat_argstring(char* b, char* s);
 char* cat_argchar(char* b, char s);
 char* cat_argint(char* b, int s);
+char* cat_argptr(char* b, char* s);
 
 Cmd* newCmd();
 Cmd* initCmd(CmdType type, const char* val, Cmd* args);

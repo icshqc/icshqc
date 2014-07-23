@@ -500,6 +500,16 @@ char* catCmd(char* b, Cmd* cmd) {
   return b;
 }
 
+char* replace(char* str, char a, char b) {
+  char* s = str;
+  for (;*s != '\0'; ++s) {
+    if (*s == a) {
+      *s = b;
+    }
+  }
+  return str;
+}
+
 void catVar(char* m, Var* v) {
   if (v != NULL) {
     if (v->type != NULL) {
@@ -583,13 +593,34 @@ int isInteger(char* str) {
   return 1;
 }
 
-// TODO: able to parse pointers and arrays and shit
 VarType parseVarType(char* str) { 
+  char* s = str;
+  while (*s != '*' && *s != '\0') {
+    ++s;
+  }
+  char typeName[52] = "";
+  strncpy(typeName, str, s - str);
+  int ptr = 0;
+  while (*s != '\0') {
+    if (*s == '*') {
+      ++ptr;
+    }
+    ++s;
+  }
   VarType v;
-  v.type = typeByName(str);
-  v.ptr = 0;
+  v.type = typeByName(typeName);
+  v.ptr = ptr;
   v.arraySize = 0;
   return v;
+}
+
+char* catVarType(char* b, VarType t) {
+  strcat(b, t.type->name);
+  int i;
+  for (i = 0; i < t.ptr; i++) {
+    strcat(b, "*");
+  }
+  return b;
 }
 
 Cmd* runFunc(Cmd* cmd) {
@@ -1017,16 +1048,30 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   fclose(s);
 }
 
-char* argTypeFunc(char* name) {
-  char type[52];
-  strcpy(type, name); 
-  name[0] = '\0';
-  if (strcmp(type, "char*") == 0) {
-    sprintf(name, "argstring");
-  } else {
-    sprintf(name, "arg%s", type);
+char* catArgTypeGetter(char* b, Attr* a, int i) {
+  int j;
+  strcat(b, "  ");
+  strcat(b, a->type.type->name);
+  for (j = 0; j < a->type.ptr; j++) {
+    strcat(b, "*");
   }
-  return name;
+  strcat(b, " ");
+  strcat(b, a->name);
+  strcat(b, "_ = arg");
+  if (a->type.ptr != 0) {
+    strcat(b, "ptr");
+  } else {
+    char typeFuncName[52] = "";
+    strcpy(typeFuncName, a->type.type->name);
+    replace(typeFuncName, ' ', '_');
+    strcat(b, typeFuncName);
+  }
+  if (i == 0) {
+    strcat(b, "(args);\n");
+  } else {
+    strcat(b, "(nxtCmd(&args));\n");
+  }
+  return b;
 }
 
 void bindCFunctionsSource(char* fname, CFunc* fs) {
@@ -1048,9 +1093,13 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   // In case the header was not defined, that it was just
   // a source file, define the prototype of the function.
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "%s %s(", f->ret.type->name, f->name);
+    char fRetType[52] = "";
+    catVarType(fRetType, f->ret);
+    fprintf(s, "%s %s(", fRetType, f->name);
     for (a = f->args; a != NULL; a = a->nxt) {
-      fprintf(s, "%s %s", a->type.type->name, a->name);
+      char aTypeT[52] = "";
+      catVarType(aTypeT, a->type);
+      fprintf(s, "%s %s", aTypeT, a->name);
       if (a->nxt != NULL) {
         fprintf(s, ", ");
       }
@@ -1075,10 +1124,9 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     fprintf(s, "};\n");
     fprintf(s, "  if ((m = checkSignature(cmd->args, t, %d)) != NULL) return m;\n", nAttrs);
     for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
-      char argTypeFuncName[52] = "";
-      strcpy(argTypeFuncName, a->type.type->name);
-      fprintf(s, "  %s %s_ = %s(%s);\n", a->type.type->name, a->name, argTypeFunc(argTypeFuncName),
-                 i == 0 ? "args" : "nxtCmd(&args)");
+      char argTypeG[124] = "";
+      catArgTypeGetter(argTypeG, a, i);
+      fprintf(s, "%s", argTypeG);
     }
     if (f->ret.type != NULL) {
       fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", f->ret.type->name, f->name);
@@ -1368,16 +1416,6 @@ Type* parseCStruct(CLine* l) {
     }
   }
   return t;
-}
-
-char* replace(char* str, char a, char b) {
-  char* s = str;
-  for (;*s != '\0'; ++s) {
-    if (*s == a) {
-      *s = b;
-    }
-  }
-  return str;
 }
 
 Cmd* parseCIncludeFile(char* filename) {
@@ -1833,7 +1871,6 @@ int main()
   return 0;
 }
 #endif
-
 
 /*void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
   Func* f = funcByName(cmd->name);
