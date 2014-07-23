@@ -16,6 +16,8 @@
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
+// TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
+
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 // Version 0.2 == Deux screen. Une console et une qui affiche les variables et les fonctions.
 // TODO: Rouler l'application dans une autre fenetre que l'editeur. Vraiment separer app/editeur.
@@ -788,7 +790,7 @@ ParsePair parseArray(char* command) {
   }
   return parsePair(ary, s+1);
 }
-ParsePair parseCmdR(char* command) { // FIXME: Does not work for "(add 12 12)"
+ParsePair parseCmdR(char* command) {
   Cmd* cmds = NULL;
   char* s = trim(command);
   while (*s != '\0') {
@@ -862,8 +864,7 @@ int insertInputCh(char ch, char* input, char* cursor, int *nested) {
 #define KEY_DL 127
 #endif
 
-Cmd* getInput() {  
-  char input[256] = "";
+char* getInput(char* input) {  
   int nested = 0;
   char *cursor = input;
   while (1) {
@@ -914,7 +915,7 @@ Cmd* getInput() {
     //msg("Invalid block syntax.");
     return NULL;
   }
-  return parseCmd(input);
+  return input;
 }
 
 int isOperator(char* opName) {
@@ -1679,6 +1680,22 @@ Cmd* listDefs(Cmd* cmd) {
   return arr;
 }
 
+Val* initVal(VarType t, void* a) {
+  Val* v = malloc(sizeof(Val));
+  v->type = t;
+  v->addr = a; 
+  return v;
+}
+
+Val* cmdToVal(Cmd* cmd) {
+  if (cmd->type == VALUE) {
+
+  }
+}
+
+Cmd* valToCmd(Val* v) {
+}
+
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
@@ -1740,41 +1757,43 @@ void loop()
   int continuer = 1;
   output(">> ");
   while (continuer) {
-    Cmd* cmd = getInput();
+    char input[124] = "";
+    getInput(input);
+    if (input[0] == ':') {
+      char* name = input + 1;
+      if (strcmp(name, "exit") == 0 ||
+                 strcmp(name, "quit") == 0 ||
+                 strcmp(name, "q") == 0) {
+        return;
+      } else if (strcmp(name, "h") == 0 ||
+                 strcmp(name, "l") == 0 ||
+                 strcmp(name, "list") == 0 ||
+                 strcmp(name, "help") == 0) {
+        char m[1024] = "";
+        output("\n");
+        output(catPrintCmd(m, listDefs(NULL)));
+      } else if (strcmp(name, "v") == 0 ||
+                 strcmp(name, "vars") == 0) {
+        char m[1024] = "";
+        output("\n");
+        output(catPrintCmd(m, listVars(NULL)));
+      } else if (strcmp(name, "t") == 0 ||
+                 strcmp(name, "types") == 0) {
+        output("\n");
+        listTypes(NULL);
+      } else if (strcmp(name, "s") == 0 ||
+                 strcmp(name, "save") == 0) {
+        save();
+      } else {
+        char err[128] = "\n";
+        strcat(err, input);
+        strcat(err, ": unkown command");
+        output(err);
+      }
+    }
+    Cmd* cmd = parseCmd(input);
     if (cmd != NULL) {
-      if (cmd->type == EDITOR) {
-        char* name = cmd->name + 1;
-        if (strcmp(name, "exit") == 0 ||
-                   strcmp(name, "quit") == 0 ||
-                   strcmp(name, "q") == 0) {
-          freeCmd(cmd);
-          return;
-        } else if (strcmp(name, "h") == 0 ||
-                   strcmp(name, "l") == 0 ||
-                   strcmp(name, "list") == 0 ||
-                   strcmp(name, "help") == 0) {
-          char m[1024] = "";
-          output("\n");
-          output(catPrintCmd(m, listDefs(NULL)));
-        } else if (strcmp(name, "v") == 0 ||
-                   strcmp(name, "vars") == 0) {
-          char m[1024] = "";
-          output("\n");
-          output(catPrintCmd(m, listVars(NULL)));
-        } else if (strcmp(name, "t") == 0 ||
-                   strcmp(name, "types") == 0) {
-          output("\n");
-          listTypes(NULL);
-        } else if (strcmp(name, "s") == 0 ||
-                   strcmp(name, "save") == 0) {
-          save();
-        } else {
-          char err[128] = "\n";
-          strcat(err, cmd->name);
-          strcat(err, ": unkown command");
-          output(err);
-        }
-      } else if (cmd->type == UNKOWN) {
+      if (cmd->type == UNKOWN) {
         char err[128] = "\n";
         strcat(err, cmd->name);
         strcat(err, ": undefined variable or function");

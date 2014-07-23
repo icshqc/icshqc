@@ -24,6 +24,12 @@ struct VarType {
 };
 typedef struct VarType VarType;
 
+struct Val {
+  VarType type;
+  void* addr;
+};
+typedef struct Val Val;
+
 struct Attr {
   char name[32];
   struct VarType type;
