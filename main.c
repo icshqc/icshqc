@@ -1057,24 +1057,31 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   fclose(s);
 }
 
-char* catArgTypeGetter(char* b, Attr* a, int i) {
-  int j;
-  strcat(b, "  ");
-  catVarType(b, a->type);
-  for (j = 0; j < a->type.ptr; j++) {
-    strcat(b, "*");
-  }
-  strcat(b, " ");
-  strcat(b, a->name);
-  strcat(b, "_ = arg");
-  if (a->type.ptr != 0) {
+char* catArgTypeFname(char* b, VarType t) {
+  strcat(b, "arg");
+  if (t.ptr != 0) {
     strcat(b, "ptr");
   } else {
     char typeFuncName[52] = "";
-    catPrimVarType(typeFuncName, a->type.type);
+    catPrimVarType(typeFuncName, t.type);
     replace(typeFuncName, ' ', '_');
     strcat(b, typeFuncName);
   }
+  return b;
+}
+
+char* catArgTypeGetter(char* b, Attr* a, int i) {
+  strcat(b, "  ");
+  catVarType(b, a->type);
+  strcat(b, " ");
+  strcat(b, a->name);
+  strcat(b, "_ = ");
+  if (a->type.ptr != 0) {
+    strcat(b, "(");
+    catVarType(b, a->type);
+    strcat(b, ")");
+  }
+  catArgTypeFname(b, a->type);
   if (i == 0) {
     strcat(b, "(args);\n");
   } else {
@@ -1139,8 +1146,8 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     }
     if (f->ret.type != VOID) {
       char paType[52] = "";
-      catPrimVarType(paType, a->type.type);
-      fprintf(s, "  return initCmd(INT, cat_arg%s(r, %s(", paType, f->name);
+      catArgTypeFname(paType, f->ret);
+      fprintf(s, "  return initCmd(INT, cat_%s(r, %s(", paType, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }

@@ -54,7 +54,7 @@ Cmd* bind_straddch(Cmd* cmd) {
   Cmd* args = cmd->args;
   char r[52] = ""; Cmd* m; CmdType t[] = {INT, INT};
   if ((m = checkSignature(cmd->args, t, 2)) != NULL) return m;
-  char* str_ = (char*) argptr(args);
+  char* str_ = (char*)argptr(args);
   char c_ = argchar(nxtCmd(&args));
   return initCmd(INT, cat_argptr(r, straddch(str_, c_)), NULL);
 }
