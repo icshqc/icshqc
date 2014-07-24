@@ -8,9 +8,6 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
-#define GET_VAL(type_t, vals) (*((type_t*)(vals = vals->nxt)->addr))
-#define GET_PTR(type_t, vals) ((type_t)(vals = vals->nxt)->addr)
-
 int add(int x, int y);
 int sus(int x, int y);
 int mult(int x, int y);

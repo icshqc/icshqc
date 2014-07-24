@@ -3,6 +3,9 @@
 
 #include "../../model.h"
 
+#define GET_VAL(type_t, vals) (*((type_t*)(vals = vals->nxt)->addr))
+#define GET_PTR(type_t, vals) ((type_t)(vals = vals->nxt)->addr)
+
 char* argstring(Cmd* cmd);
 char argchar(Cmd* cmd);
 int argint(Cmd* cmd);
