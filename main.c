@@ -655,13 +655,13 @@ Cmd* typeCmd(Cmd* cmd) {
         } else if ((v = varByName(n)) != NULL) {
           c->type = VAR;
         } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
-          c->type = CHAR;
+          c->type = OLD_CHAR;
         } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
           c->type = STRING;
         } else if (isInteger(n)) {
           c->type = OLD_INT;
         } else if (isFloat(n)) {
-          c->type = FLOAT;
+          c->type = OLD_FLOAT;
         } else {
           // TODO: Check for int.
           c->type = UNKOWN;
@@ -880,6 +880,13 @@ Val* cmdToVal(Cmd* cmd) {
   if (cmd->type == OLD_INT) {
     int x = argint(cmd);
     return initVal(varType(INT, 0, 0), &x);
+  } else if (cmd->type == STRING) {
+    char nName[52] = "";
+    strncpy(nName, cmd->name + 1, strlen(cmd->name) - 2);
+    return initVal(varType(CHAR, 1, 0), nName);
+  } else if (cmd->type == OLD_CHAR) {
+    char c = cmd->name[1];
+    return initVal(varType(CHAR, 0, 0), &c);
   } else if (cmd->args != NULL) {
     if (cmd->name != NULL && strlen(cmd->name) > 0) {
       Val* v = initVal(varType(CHAR, 1, 0), cmd->name);
@@ -888,8 +895,9 @@ Val* cmdToVal(Cmd* cmd) {
     } else {
       return cmdArgsToVal(cmd);
     }
+  } else {
+    return initVal(varType(CHAR, 1, 0), cmd->name);
   }
-  return initVal(varType(CHAR, 1, 0), cmd->name);
 }
 
 Cmd* valToCmd(Val* v) {

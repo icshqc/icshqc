@@ -11,9 +11,9 @@
 
 void initCFunctions(LoadedDef* d);
 
-Val* bind_add(Val* cmd);
-Val* bind_sus(Val* cmd);
-Val* bind_mult(Val* cmd);
-Val* bind_divide(Val* cmd);
-Val* bind_straddch(Val* cmd);
+Val* bind_add(Val* args);
+Val* bind_sus(Val* args);
+Val* bind_mult(Val* args);
+Val* bind_divide(Val* args);
+Val* bind_straddch(Val* args);
 #endif // BIND_H

@@ -5,7 +5,7 @@ void initCFunctions(LoadedDef* d) {
   //addLoadedDef(d, "sus", CFUNCTION, bind_sus);
   //addLoadedDef(d, "mult", CFUNCTION, bind_mult);
   //addLoadedDef(d, "divide", CFUNCTION, bind_divide);
-  //addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
+  addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
 int add(int x, int y);
@@ -48,14 +48,13 @@ Val* bind_divide(Cmd* cmd) {
   int x_ = argint(args);
   int y_ = argint(nxtCmd(&args));
   return initCmd(INT, cat_argint(r, divide(x_, y_)), NULL);
-}
+}*/
 
-Cmd* bind_straddch(Cmd* cmd) {
-  Cmd* args = cmd->args;
-  char r[52] = ""; Cmd* m; CmdType t[] = {INT, INT};
-  if ((m = checkSignature(cmd->args, t, 2)) != NULL) return m;
-  char* str_ = (char*)argptr(args);
-  char c_ = argchar(nxtCmd(&args));
-  return initCmd(INT, cat_argptr(r, straddch(str_, c_)), NULL);
+Val* bind_straddch(Val* args) {
+  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
+  if ((m = checkSignature(args, t, 2)) != NULL) return m;
+  char* str_ = (char*)args->nxt->addr;
+  char c_ = *((char*)args->nxt->nxt->addr);
+  char* r = straddch(str_, c_);
+  return initVal(varType(CHAR, 1, 0), r);
 }
-*/

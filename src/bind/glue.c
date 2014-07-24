@@ -15,20 +15,32 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
 Val* initVal(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
   v->type = t;
-  if (t.type == ERR) {
-    char* err = malloc(sizeof(char) * 52);
-    strcpy(err, (char*)addr);
-    v->addr = err;
-  } else if (t.type == INT) {
-    int* vx = malloc(sizeof(int));
-    *vx = *(int*)addr;
-    v->addr = vx;
-  } else if (t.type == TUPLE) {
-    v->addr = cpyVals((Val*)addr);
-  } else if (t.type == CHAR && t.ptr == 1) {
-    char* m = malloc(sizeof(char) * 52);
-    strcpy(m, (char*)addr);
-    v->addr = m;
+  if (t.ptr == 1) {
+    if (t.type == CHAR && t.ptr == 1) {
+      char* m = malloc(sizeof(char) * 52);
+      strcpy(m, (char*)addr);
+      v->addr = m;
+    } else {
+      abort(); // FIXME: Better error message.
+    }
+  } else {
+    if (t.type == ERR) {
+      char* err = malloc(sizeof(char) * 52);
+      strcpy(err, (char*)addr);
+      v->addr = err;
+    } else if (t.type == INT) {
+      int* vx = malloc(sizeof(int));
+      *vx = *(int*)addr;
+      v->addr = vx;
+    } else if (t.type == CHAR) {
+      char* vx = malloc(sizeof(char));
+      *vx = *(char*)addr;
+      v->addr = vx;
+    } else if (t.type == TUPLE) {
+      v->addr = cpyVals((Val*)addr);
+    } else {
+      abort(); // FIXME: Better error message.
+    }
   }
   v->nxt = NULL;
   return v;

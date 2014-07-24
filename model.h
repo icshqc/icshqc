@@ -7,7 +7,8 @@
 #include <string.h>
 
 enum CmdType {UNKOWN, VAR, OPERATOR, CFUNCTION, FUNCTION, VALUE, STRING, PAIR, VAR_NAME, NIL,
-              POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, OLD_TUPLE, OLD_INT};
+              POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, OLD_TUPLE, OLD_INT,
+              OLD_FLOAT, OLD_CHAR};
 typedef enum CmdType CmdType;
 
 struct Type;
@@ -20,8 +21,8 @@ typedef enum PrimVarType PrimVarType;
 
 struct VarType {
   PrimVarType type;
-  int arraySize; // 0 if not array
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
+  int arraySize; // 0 if not array
 };
 typedef struct VarType VarType;
 
