@@ -2,9 +2,9 @@
 
 void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "add", CFUNCTION, bind_add);
-  //addLoadedDef(d, "sus", CFUNCTION, bind_sus);
-  //addLoadedDef(d, "mult", CFUNCTION, bind_mult);
-  //addLoadedDef(d, "divide", CFUNCTION, bind_divide);
+  addLoadedDef(d, "sus", CFUNCTION, bind_sus);
+  addLoadedDef(d, "mult", CFUNCTION, bind_mult);
+  addLoadedDef(d, "divide", CFUNCTION, bind_divide);
   addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
@@ -23,32 +23,32 @@ Val* bind_add(Val* args) {
   return initVal(varType(INT, 0, 0), &r);
 }
 
-/*Val* bind_sus(Cmd* cmd) {
-  Cmd* args = cmd->args;
-  char r[52] = ""; Cmd* m; CmdType t[] = {INT, INT};
-  if ((m = checkSignature(cmd->args, t, 2)) != NULL) return m;
-  int x_ = argint(args);
-  int y_ = argint(nxtCmd(&args));
-  return initCmd(INT, cat_argint(r, sus(x_, y_)), NULL);
+Val* bind_sus(Val* args) {
+  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
+  if ((m = checkSignature(args, t, 2)) != NULL) return m;
+  int x_ = GET_VAL(int, args);
+  int y_ = GET_VAL(int, args);
+  int r = sus(x_, y_);
+  return initVal(varType(INT, 0, 0), &r);
 }
 
-Val* bind_mult(Cmd* cmd) {
-  Cmd* args = cmd->args;
-  char r[52] = ""; Cmd* m; CmdType t[] = {INT, INT};
-  if ((m = checkSignature(cmd->args, t, 2)) != NULL) return m;
-  int x_ = argint(args);
-  int y_ = argint(nxtCmd(&args));
-  return initCmd(INT, cat_argint(r, mult(x_, y_)), NULL);
+Val* bind_mult(Val* args) {
+  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
+  if ((m = checkSignature(args, t, 2)) != NULL) return m;
+  int x_ = GET_VAL(int, args);
+  int y_ = GET_VAL(int, args);
+  int r = mult(x_, y_);
+  return initVal(varType(INT, 0, 0), &r);
 }
 
-Val* bind_divide(Cmd* cmd) {
-  Cmd* args = cmd->args;
-  char r[52] = ""; Cmd* m; CmdType t[] = {INT, INT};
-  if ((m = checkSignature(cmd->args, t, 2)) != NULL) return m;
-  int x_ = argint(args);
-  int y_ = argint(nxtCmd(&args));
-  return initCmd(INT, cat_argint(r, divide(x_, y_)), NULL);
-}*/
+Val* bind_divide(Val* args) {
+  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
+  if ((m = checkSignature(args, t, 2)) != NULL) return m;
+  int x_ = GET_VAL(int, args);
+  int y_ = GET_VAL(int, args);
+  int r = divide(x_, y_);
+  return initVal(varType(INT, 0, 0), &r);
+}
 
 Val* bind_straddch(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
@@ -58,3 +58,4 @@ Val* bind_straddch(Val* args) {
   char* r = straddch(str_, c_);
   return initVal(varType(CHAR, 1, 0), r);
 }
+

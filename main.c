@@ -1220,7 +1220,7 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
 
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "Cmd* bind_%s(Cmd* cmd);\n", f->name);
+    fprintf(s, "Val* bind_%s(Val* args);\n", f->name);
   }
 
   fprintf(s, "#endif // BIND_H");
@@ -1316,7 +1316,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     }
     if (f->ret.type != VOID) {
       char paType[52] = "";
-      catVarType(paType, f->ret);
+      catPrimVarTypeEnum(paType, f->ret.type);
       fprintf(s, ");\n  return initVal(varType(%s, %d, %d), %s);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize,
                               f->ret.ptr != 0 ? "r" : "&r");
     } else {
