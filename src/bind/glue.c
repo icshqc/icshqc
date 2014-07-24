@@ -23,6 +23,8 @@ Val* initVal(VarType t, void* addr) {
     int* vx = malloc(sizeof(int));
     *vx = *(int*)addr;
     v->addr = vx;
+  } else if (t.type == TUPLE) {
+    v->addr = cpyVals((Val*)addr);
   } else if (t.type == CHAR && t.ptr == 1) {
     char* m = malloc(sizeof(char) * 52);
     strcpy(m, (char*)addr);
@@ -30,6 +32,16 @@ Val* initVal(VarType t, void* addr) {
   }
   v->nxt = NULL;
   return v;
+}
+Val* cpyVal(Val* v) {
+  if (v == NULL) return NULL;
+  return initVal(v->type, v->addr);
+}
+Val* cpyVals(Val* v) {
+  if (v == NULL) return NULL;
+  Val* n = cpyVal(v);
+  n->nxt = cpyVals(v->nxt);
+  return n;
 }
 void freeVal(Val* v) {
   if (v != NULL) {
@@ -54,23 +66,23 @@ Cmd* newCmd() {
   return arg0;
 }
 
-Cmd* nxtCmd(Cmd** cmd) {
-  *cmd = (*cmd)->nxt;
-  return *cmd;
+Val* nxtVal(Val** vals) {
+  *vals = (*vals)->nxt;
+  return *vals;
 }
 
-Val* checkSignature(Cmd* args, CmdType* types, int nArgs) {
-  CmdType* t;
-  Cmd* c;
+Val* checkSignature(Val* args, VarType* types, int nArgs) {
+  VarType* t;
+  Val* v;
   int i;
-  for (i = 0, c = args, t = types; i < nArgs; i++, c = c->nxt, t++) {
-    if (c == NULL) {
+  for (i = 0, v = args->nxt, t = types; i < nArgs; i++, v = v->nxt, t++) {
+    if (v == NULL) {
       return errorStr("Missing arg.");
-    } else if (c == NULL || c->type != *t) {
+    } else if (v == NULL || (v->type.type != (*t).type || v->type.ptr != (*t).ptr || v->type.arraySize != (*t).arraySize)) {
       return errorStr("Invalid arg i: Expected type ...");
     }
   }
-  if (c != NULL) {
+  if (v != NULL) {
     return errorStr("Supplied too many args.");
   }
   return NULL;
@@ -126,7 +138,7 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
   return c;
 }
 
-LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Val* (*ptr)(Cmd* cmd)) {
+LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Val* (*ptr)(Val* cmd)) {
   LoadedDef* f = createLoadedDef(name, type, ptr);
   lastLoadedDef(p)->nxt = f;
   return p;
@@ -140,7 +152,7 @@ LoadedDef* lastLoadedDef(LoadedDef* d) {
   return f;
 }
 
-LoadedDef* createLoadedDef(char* name, CmdType type, Val* (*ptr)(Cmd* cmd)) {
+LoadedDef* createLoadedDef(char* name, CmdType type, Val* (*ptr)(Val* cmd)) {
   LoadedDef* d = malloc(sizeof(LoadedDef));
   strcpy(d->name, name);
   d->type = type;
