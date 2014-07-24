@@ -15,6 +15,13 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
 Val* initVal(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
   v->type = t;
+  v->nxt = NULL;
+  if (t.type == ERR) {
+    char* err = malloc(sizeof(char) * 52);
+    strcpy(err, (char*)addr);
+    v->addr = err;
+    return v;
+  }
   if (t.ptr == 1) {
     if (t.type == CHAR && t.ptr == 1) {
       char* m = malloc(sizeof(char) * 52);
@@ -24,11 +31,7 @@ Val* initVal(VarType t, void* addr) {
       abort(); // FIXME: Better error message.
     }
   } else {
-    if (t.type == ERR) {
-      char* err = malloc(sizeof(char) * 52);
-      strcpy(err, (char*)addr);
-      v->addr = err;
-    } else if (t.type == INT) {
+    if (t.type == INT) {
       int* vx = malloc(sizeof(int));
       *vx = *(int*)addr;
       v->addr = vx;
@@ -42,7 +45,6 @@ Val* initVal(VarType t, void* addr) {
       abort(); // FIXME: Better error message.
     }
   }
-  v->nxt = NULL;
   return v;
 }
 Val* cpyVal(Val* v) {
