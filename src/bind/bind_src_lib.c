@@ -8,7 +8,8 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
-#define GET_VAL(type_t, vals) (*((int*)(vals = vals->nxt)->addr))
+#define GET_VAL(type_t, vals) (*((type_t*)(vals = vals->nxt)->addr))
+#define GET_PTR(type_t, vals) ((type_t)(vals = vals->nxt)->addr)
 
 int add(int x, int y);
 int sus(int x, int y);
@@ -55,8 +56,8 @@ Val* bind_divide(Cmd* cmd) {
 Val* bind_straddch(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
   if ((m = checkSignature(args, t, 2)) != NULL) return m;
-  char* str_ = (char*)args->nxt->addr;
-  char c_ = *((char*)args->nxt->nxt->addr);
+  char* str_ = GET_PTR(char*, args);
+  char c_ = GET_VAL(char, args);
   char* r = straddch(str_, c_);
   return initVal(varType(CHAR, 1, 0), r);
 }
