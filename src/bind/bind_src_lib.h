@@ -16,4 +16,9 @@ Val* bind_sus(Val* args);
 Val* bind_mult(Val* args);
 Val* bind_divide(Val* args);
 Val* bind_straddch(Val* args);
+Val* bind_strdelch(Val* args);
+Val* bind_strinsertch(Val* args);
+Val* bind_trimCEnd(Val* args);
+Val* bind_trimEnd(Val* args);
+Val* bind_trim(Val* args);
 #endif // BIND_H

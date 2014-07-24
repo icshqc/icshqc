@@ -18,6 +18,9 @@ void initCFunctions(LoadedDef* d);
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
+// TODO: :d => lists the function prototype
+// TODO: x = "hello"; straddch(x, '!'); x
+
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 
 // TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
@@ -301,25 +304,6 @@ char* strVal(char* val, Cmd* cmd) {
 
 // HELPER
 
-void strinsertch(char* cursor, char c) { //FIXME: Not buffer safe
-  char* s = cursor;
-  char n = *s;
-  char n2;
-  while (n != '\0') {
-    n2 = *(s+1);
-    *(s+1) = n;
-    n = n2;
-  }
-  *cursor = c;
-}
-char* strdelch(char* str) {
-  int i = strlen(str);
-  if (i > 0) {
-    str[i-1] = '\0';
-  }
-  return str;
-}
-
 // NCURSES HELPER
 
 // TODO: debug(), fatal(), error(), warn(), log()
@@ -351,44 +335,6 @@ Cmd* outputStr(const char* str) {
   if (strlen(str) >= 52) return outputStr("Error, string too big.");
   return initCmd(STRING, str, NULL);
 }
-
-char* trimCEnd(char* s) {
-  char* init = s;
-  s = s + strlen(s) - 1;
-  while (s != init) {
-    if (*s == ' ' || *s == '\t' || *s == ';') {
-      *s = '\0';
-    } else {
-      break;
-    }
-    --s;
-  }
-  return init;
-}
-char* trimEnd(char* s) {
-  char* init = s;
-  s = s + strlen(s) - 1;
-  while (s != init) {
-    if (*s == ' ' || *s == '\t') {
-      *s = '\0';
-    } else {
-      break;
-    }
-    --s;
-  }
-  return init;
-}
-
-// Return a pointer to the first non whitespace char of the string.
-char* trim(char* s) {
-  char* c = s;
-  while (*c != '\0' && (*c == ' ' || *c == '\n')) {
-    c++;
-  }
-  return c;
-}
-
-// APP
 
 char* catCmdType(char* b, CmdType t) {
   if (t == VALUE) {
