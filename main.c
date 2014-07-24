@@ -612,6 +612,17 @@ VarType parseVarType(char* str) {
   return v;
 }
 
+char* catPrimVarTypeEnum(char* b, PrimVarType t) {
+  if (t == INT) {
+    strcat(b, "INT");
+  } else if (t == FLOAT) {
+    strcat(b, "FLOAT");
+  } else if (t == CHAR) {
+    strcat(b, "CHAR");
+  }
+  return b;
+}
+
 char* catPrimVarType(char* b, PrimVarType t) {
   if (t == INT) {
     strcat(b, "int");
@@ -1216,19 +1227,6 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   fclose(s);
 }
 
-char* catArgTypeFname(char* b, VarType t) {
-  strcat(b, "arg");
-  if (t.ptr != 0) {
-    strcat(b, "ptr");
-  } else {
-    char typeFuncName[52] = "";
-    catPrimVarType(typeFuncName, t.type);
-    replace(typeFuncName, ' ', '_');
-    strcat(b, typeFuncName);
-  }
-  return b;
-}
-
 char* catArgTypeGetter(char* b, Attr* a, int i) {
   strcat(b, "  ");
   catVarType(b, a->type);
@@ -1236,16 +1234,12 @@ char* catArgTypeGetter(char* b, Attr* a, int i) {
   strcat(b, a->name);
   strcat(b, "_ = ");
   if (a->type.ptr != 0) {
-    strcat(b, "(");
-    catVarType(b, a->type);
-    strcat(b, ")");
-  }
-  catArgTypeFname(b, a->type);
-  if (i == 0) {
-    strcat(b, "(args);\n");
+    strcat(b, "GET_PTR(");
   } else {
-    strcat(b, "(nxtCmd(&args));\n");
+    strcat(b, "GET_VAL(");
   }
+  catVarType(b, a->type);
+  strcat(b, ", args);\n");
   return b;
 }
 
@@ -1283,21 +1277,25 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   }
   fprintf(s, "\n");
 
+  /*int r = add(x_, y_);
+  return initVal(varType(INT, 0, 0), &r);
+}*/
+
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "Cmd* bind_%s(Cmd* cmd) {\n", f->name);
-    fprintf(s, "  Cmd* args = cmd->args;\n");
-    fprintf(s , "  char r[52] = \"\"; Cmd* m; CmdType t[] = {");
+    fprintf(s, "Val* bind_%s(Val* args) {\n", f->name);
+    fprintf(s, "  Val* m; VarType t[] = {");
     int nAttrs = 0;
     for (nAttrs = 0, a = f->args; a != NULL; a = a->nxt, nAttrs++) {
-      char type[52] = "INT"; // FIXME
-      fprintf(s, "%s", type);
+      char vType[52] = "";
+      catPrimVarTypeEnum(vType, a->type.type);
+      fprintf(s, "varType(%s, %d, %d)", vType, a->type.ptr, a->type.arraySize);
       if (a->nxt != NULL) {
         fprintf(s, ", ");
       }
     }
     int i;
     fprintf(s, "};\n");
-    fprintf(s, "  if ((m = checkSignature(cmd->args, t, %d)) != NULL) return m;\n", nAttrs);
+    fprintf(s, "  if ((m = checkSignature(args, t, %d)) != NULL) return m;\n", nAttrs);
     for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
       char argTypeG[124] = "";
       catArgTypeGetter(argTypeG, a, i);
@@ -1305,8 +1303,8 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     }
     if (f->ret.type != VOID) {
       char paType[52] = "";
-      catArgTypeFname(paType, f->ret);
-      fprintf(s, "  return initCmd(OLD_INT, cat_%s(r, %s(", paType, f->name);
+      catVarType(paType, f->ret);
+      fprintf(s, "  %s r = %s(", paType, f->name);
     } else {
       fprintf(s, "  %s(", f->name);
     }
@@ -1317,9 +1315,13 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
       }
     }
     if (f->ret.type != VOID) {
-      fprintf(s, ")), NULL");
+      char paType[52] = "";
+      catVarType(paType, f->ret);
+      fprintf(s, ");\n  return initVal(varType(%s, %d, %d), %s);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize,
+                              f->ret.ptr != 0 ? "r" : "&r");
+    } else {
+      fprintf(s, ");\n  return NULL;\n}\n\n");
     }
-    fprintf(s, ");\n}\n\n");
   }
   fclose(s);
 }
