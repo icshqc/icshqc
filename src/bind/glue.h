@@ -25,7 +25,6 @@ Val* cpyVals(Val* v);
 Val* initVal(VarType t, void* addr);
 void freeVal(Val* v);
 
-Val* nxtVal(Val** vals);
 Val* checkSignature(Val* args, VarType* types, int nArgs);
 
 int validArg(Cmd* cmd, CmdType type);

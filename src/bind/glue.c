@@ -80,11 +80,6 @@ Cmd* newCmd() {
   return arg0;
 }
 
-Val* nxtVal(Val** vals) {
-  *vals = (*vals)->nxt;
-  return *vals;
-}
-
 Val* checkSignature(Val* args, VarType* types, int nArgs) {
   VarType* t;
   Val* v;

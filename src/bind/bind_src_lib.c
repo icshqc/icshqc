@@ -8,6 +8,8 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
 }
 
+#define GET_VAL(type_t, vals) (*((int*)(vals = vals->nxt)->addr))
+
 int add(int x, int y);
 int sus(int x, int y);
 int mult(int x, int y);
@@ -17,8 +19,8 @@ char* straddch(char* str, char c);
 Val* bind_add(Val* args) {
   Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
   if ((m = checkSignature(args, t, 2)) != NULL) return m;
-  int x_ = *((int*)(args = args->nxt)->addr);
-  int y_ = *((int*)(args = args->nxt)->addr);
+  int x_ = GET_VAL(int, args);
+  int y_ = GET_VAL(int, args);
   int r = add(x_, y_);
   return initVal(varType(INT, 0, 0), &r);
 }
