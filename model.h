@@ -84,7 +84,7 @@ struct Func {
   VarType ret;
   int isOperator;
   Attr* args;
-  Cmd* cmd;
+  Val* cmd;
   struct Func* nxt;
 };
 typedef struct Func Func;

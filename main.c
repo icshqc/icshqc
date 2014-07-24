@@ -158,7 +158,7 @@ void freeCmd(Cmd* arg) {
 
 void freeFunc(Func* f) {
   if (f != NULL) {
-    freeCmd(f->cmd);
+    freeVal(f->cmd);
     freeAttr(f->args);
     freeFunc(f->nxt);
     free(f);
@@ -635,7 +635,7 @@ char* catVarType(char* b, VarType t) {
 Val* runFunc(Val* args) {
   // TODO, replace all of f->args in f->cmd by cmd->args
   Func* f = funcByName((char*)args->addr);
-  LoadedDef* d = loadedFuncByName(f->cmd->name);
+  LoadedDef* d = loadedFuncByName((char*)((Val*)f->cmd->addr)->addr);
   return (d != NULL) ? d->ptr(args) : NULL;
 }
 
@@ -1176,7 +1176,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
       fprintf(s, "| ");
     }
     char cmdExe[256] = "";
-    catCmdExe(cmdExe, f->cmd, 0);
+    //catCmdExe(cmdExe, f->cmd, 0); FIXME
     fprintf(s, "%s }\n", cmdExe);
   }
   fclose(s);
@@ -1725,7 +1725,7 @@ Func* createFunc(Val* args) {
     strcpy(a->name, (char*)pair->nxt->addr);
     arg = arg->nxt;
   }
-  f->cmd = valToCmd(arg);
+  f->cmd = cpyVal(arg);
   Func* oldFirst = funcs;
   funcs = f;
   f->nxt = oldFirst;
