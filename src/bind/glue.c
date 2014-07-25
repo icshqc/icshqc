@@ -21,6 +21,8 @@ char* catPrimVarType(char* b, PrimVarType t) {
     strcat(b, "char");
   } else if (t == VOID) {
     strcat(b, "void");
+  } else if (t == UNDEFINED) {
+    strcat(b, "undefined");
   } else {
     abort();
   }

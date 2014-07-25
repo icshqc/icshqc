@@ -574,7 +574,6 @@ VarType parseVarType(char* str) {
   } else if (strcmp(typeName, "void") == 0) {
     v.type = VOID;
   } else {
-    abort();
     v.type = UNDEFINED;
   }
   v.ptr = ptr;
@@ -1369,7 +1368,7 @@ void addType(Type* type) {
 }
 
 struct CLine {
-  char val[200];
+  char val[512];
   struct CLine* nxt;
   struct CLine* block;
 };
@@ -1520,14 +1519,6 @@ Val* runCLine(CLine* l, char* current_filename) {
         return secRet;
       }
     }
-  } else if (strchr(l->val, '(')) { // It is a function.
-    if (cfuncs == NULL) {
-      cfuncs = parseCFunction(l->val);
-    } else {
-      CFunc* oldFirst = cfuncs;
-      cfuncs = parseCFunction(l->val);
-      cfuncs->nxt = oldFirst;
-    }
   } else if (startsWith("typedef", l->val)) {
     parseTypedef(l);
   } else if (startsWith("enum", l->val)) {
@@ -1535,6 +1526,18 @@ Val* runCLine(CLine* l, char* current_filename) {
   } else if (startsWith("struct", l->val)) {
     if (parseCStruct(l) == NULL) {
       return errorStr("Could not parse struct.");
+    }
+  } else if (strchr(l->val, '(') && (l->val[strlen(l->val-1)] == ';' || l->block != NULL)) { // It is a function.
+    if (cfuncs == NULL) {
+      cfuncs = parseCFunction(l->val);
+    } else {
+      CFunc* oldFirst = cfuncs;
+      cfuncs = parseCFunction(l->val);
+      if (cfuncs == NULL) {
+        cfuncs = oldFirst;
+      } else {
+        cfuncs->nxt = oldFirst;
+      }
     }
   }
   return NULL;
