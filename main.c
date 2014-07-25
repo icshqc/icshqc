@@ -591,11 +591,38 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
   return b;
 }
 
+// doubler :: {|int x| x + x}
+// fArgs = x
+// cmdArgs = x, x
+// args = 10
 Val* runFunc(Val* args) {
-  // TODO, replace all of f->args in f->cmd by cmd->args
+  // TODO: Check size of fArgs == args
   Func* f = funcByName((char*)args->addr);
-  LoadedDef* d = loadedFuncByName((char*)((Val*)f->cmd->addr)->addr);
-  return (d != NULL) ? d->ptr(args) : NULL;
+  Val* cmd = (Val*)f->cmd->addr;
+  Attr* fArgs = f->args;
+  LoadedDef* d = loadedFuncByName((char*)cmd->addr);
+  Val* nArgs = args;
+  Val* cmdArgs = (Val*)cmd->nxt->addr;
+  Val* a;
+  Attr* b;
+  Val* c;
+  Val* n = nArgs;
+  for (a = cmdArgs; a != NULL; a = a->nxt) {
+    int found = 0;
+    for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
+      if (strcmp((char*)a->addr, b->name) == 0) {
+        n->nxt = cpyVal(c);
+        n = n->nxt;
+        found = 1;
+        break;
+      }
+    }
+    if (found == 0) {
+      return errorStr("WTF dude");
+    }
+  }
+
+  return (d != NULL) ? d->ptr(nArgs) : NULL;
 }
 
 Cmd* typeCmd(Cmd* cmd) {
