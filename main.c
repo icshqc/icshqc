@@ -38,6 +38,8 @@ static Type* types = NULL;
 static Var* vars = NULL;
 static Func* funcs = NULL;
 
+static CFunc* cfuncs = NULL;
+
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
@@ -1591,8 +1593,6 @@ Val* parseCIncludeFile(char* current_dir, char* filename) {
 
   CLine* lines = getCLines(s, 0);
   CLine* l;
-  CFunc* f0 = NULL;
-  CFunc* f = NULL;
   for (l = lines; l != NULL; l = l->nxt) {
     if (l->val[0] == '#') { // TODO: All preprocessor directives.
       if (startsWith("#include", l->val)) {
@@ -1608,18 +1608,17 @@ Val* parseCIncludeFile(char* current_dir, char* filename) {
           secRet = parseCIncludeFile(curDir, filename);
         }
         if (secRet != NULL && secRet->type.type == ERR) {
-          freeCFunc(f0);
           free(lines);
           return secRet;
         }
       }
     } else if (strchr(l->val, '(')) { // It is a function.
-      if (f0 == NULL) {
-        f0 = parseCFunction(l->val);
-        f = f0;
+      if (cfuncs == NULL) {
+        cfuncs = parseCFunction(l->val);
       } else {
-        f->nxt = parseCFunction(l->val);
-        f = f->nxt;
+        CFunc* oldFirst = cfuncs;
+        cfuncs = parseCFunction(l->val);
+        cfuncs->nxt = oldFirst;
       }
     } else if (startsWith("typedef", l->val)) {
       parseTypedef(l);
@@ -1627,29 +1626,31 @@ Val* parseCIncludeFile(char* current_dir, char* filename) {
       parseEnum(l);
     } else if (startsWith("struct", l->val)) {
       if (parseCStruct(l) == NULL) {
-        freeCFunc(f0);
         free(lines);
         return errorStr("Could not parse struct.");
       }
     }
   }
-  char bind_filename[52] = "bind_";
-  strcat(bind_filename, filename);
-  char* ext;
-  if ((ext = strchr(bind_filename, '.')) != NULL) {
-    *ext = '\0';
-  }
-  replace(bind_filename, '/', '_');
-  if (f0 != NULL) {
-    bindCFunctionsHeader(bind_filename, f0);
-    bindCFunctionsSource(bind_filename, f0);
-  }
-  freeCFunc(f0);
   free(lines);
   return NULL;
 }
 Val* parseCIncludeFileCmd(Val* args) {
-  return parseCIncludeFile(NULL, (char*)args->nxt->addr);
+  char* filename = (char*)args->nxt->addr;
+  Val* v = parseCIncludeFile(NULL, filename);
+  if (cfuncs != NULL) {
+    char bind_filename[52] = "bind_";
+    strcat(bind_filename, filename);
+    char* ext;
+    if ((ext = strchr(bind_filename, '.')) != NULL) {
+      *ext = '\0';
+    }
+    replace(bind_filename, '/', '_');
+    bindCFunctionsHeader(bind_filename, cfuncs);
+    bindCFunctionsSource(bind_filename, cfuncs);
+  }
+  freeCFunc(cfuncs);
+  cfuncs = NULL;
+  return v;
 }
 
 void load() {
