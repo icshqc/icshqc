@@ -1797,9 +1797,12 @@ void loop()
                  strcmp(name, "list") == 0 ||
                  strcmp(name, "help") == 0) {
         output("\n");
-        Val* v = listDefs();
-        output((char*)v->addr);
-        free(v);
+        char b[] = ":h\t           This help message\n"
+                   ":l\t           Lists all the loaded functions\n"
+                   ":v\t           Lists all the variables\n"
+                   ":t\t           Lists all the types\n"
+                   ":d\t           Shows the prototype of a function\n";
+        output(b);
       } else if (strcmp(name, "v") == 0 ||
                  strcmp(name, "vars") == 0) {
         output("\n");
