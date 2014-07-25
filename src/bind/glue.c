@@ -108,7 +108,6 @@ Val* cpyVals(Val* v) {
 }
 void freeVal(Val* v) {
   if (v != NULL) {
-    freeVal(v->nxt);
     if (v->addr != NULL && v->type.ptr == 0) {
       free(v->addr);
     }

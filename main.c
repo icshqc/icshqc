@@ -881,11 +881,18 @@ Cmd* valToCmd(Val* v) {
   }
 }
 
+void addVal(Val** list, Val* v) {
+  while (*list != NULL) {
+    ++list;
+  }
+  *list = v;
+}
+
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
-Val* cmdVal(Cmd* cmd) {
+Val* cmdVal(Cmd* cmd, Val** garbage) {
   Val* ret = NULL;
   Val* nVal = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
@@ -893,12 +900,13 @@ Val* cmdVal(Cmd* cmd) {
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
-      n->nxt = cmdVal(arg);
+      n->nxt = cmdVal(arg, garbage);
       if (n->nxt != NULL) {
         n = n->nxt;
       }
     }
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
+    addVal(garbage, ret);
   } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
     nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
@@ -910,19 +918,25 @@ Val* cmdVal(Cmd* cmd) {
       }
     }
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
+    addVal(garbage, ret);
   } else if (cmd->type == VAR) {
-    ret = cpyVal(varByName(cmd->name)->val);
+    ret = varByName(cmd->name)->val;
   } else {
     ret = cmdToVal(cmd);
+    addVal(garbage, ret);
   }
-  if (ret != NULL) ret->nxt = nVal; // To be able to free them at the end.
   return ret;
 }
 
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
-  Val* v = cmdVal(cmd);
+  Val* garbage[10];
+  int i;
+  for (i = 0; i < 10; i++) {
+    garbage[i] = NULL;
+  }
+  Val* v = cmdVal(cmd, garbage);
   if (v == NULL || v->type.type != ERR) {
     output("\n=> ");
   } else {
@@ -931,7 +945,9 @@ void eval(Cmd* cmd) {
   char out[52] = "";
   catVal(out, v);
   output(out);
-  freeVal(v);
+  for (i = 0; i < 10; i++) {
+    freeVal(garbage[i]);
+  }
  
   eval(cmd->nxt);
 }
@@ -1312,7 +1328,7 @@ Val* construct(Val* args) {
   if (t->attrs != NULL) {
     addCmd(&ret->args, cpyCmd(cmd->args));
   }
-  return cmdToVal(ret);*/
+  return cmdToVal(ret); FIXME*/
   return NULL;
 }
 
