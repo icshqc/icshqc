@@ -19,7 +19,6 @@ void initCFunctions(LoadedDef* d);
 //#define DEBUG_MODE
 
 // TODO: :d => lists the function prototype
-// TODO: x = "hello"; straddch(x, '!'); x
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 
@@ -447,9 +446,9 @@ char* catVal(char* b, Val* v) {
   } else if (v->type.type == ERR || (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0))) {
     strcat(b, (char*)v->addr);
   } else if (v->type.type == TUPLE) {
-    Val* v2 = (Val*)v->addr;
+    Val* v2;
     strcat(b, "(");
-    while (v2 != NULL) {
+    for (v2 = (Val*)v->addr; v2 != NULL; v2 = v2->nxt) {
       catVal(b, v2);
       if (v2->nxt != NULL) {
         strcat(b, ", ");
@@ -756,7 +755,7 @@ ParsePair parseCmdR(char* command) {
   while (*s != '\0') {
     char* i = s;
     while (*s != '\0' && *s != ' ' && *s != '(' && *s != ')' &&
-           *s != '{' && *s != '}' && *s != '[' && *s != '\n') {
+           *s != '{' && *s != '}' && *s != '"' && *s != '[' && *s != '\n') {
       ++s;
     }
     if (s > i) {
@@ -765,7 +764,27 @@ ParsePair parseCmdR(char* command) {
       addCmd(&cmds, cmd);
     }
     s = trim(s);
-    if (*s == ')') {
+    if (*s == '"') {
+      char p = *s;
+      char* i2 = s;
+      while (*(++s) != '\0') {
+        if (*s == '"' && p != '\\') {
+          break;
+        }
+        p = *s;
+      }
+      if (*s != '"') {
+        //msg("Error parsing string.");
+        freeCmd(cmds);
+        return parsePair(NULL, s);
+      } else {
+        Cmd* cmd = newCmd();
+        cmd->type = STRING;
+        strncpy(cmd->name, i2 + 1, s-i2-1);
+        addCmd(&cmds, cmd);
+        ++s;
+      }
+    } else if (*s == ')') {
       ++s;
       break;
     } else if (*s == '[') {
@@ -833,7 +852,7 @@ Val* cmdToVal(Cmd* cmd) {
     return initVal(varType(INT, 0, 0), &x);
   } else if (cmd->type == STRING) {
     char name[52] = "";
-    strncpy(name, cmd->name + 1, strlen(cmd->name) - 2);
+    strncpy(name, cmd->name, strlen(cmd->name));
     return initArray(varType(CHAR, 0, 52), name);
   } else if (cmd->type == OLD_CHAR) {
     char c = cmd->name[1];
