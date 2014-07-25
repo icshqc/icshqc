@@ -13,19 +13,17 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
 }
 
 size_t sizeofVarType(VarType t) {
+  size_t s;
   if (t.ptr != 0) {
-    return sizeof(void*);
-  } else {
-    size_t s;
-    if (t.type == INT) {
-      s = sizeof(int);
-    } else if (t.type == CHAR) {
-      s = sizeof(char);
-    } else if (t.type == FLOAT) {
-      s = sizeof(float);
-    }
-    return t.arraySize == 0 ? s : s * t.arraySize;
+    s = sizeof(void*);
+  } else if (t.type == INT) {
+    s = sizeof(int);
+  } else if (t.type == CHAR) {
+    s = sizeof(char);
+   } else if (t.type == FLOAT) {
+     s = sizeof(float);
   }
+  return t.arraySize == 0 ? s : s * t.arraySize;
 }
 
 Val* initArray(VarType t, void* addr) {
