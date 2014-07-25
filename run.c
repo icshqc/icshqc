@@ -67,7 +67,7 @@ void main(int argc, char* argv[]) {
   strcat(cmd, " -lffi");
   strcat(cmd, " -lSDL_ttf");
   if (debug_mode) {
-    strcat(cmd, " && gdb build/debug");
+    strcat(cmd, " && gdb -q build/debug");
   } else {
     strcat(cmd, " && ./build/icsh");
   }

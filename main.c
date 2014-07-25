@@ -1716,7 +1716,7 @@ Val* assign(Val* args) {
     freeVal(v->val);
   }
   v->val = cpyVal(args->nxt->nxt);
-  return v->val;
+  return cpyVal(v->val);
 }
 
 void listTypes(Cmd* cmd) {
