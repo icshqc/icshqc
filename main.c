@@ -1480,13 +1480,6 @@ int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
 }
 
-FILE* fopenWithExtension(char* extension, char* filename) {
-  char buf[64] = "";
-  strcat(buf, extension);
-  strcat(buf, filename);
-  return fopen(buf, "r");
-}
-
 Attr* parseAttr(char* val) {
   char* space = strrchr(trimEnd(val), ' ');
   if (space == NULL) return NULL;
@@ -1569,13 +1562,32 @@ Type* parseCStruct(CLine* l) {
   return t;
 }
 
-Val* parseCIncludeFile(char* filename) {
-  FILE* s = fopen(filename, "r");
-  //if (s == NULL) s = fopenWithExtension("/usr/include/", filename);
-  if (s == NULL) {
-    //return errorStr("Invalid include file.\n"); FIXME: TMP commented because always gives error
-    return NULL;
+Val* parseCIncludeFile(char* current_dir, char* filename) {
+  FILE* s = NULL;
+  char buf2[64] = "";
+  char* current_filename = filename;
+  if (current_dir == NULL) {
+    s = fopen(filename, "r");
+  } else {
+    strcat(buf2, current_dir);
+    strcat(buf2, filename);
+    s = fopen(buf2, "r");
+    current_filename = buf2;
   }
+  char buf[64] = "";
+  if (s == NULL) {
+    strcat(buf, "/usr/include/");
+    strcat(buf, filename);
+    s = fopen(buf, "r");
+    current_filename = buf;
+  }
+  if (s == NULL) {
+    char msg[52] = "";
+    sprintf(msg, "Invalid include file %s.\n", filename);
+    return errorStr(msg);
+    //return NULL;
+  }
+
 
   CLine* lines = getCLines(s, 0);
   CLine* l;
@@ -1586,7 +1598,15 @@ Val* parseCIncludeFile(char* filename) {
       if (startsWith("#include", l->val)) {
         char filename[64] = "";
         strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
-        Val* secRet = parseCIncludeFile(filename);
+        char* lastSlash = strrchr(current_filename, '/');
+        Val* secRet;
+        if (lastSlash == NULL) {
+          secRet = parseCIncludeFile(NULL, filename);
+        } else {
+          char curDir[64] = "";
+          strncpy(curDir, current_filename, lastSlash - current_filename + 1);
+          secRet = parseCIncludeFile(curDir, filename);
+        }
         if (secRet != NULL && secRet->type.type == ERR) {
           freeCFunc(f0);
           free(lines);
@@ -1629,7 +1649,7 @@ Val* parseCIncludeFile(char* filename) {
   return NULL;
 }
 Val* parseCIncludeFileCmd(Val* args) {
-  return parseCIncludeFile((char*)args->nxt->addr);
+  return parseCIncludeFile(NULL, (char*)args->nxt->addr);
 }
 
 void load() {
