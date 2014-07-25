@@ -444,6 +444,8 @@ char* replace(char* str, char a, char b) {
 char* catVal(char* b, Val* v) {
   if (v == NULL) {
     strcat(b, "NULL");
+  } else if (v->type.type == ERR || (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0))) {
+    strcat(b, (char*)v->addr);
   } else if (v->type.type == TUPLE) {
     Val* v2 = (Val*)v->addr;
     strcat(b, "(");
@@ -454,8 +456,6 @@ char* catVal(char* b, Val* v) {
       }
     }
     strcat(b, ")");
-  } else if (v->type.type == ERR || (v->type.type == CHAR && v->type.ptr == 1)) {
-    strcat(b, (char*)v->addr);
   } else if (v->type.type == INT) {
     char buffer[52] = "";
     sprintf(buffer, "%d", *((int*)v->addr));
@@ -904,8 +904,9 @@ Cmd* valToCmd(Val* v) {
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
 Val* cmdVal(Cmd* cmd) {
   Val* ret = NULL;
+  Val* nVal = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
-    Val* nVal = initArray(varType(CHAR, 0, 52), cmd->name);
+    nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
@@ -915,9 +916,8 @@ Val* cmdVal(Cmd* cmd) {
       }
     }
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
-    freeVal(nVal);
   } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
-    Val* nVal = initArray(varType(CHAR, 0, 52), cmd->name);
+    nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
@@ -932,6 +932,7 @@ Val* cmdVal(Cmd* cmd) {
   } else {
     ret = cmdToVal(cmd);
   }
+  if (ret != NULL) ret->nxt = nVal; // To be able to free them at the end.
   return ret;
 }
 
@@ -1793,8 +1794,6 @@ void loop()
                  strcmp(name, "q") == 0) {
         return;
       } else if (strcmp(name, "h") == 0 ||
-                 strcmp(name, "l") == 0 ||
-                 strcmp(name, "list") == 0 ||
                  strcmp(name, "help") == 0) {
         output("\n");
         char b[] = ":h\t           This help message\n"
@@ -1803,6 +1802,12 @@ void loop()
                    ":t\t           Lists all the types\n"
                    ":d\t           Shows the prototype of a function\n";
         output(b);
+      } else if (strcmp(name, "l") == 0 ||
+                 strcmp(name, "list") == 0) {
+        output("\n");
+        Val* v = listDefs();
+        output((char*)v->addr);
+        free(v);
       } else if (strcmp(name, "v") == 0 ||
                  strcmp(name, "vars") == 0) {
         output("\n");

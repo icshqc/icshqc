@@ -105,6 +105,10 @@ Cmd* newCmd() {
   return arg0;
 }
 
+int isValArray(VarType t) {
+  return t.arraySize == 0 ? 0 : 1;
+}
+
 Val* checkSignature(Val* args, VarType* types, int nArgs) {
   VarType* t;
   Val* v;
@@ -112,7 +116,7 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
   for (i = 0, v = args->nxt, t = types; i < nArgs; i++, v = v->nxt, t++) {
     if (v == NULL) {
       return errorStr("Missing arg.");
-    } else if (v == NULL || (v->type.type != (*t).type || v->type.ptr != (*t).ptr || v->type.arraySize != (*t).arraySize)) {
+    } else if (v == NULL || (v->type.type != (*t).type || v->type.ptr != (*t).ptr || (isValArray(v->type) != isValArray(*t)))) {
       return errorStr("Invalid arg i: Expected type ...");
     }
   }
