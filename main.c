@@ -331,11 +331,6 @@ void output(const char* str) {
   refresh();
 }
 
-Cmd* outputStr(const char* str) {
-  if (strlen(str) >= 52) return outputStr("Error, string too big.");
-  return initCmd(STRING, str, NULL);
-}
-
 char* catCmdType(char* b, CmdType t) {
   if (t == VALUE) {
     strcat(b, "VALUE");
@@ -446,6 +441,31 @@ char* replace(char* str, char a, char b) {
   return str;
 }
 
+char* catVal(char* b, Val* v) {
+  if (v == NULL) {
+    strcat(b, "NULL");
+  } else if (v->type.type == TUPLE) {
+    Val* v2 = (Val*)v->addr;
+    strcat(b, "(");
+    while (v2 != NULL) {
+      catVal(b, v2);
+      if (v2->nxt != NULL) {
+        strcat(b, ", ");
+      }
+    }
+    strcat(b, ")");
+  } else if (v->type.type == ERR || (v->type.type == CHAR && v->type.ptr == 1)) {
+    strcat(b, (char*)v->addr);
+  } else if (v->type.type == INT) {
+    char buffer[52] = "";
+    sprintf(buffer, "%d", *((int*)v->addr));
+    strcat(b, buffer);
+  } else {
+    abort();
+  }
+  return b;
+}
+
 void catVar(char* m, Var* v) {
   if (v != NULL) {
     if (v->type != NULL) {
@@ -455,7 +475,7 @@ void catVar(char* m, Var* v) {
     strcat(m, v->name);
     if (v->val != NULL) {
       strcat(m, " ");
-      catCmd(m, v->val);
+      catVal(m, v->val);
     }
   }
 }
@@ -806,15 +826,6 @@ ParsePair parseCmdR(char* command) {
   return parsePair(cmds, s);
 }
 
-char* catVal(char* b, Val* v) {
-  if (v == NULL) {
-    strcat(b, "NULL");
-  } else if (v->type.type == ERR || (v->type.type == CHAR && v->type.ptr == 1)) {
-    strcat(b, (char*)v->addr);
-  }
-  return b;
-}
-
 Val* cmdToVal(Cmd* cmd);
 Val* cmdArgsToVal(Cmd* cmd) {
   Val* v0 = NULL;
@@ -919,7 +930,7 @@ Val* cmdVal(Cmd* cmd) {
     }
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
   } else if (cmd->type == VAR) {
-    ret = cmdToVal(varByName(cmd->name)->val);
+    ret = cpyVal(varByName(cmd->name)->val);
   } else {
     ret = cmdToVal(cmd);
   }
@@ -930,21 +941,15 @@ void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
   Val* v = cmdVal(cmd);
-  if (v == NULL) {
-    output("\n=> FIXME");
-  } else if (v->type.type == ERR) {
-    output("\nError: ");
-    char out[52] = "";
-    catVal(out, v);
-    output(out);
-  } else {
-    Cmd* ret = valToCmd(v);
+  if (v == NULL || v->type.type != ERR) {
     output("\n=> ");
-    char m[1024] = "";
-    output(catPrintCmd(m, ret));
-    if (ret != cmd) freeCmd(ret);
+  } else {
+    output("\nError: ");
   }
-  if (v != NULL) freeVal(v);
+  char out[52] = "";
+  catVal(out, v);
+  output(out);
+  freeVal(v);
  
   eval(cmd->nxt);
 }
@@ -1641,12 +1646,6 @@ char* argVal(char* buf, Cmd* arg) {
   return buf;
 }
 
-Cmd* printVar(Cmd* cmd) {
-  char b[1024] = "";
-  catVar(b, varByName(cmd->name));
-  return outputStr(b);
-}
-
 Var* addNewVar(Type* type, char* name) {
   Var* var = malloc(sizeof(Var));
   strcpy(var->name, name);
@@ -1729,12 +1728,10 @@ Val* assign(Val* args) {
   if (v == NULL) {
     v = addNewVar(NULL, (char*)args->nxt->addr); // FIXME hardcoded type, but maybe var type is useless anyway.
   } else if (v->val != NULL) {
-    freeCmd(v->val);
+    freeVal(v->val);
   }
-  Cmd* val = valToCmd(args->nxt->nxt);
-  v->val = initCmd(val->type, val->name, val->args);
-  v->val->nxt = val->nxt;
-  return args->nxt->nxt;
+  v->val = cpyVal(args->nxt->nxt);
+  return v->val;
 }
 
 void listTypes(Cmd* cmd) {
@@ -1760,34 +1757,28 @@ void listTypes(Cmd* cmd) {
   output(m);
 }
 
-Cmd* listVars(Cmd* cmd) {
+Val* listVars() {
   Var* v;
-  char m[1024] = "";
+  char* m = malloc(sizeof(char) * 2056);
   for (v = vars; v != NULL; v = v->nxt) {
     catVar(m, v);
     if (v->nxt != NULL) {
       strcat(m, "\n");
     }
   }
-  return outputStr(m);
+  return initPtr(CHAR, m);
 }
 
-Cmd* listDefs(Cmd* cmd) {
+Val* listDefs() {
   LoadedDef* d;
-  Cmd* arr = initCmd(ARRAY, NULL, NULL);
-  Cmd* n = NULL;
+  char* m = malloc(sizeof(char) * 2056);
   for (d = loadedDefs; d != NULL; d = d->nxt) {
-    if (n == NULL) {
-      arr->args = newCmd();
-      n = arr->args;
-    } else {
-      n->nxt = newCmd();
-      n = n->nxt;
+    strcat(m, d->name);
+    if (d->nxt != NULL) {
+      strcat(m, ", ");
     }
-    strcpy(n->name, d->name);
-    n->type = STRING;
   }
-  return arr;
+  return initPtr(CHAR, m);
 }
 
 void loop()
@@ -1807,14 +1798,16 @@ void loop()
                  strcmp(name, "l") == 0 ||
                  strcmp(name, "list") == 0 ||
                  strcmp(name, "help") == 0) {
-        char m[1024] = "";
         output("\n");
-        output(catPrintCmd(m, listDefs(NULL)));
+        Val* v = listDefs();
+        output((char*)v->addr);
+        free(v);
       } else if (strcmp(name, "v") == 0 ||
                  strcmp(name, "vars") == 0) {
-        char m[1024] = "";
         output("\n");
-        output(catPrintCmd(m, listVars(NULL)));
+        Val* v = listVars();
+        output((char*)v->addr);
+        free(v);
       } else if (strcmp(name, "t") == 0 ||
                  strcmp(name, "types") == 0) {
         output("\n");

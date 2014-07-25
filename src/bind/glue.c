@@ -12,6 +12,13 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   return t;
 }
 
+Val* initPtr(PrimVarType t, void* addr) {
+  Val* v = malloc(sizeof(Val));
+  v->type = varType(t, 1, 0);
+  v->nxt = NULL;
+  v->addr = addr;
+  return v;
+}
 Val* initVal(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
   v->type = t;

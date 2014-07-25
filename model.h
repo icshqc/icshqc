@@ -75,7 +75,7 @@ typedef struct LoadedDef LoadedDef;
 struct Var {
   char name[32];
   Type* type;
-  Cmd* val;
+  Val* val;
   struct Var* nxt;
 };
 typedef struct Var Var;
