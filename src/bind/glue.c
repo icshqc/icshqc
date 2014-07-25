@@ -20,8 +20,10 @@ size_t sizeofVarType(VarType t) {
     s = sizeof(int);
   } else if (t.type == CHAR) {
     s = sizeof(char);
-   } else if (t.type == FLOAT) {
-     s = sizeof(float);
+  } else if (t.type == ERR) {
+    s = sizeof(char);
+  } else if (t.type == FLOAT) {
+    s = sizeof(float);
   }
   return t.arraySize == 0 ? s : s * t.arraySize;
 }
@@ -36,9 +38,9 @@ Val* initArray(VarType t, void* addr) {
   return v;
 }
 
-Val* initPtr(PrimVarType t, void* addr) {
+Val* initPtr(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
-  v->type = varType(t, 1, 0);
+  v->type = t;
   v->nxt = NULL;
   v->addr = addr;
   return v;
@@ -83,7 +85,7 @@ Val* cpyVals(Val* v) {
 void freeVal(Val* v) {
   if (v != NULL) {
     freeVal(v->nxt);
-    if (v->addr != NULL) {
+    if (v->addr != NULL && v->type.ptr == 0) {
       free(v->addr);
     }
     free(v);
@@ -121,7 +123,7 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
 }
 
 Val* errorStr(char* str) {
-  return initPtr(ERR, strcpy(malloc(sizeof(char)*124), str));
+  return initArray(varType(ERR, 0, 124), str);
 }
 
 int validArg(Cmd* cmd, CmdType type) {

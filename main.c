@@ -1764,7 +1764,7 @@ Val* listVars() {
       strcat(m, "\n");
     }
   }
-  return initPtr(CHAR, m);
+  return initPtr(varType(CHAR, 0, 2056), m);
 }
 
 Val* listDefs() {
@@ -1776,7 +1776,7 @@ Val* listDefs() {
       strcat(m, ", ");
     }
   }
-  return initPtr(CHAR, m);
+  return initPtr(varType(CHAR, 0, 2056), m);
 }
 
 void loop()
