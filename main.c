@@ -596,17 +596,20 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
 // cmdArgs = x, x
 // args = 10
 Val* runFunc(Val* args) {
-  // TODO: Check size of fArgs == args
   Func* f = funcByName((char*)args->addr);
   Val* cmd = (Val*)f->cmd->addr;
   Attr* fArgs = f->args;
   LoadedDef* d = loadedFuncByName((char*)cmd->addr);
-  Val* nArgs = args;
+  Val* nArgs = cpyVal(args);
   Val* cmdArgs = (Val*)cmd->nxt->addr;
   Val* a;
   Attr* b;
   Val* c;
   Val* n = nArgs;
+  for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {}
+  if (b != NULL || c != NULL) {
+    return errorStr("Invalid amount of args supplied.");
+  }
   for (a = cmdArgs; a != NULL; a = a->nxt) {
     int found = 0;
     for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
@@ -618,7 +621,7 @@ Val* runFunc(Val* args) {
       }
     }
     if (found == 0) {
-      return errorStr("WTF dude");
+      return errorStr("Missing args to runFunc");
     }
   }
 
@@ -885,36 +888,6 @@ Val* cmdToVal(Cmd* cmd) {
     }
   } else {
     return initArray(varType(CHAR, 0, 52), cmd->name);
-  }
-}
-
-Cmd* valToCmd(Val* v) {
-  if (v == NULL) return NULL;
-  if (v->type.type == CHAR && v->type.ptr == 1) {
-    Cmd* cmd = newCmd();
-    cmd->type = STRING;
-    strcpy(cmd->name, (char*)v->addr);
-    return cmd;
-  } else if (v->type.type == TUPLE) {
-    Cmd* cmd = newCmd();
-    Cmd* c = NULL;
-    Val* v2 = (Val*)v->addr;
-    for (; v2 != NULL; v2 = v2->nxt) {
-      if (cmd->args == NULL) {
-        cmd->args = valToCmd(v2);
-        c = cmd->args;
-      } else {
-        c->nxt = valToCmd(v2);
-        c = c->nxt;
-      }
-    }
-    return cmd;
-  } else if (v->type.type == INT) {
-    char r[52] = "";
-    cat_argint(r, *(int*)v->addr);
-    return initCmd(OLD_INT, r, NULL);
-  } else {
-    return NULL;
   }
 }
 
