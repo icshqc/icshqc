@@ -849,22 +849,22 @@ Val* cmdToVal(Cmd* cmd) {
     int x = argint(cmd);
     return initVal(varType(INT, 0, 0), &x);
   } else if (cmd->type == STRING) {
-    char nName[52] = "";
-    strncpy(nName, cmd->name + 1, strlen(cmd->name) - 2);
-    return initVal(varType(CHAR, 1, 0), nName);
+    char name[52] = "";
+    strncpy(name, cmd->name + 1, strlen(cmd->name) - 2);
+    return initArray(varType(CHAR, 0, 52), name);
   } else if (cmd->type == OLD_CHAR) {
     char c = cmd->name[1];
     return initVal(varType(CHAR, 0, 0), &c);
   } else if (cmd->args != NULL) {
     if (cmd->name != NULL && strlen(cmd->name) > 0) {
-      Val* v = initVal(varType(CHAR, 1, 0), cmd->name);
+      Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
       v->nxt = cmdArgsToVal(cmd);
       return initVal(varType(TUPLE, 0, 0), v);
     } else {
       return cmdArgsToVal(cmd);
     }
   } else {
-    return initVal(varType(CHAR, 1, 0), cmd->name);
+    return initArray(varType(CHAR, 0, 52), cmd->name);
   }
 }
 
@@ -898,8 +898,6 @@ Cmd* valToCmd(Val* v) {
   }
 }
 
-// FIXME: Free val!!!!
-
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
@@ -907,7 +905,7 @@ Cmd* valToCmd(Val* v) {
 Val* cmdVal(Cmd* cmd) {
   Val* ret = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
-    Val* nVal = initVal(varType(CHAR, 1, 0), cmd->name);
+    Val* nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
@@ -919,7 +917,7 @@ Val* cmdVal(Cmd* cmd) {
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
     freeVal(nVal);
   } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
-    Val* nVal = initVal(varType(CHAR, 1, 0), cmd->name);
+    Val* nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {

@@ -22,7 +22,7 @@ typedef enum PrimVarType PrimVarType;
 struct VarType {
   PrimVarType type;
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
-  int arraySize; // 0 if not array
+  unsigned int arraySize; // 0 if not array
 };
 typedef struct VarType VarType;
 

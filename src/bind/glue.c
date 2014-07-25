@@ -12,6 +12,32 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   return t;
 }
 
+size_t sizeofVarType(VarType t) {
+  if (t.ptr != 0) {
+    return sizeof(void*);
+  } else {
+    size_t s;
+    if (t.type == INT) {
+      s = sizeof(int);
+    } else if (t.type == CHAR) {
+      s = sizeof(char);
+    } else if (t.type == FLOAT) {
+      s = sizeof(float);
+    }
+    return t.arraySize == 0 ? s : s * t.arraySize;
+  }
+}
+
+Val* initArray(VarType t, void* addr) {
+  Val* v = malloc(sizeof(Val));
+  v->type = t;
+  v->nxt = NULL;
+  size_t s = sizeofVarType(t);
+  v->addr = malloc(s);
+  memcpy(v->addr, addr, s);
+  return v;
+}
+
 Val* initPtr(PrimVarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
   v->type = varType(t, 1, 0);
@@ -23,20 +49,8 @@ Val* initVal(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
   v->type = t;
   v->nxt = NULL;
-  if (t.type == ERR) {
-    char* err = malloc(sizeof(char) * 52);
-    strcpy(err, (char*)addr);
-    v->addr = err;
-    return v;
-  }
-  if (t.ptr == 1) {
-    if (t.type == CHAR && t.ptr == 1) {
-      char* m = malloc(sizeof(char) * 52);
-      strcpy(m, (char*)addr);
-      v->addr = m;
-    } else {
-      abort(); // FIXME: Better error message.
-    }
+  if (t.ptr == 1 || t.type == ERR) {
+    abort(); // Should be using initPtr
   } else {
     if (t.type == INT) {
       int* vx = malloc(sizeof(int));
@@ -56,7 +70,11 @@ Val* initVal(VarType t, void* addr) {
 }
 Val* cpyVal(Val* v) {
   if (v == NULL) return NULL;
-  return initVal(v->type, v->addr);
+  if (v->type.arraySize != 0) {
+    return initArray(v->type, v->addr);
+  } else {
+    return initVal(v->type, v->addr);
+  }
 }
 Val* cpyVals(Val* v) {
   if (v == NULL) return NULL;
@@ -105,7 +123,7 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
 }
 
 Val* errorStr(char* str) {
-  return initVal(varType(ERR, 1, 0), str);
+  return initPtr(ERR, strcpy(malloc(sizeof(char)*124), str));
 }
 
 int validArg(Cmd* cmd, CmdType type) {

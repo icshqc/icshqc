@@ -27,6 +27,7 @@ Val* cpyVal(Val* v);
 Val* cpyVals(Val* v);
 Val* initVal(VarType t, void* addr);
 Val* initPtr(PrimVarType t, void* addr);
+Val* initArray(VarType t, void* addr);
 void freeVal(Val* v);
 
 Val* checkSignature(Val* args, VarType* types, int nArgs);
