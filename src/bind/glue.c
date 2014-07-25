@@ -19,6 +19,10 @@ char* catPrimVarType(char* b, PrimVarType t) {
     strcat(b, "float");
   } else if (t == CHAR) {
     strcat(b, "char");
+  } else if (t == VOID) {
+    strcat(b, "void");
+  } else {
+    abort();
   }
   return b;
 }
@@ -129,6 +133,10 @@ int isValArray(VarType t) {
   return t.arraySize == 0 ? 0 : 1;
 }
 
+int nPtr(VarType t) {
+  return t.ptr + (isValArray(t) ? 1 : 0);
+}
+
 Val* checkSignature(Val* args, VarType* types, int nArgs) {
   VarType* t;
   Val* v;
@@ -136,7 +144,7 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
   for (i = 0, v = args->nxt, t = types; i < nArgs; i++, v = v->nxt, t++) {
     if (v == NULL) {
       return errorStr("Missing arg.");
-    } else if (v == NULL || (v->type.type != (*t).type || v->type.ptr != (*t).ptr || (isValArray(v->type) != isValArray(*t)))) {
+    } else if (v == NULL || (v->type.type != (*t).type || nPtr(v->type) != nPtr(*t))) {
       char m[52] = "";
       sprintf(m, "Invalid arg %d: Expected type ", i);
       catVarType(m, *t);

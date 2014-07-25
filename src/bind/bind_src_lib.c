@@ -61,7 +61,7 @@ Val* bind_divide(Val* args) {
 }
 
 Val* bind_straddch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 0, 1), varType(CHAR, 0, 0)};
+  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
   if ((m = checkSignature(args, t, 2)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   char c_ = GET_VAL(char, args);
@@ -70,7 +70,7 @@ Val* bind_straddch(Val* args) {
 }
 
 Val* bind_strdelch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
+  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   char* r = strdelch(str_);
@@ -78,7 +78,7 @@ Val* bind_strdelch(Val* args) {
 }
 
 Val* bind_strinsertch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 0, 1), varType(CHAR, 0, 0)};
+  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
   if ((m = checkSignature(args, t, 2)) != NULL) return m;
   char* cursor_ = GET_PTR(char*, args);
   char c_ = GET_VAL(char, args);
@@ -87,7 +87,7 @@ Val* bind_strinsertch(Val* args) {
 }
 
 Val* bind_trimCEnd(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
+  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trimCEnd(s_);
@@ -95,7 +95,7 @@ Val* bind_trimCEnd(Val* args) {
 }
 
 Val* bind_trimEnd(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
+  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trimEnd(s_);
@@ -103,7 +103,7 @@ Val* bind_trimEnd(Val* args) {
 }
 
 Val* bind_trim(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
+  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trim(s_);

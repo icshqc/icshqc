@@ -570,7 +570,10 @@ VarType parseVarType(char* str) {
     v.type = CHAR;
   } else if (strcmp(typeName, "float") == 0) {
     v.type = FLOAT;
+  } else if (strcmp(typeName, "void") == 0) {
+    v.type = VOID;
   } else {
+    abort();
     v.type = UNDEFINED;
   }
   v.ptr = ptr;
@@ -1247,8 +1250,11 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     if (f->ret.type != VOID) {
       char paType[52] = "";
       catPrimVarTypeEnum(paType, f->ret.type);
-      fprintf(s, ");\n  return initVal(varType(%s, %d, %d), %s);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize,
-                              f->ret.ptr != 0 ? "r" : "&r");
+      if (f->ret.ptr != 0) {
+        fprintf(s, ");\n  return initPtr(varType(%s, %d, %d), r);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize);
+      } else {
+        fprintf(s, ");\n  return initVal(varType(%s, %d, %d), &r);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize);
+      }
     } else {
       fprintf(s, ");\n  return NULL;\n}\n\n");
     }
