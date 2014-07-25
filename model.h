@@ -82,7 +82,6 @@ typedef struct Var Var;
 
 struct Func {
   char name[52];
-  VarType ret;
   int isOperator;
   Attr* args;
   Val* cmd;

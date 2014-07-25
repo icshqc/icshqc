@@ -94,7 +94,6 @@ Func* newFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(f->name, '\0', sizeof(f->name));
-  f->ret.type = UNDEFINED;
   f->cmd = NULL;
   f->args = NULL;
   f->isOperator = 0;
@@ -704,19 +703,10 @@ ParsePair parseCmdR(char* command);
 ParsePair parseBlock(char* command) {
   char* s = trim(command);
   Cmd* block = initCmd(BLOCK, NULL, NULL);
-  ParsePair p = parse(command, ALLOWED_NAME_CHARS);
-  s = p.ptr;
-  if (*s != ':') {
-    //msg("Error parsing block. Missing return type.");
-    freeCmd(block);
-    return parsePair(NULL, s);
-  }
-  block->args = p.cmd;
-  block->args->type = TYPE;
-  s = trim(s+1);
+  ParsePair p;
   if (*s == '|') {
     p = parseBlockAttr(++s);
-    block->args->nxt = p.cmd;
+    block->args = p.cmd;
     s = p.ptr;
   }
   Cmd* arg;
@@ -1147,15 +1137,13 @@ void save() { // .qc extension. Quick C, Quebec!!!
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
   Func* f;
   for (f = funcs; f != NULL; f = f->nxt) {
-    char vType[52] = "";
-    catVarType(vType, f->ret);
-    fprintf(s, "%s %s {%s: ", f->name, f->isOperator ? ":::" : "::", vType);
+    fprintf(s, "%s %s {", f->name, f->isOperator ? ":::" : "::");
     if (f->args != NULL) {
       fprintf(s, "|");
       Attr* a;
       for (a = f->args; a != NULL; a = a->nxt) {
         char aType[52] = "";
-        catVarType(aType, f->ret);
+        catVarType(aType, a->type);
         fprintf(s, "%s %s", aType, a->name);
         if (a->nxt != NULL) {
           fprintf(s, ", ");
@@ -1709,8 +1697,7 @@ Func* createFunc(Val* args) {
   Func* f = newFunc();
   strcpy(f->name, (char*)args->nxt->addr);
   Val* block = (Val*)args->nxt->nxt->addr;
-  f->ret = parseVarType((char*)block->addr);
-  Val* arg = block->nxt;
+  Val* arg = block;
   Attr* a = NULL;
   //while(arg != NULL && arg->type == PAIR) {
   while(arg != NULL && arg->nxt != NULL) {
