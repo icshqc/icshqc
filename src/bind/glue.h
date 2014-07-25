@@ -16,6 +16,9 @@ char* cat_argchar(char* b, char s);
 char* cat_argint(char* b, int s);
 char* cat_argptr(char* b, char* s);
 
+char* catPrimVarType(char* b, PrimVarType t);
+char* catVarType(char* b, VarType t);
+
 Cmd* newCmd();
 Cmd* initCmd(CmdType type, const char* val, Cmd* args);
 

@@ -589,26 +589,6 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
   return b;
 }
 
-char* catPrimVarType(char* b, PrimVarType t) {
-  if (t == INT) {
-    strcat(b, "int");
-  } else if (t == FLOAT) {
-    strcat(b, "float");
-  } else if (t == CHAR) {
-    strcat(b, "char");
-  }
-  return b;
-}
-
-char* catVarType(char* b, VarType t) {
-  catPrimVarType(b, t.type);
-  int i;
-  for (i = 0; i < t.ptr; i++) {
-    strcat(b, "*");
-  }
-  return b;
-}
-
 Val* runFunc(Val* args) {
   // TODO, replace all of f->args in f->cmd by cmd->args
   Func* f = funcByName((char*)args->addr);

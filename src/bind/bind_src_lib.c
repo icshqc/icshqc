@@ -6,11 +6,11 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "mult", CFUNCTION, bind_mult);
   addLoadedDef(d, "divide", CFUNCTION, bind_divide);
   addLoadedDef(d, "straddch", CFUNCTION, bind_straddch);
-  /*addLoadedDef(d, "strdelch", CFUNCTION, bind_strdelch);
+  addLoadedDef(d, "strdelch", CFUNCTION, bind_strdelch);
   addLoadedDef(d, "strinsertch", CFUNCTION, bind_strinsertch);
   addLoadedDef(d, "trimCEnd", CFUNCTION, bind_trimCEnd);
   addLoadedDef(d, "trimEnd", CFUNCTION, bind_trimEnd);
-  addLoadedDef(d, "trim", CFUNCTION, bind_trim);*/
+  addLoadedDef(d, "trim", CFUNCTION, bind_trim);
 }
 
 int add(int x, int y);
@@ -69,8 +69,8 @@ Val* bind_straddch(Val* args) {
   return initPtr(varType(CHAR, 1, 0), r);
 }
 
-/*Val* bind_strdelch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
+Val* bind_strdelch(Val* args) {
+  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   char* r = strdelch(str_);
@@ -78,7 +78,7 @@ Val* bind_straddch(Val* args) {
 }
 
 Val* bind_strinsertch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
+  Val* m; VarType t[] = {varType(CHAR, 0, 1), varType(CHAR, 0, 0)};
   if ((m = checkSignature(args, t, 2)) != NULL) return m;
   char* cursor_ = GET_PTR(char*, args);
   char c_ = GET_VAL(char, args);
@@ -87,7 +87,7 @@ Val* bind_strinsertch(Val* args) {
 }
 
 Val* bind_trimCEnd(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
+  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trimCEnd(s_);
@@ -95,7 +95,7 @@ Val* bind_trimCEnd(Val* args) {
 }
 
 Val* bind_trimEnd(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
+  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trimEnd(s_);
@@ -103,10 +103,10 @@ Val* bind_trimEnd(Val* args) {
 }
 
 Val* bind_trim(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
+  Val* m; VarType t[] = {varType(CHAR, 0, 1)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trim(s_);
   return initPtr(varType(CHAR, 1, 0), r);
 }
-*/
+
