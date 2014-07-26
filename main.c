@@ -1160,6 +1160,41 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   fclose(s);
 }
 
+Attr* parseAttrs2(char* l, char seperator, char delimiter) {
+  char* s = l;
+  char* lastAttr = s;
+  Attr* attrs = NULL;
+  Attr* a = NULL;
+  char* lastSpace = NULL;
+  for (; *s != '\0'; s++) {
+    if (*(s-1) == delimiter) return attrs;
+    if (*s == seperator || *s == delimiter) {
+      if (a == NULL) {
+        attrs = newAttr();
+        a = attrs;
+      } else {
+        a->nxt = newAttr();
+        a = a->nxt;
+      }
+      char aType[52] = "";
+      if (lastSpace == NULL) { // f(int, int)
+        strncpy(aType, lastAttr, s - lastAttr);
+        a->type = parseVarType(aType);
+        lastAttr = trim(s+1);
+      } else {
+        strncpy(aType, lastAttr, lastSpace - lastAttr);
+        a->type = parseVarType(aType);
+        strncpy(a->name, lastSpace+1, s - (lastSpace+1));
+        lastAttr = trim(s+1);
+        lastSpace = NULL;
+      }
+    } else if (*s == ' ' && s >= lastAttr) {
+      lastSpace = s;
+    }
+  }
+  return attrs;
+}
+
 CFunc* parseCFunction(char* s0) {
   char* argStart = strchr(s0, '(');
   char* argEnd = strchr(s0, ')');
@@ -1185,35 +1220,7 @@ CFunc* parseCFunction(char* s0) {
   f->ret = parseVarType(ret);
   strcpy(f->name, space + 1);
 
-  char* s = argStart + 1;
-  char* lastAttr = s;
-  Attr* a = NULL;
-  char* lastSpace = NULL;
-  for (; s != (argEnd+1); s++) {
-    if (*s == ',' || s == argEnd) {
-      if (a == NULL) {
-        f->args = newAttr();
-        a = f->args;
-      } else {
-        a->nxt = newAttr();
-        a = a->nxt;
-      }
-      char aType[52] = "";
-      if (lastSpace == NULL) { // f(int, int)
-        strncpy(aType, lastAttr, s - lastAttr);
-        a->type = parseVarType(aType);
-        lastAttr = trim(s+1);
-      } else {
-        strncpy(aType, lastAttr, lastSpace - lastAttr);
-        a->type = parseVarType(aType);
-        strncpy(a->name, lastSpace+1, s - (lastSpace+1));
-        lastAttr = trim(s+1);
-        lastSpace = NULL;
-      }
-    } else if (*s == ' ' && s >= lastAttr) {
-      lastSpace = s;
-    }
-  }
+  f->args = parseAttrs2(argStart + 1, ',', ')');
 
   return f;
 }
@@ -1298,7 +1305,13 @@ int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
 }
 
-Attr* parseAttr(char* val) {
+/*Attr* parseAttrs(char* vals) {
+  char* start = vals;
+  char* eol;
+  while ((eol = strchr(start, ';')) != NULL) {
+    char val[128] = "";
+    strncpy(val, start, eol - start);
+  }
   char* space = strrchr(trimEnd(val), ' ');
   if (space == NULL) return NULL;
   char* bracket = strchr(val, '[');
@@ -1333,7 +1346,7 @@ Attr* parseAttr(char* val) {
     return NULL;
   }
   return a;
-}
+}*/
 
 Type* parseTypedef(CLine* l) {
   Type* t = newType();
@@ -1357,27 +1370,19 @@ Type* parseEnum(CLine* l) {
   return t;
 }
 
-Type* parseCStruct(CLine* l) {
-  Type* t = newType();
-  strcpy(t->name, trimCEnd(l->val));
-  Type* oldFirst = types;
+Type* parseCStruct(char* l) {
+  /*Type* t = newType();
+  char* defStart = strchr(l, '{');
+  strncpy(t->name, l, defStart-l);
+  trimEnd(t->name);*/
+
+//  t->attrs = parseAttrs(defStart + 1);
+
+  /*Type* oldFirst = types;
   types = t;
   t->nxt = oldFirst;
-  if (l->block != NULL) {
-    t->attrs = parseAttr(l->block->val);
-    Attr* a = t->attrs;
-    CLine* li;
-    for (li = l->block->nxt; li != NULL; li = li->nxt) {
-      a->nxt = parseAttr(li->val);
-      a = a->nxt;
-    }
-    if (t->attrs == NULL) {
-      types = oldFirst;
-      freeType(t);
-      return NULL;
-    }
-  }
-  return t;
+  return t;*/
+  return NULL;
 }
 
 int debug(char* str) {
@@ -1424,9 +1429,7 @@ Val* parseCFile(char* filename, int nested) {
       } else if (startsWith("enum", line)) {
       //  parseEnum(l);
       } else if (startsWith("struct", line)) {
-      //  if (parseCStruct(l) == NULL) {
-      //    return errorStr("Could not parse struct.");
-      //  }
+        parseCStruct(line);
       } else if (startsWith("union", line)) {
       } else if (strchr(line, '(')) { // It is a function.
         if (cfuncs == NULL) {
