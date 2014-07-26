@@ -8,40 +8,6 @@
 
 #include "src/lib.h"
 
-//#include "bind.h"
-#include "src/bind/bind.h"
-
-void initCFunctions(LoadedDef* d);
-
-//#define CURSES_MODE
-//#define DEBUG_MODE
-
-// TODO: :d => lists the function prototype
-
-// TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
-
-// TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
-
-// Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
-// Version 0.2 == Deux screen. Une console et une qui affiche les variables et les fonctions.
-// TODO: Rouler l'application dans une autre fenetre que l'editeur. Vraiment separer app/editeur.
-
-// MODEL
-
-static const int MSG_CONSOLE_SIZE = 10;
-static const char DEF_FILE_PATH[] = "defs";
-
-static Type* types = NULL;
-// Maybe vars by scope.
-static Var* vars = NULL;
-static Func* funcs = NULL;
-
-static CFunc* cfuncs = NULL;
-
-// TODO: Have a list that contains both the loaded defs and the runtime one.
-// They should of type struct LoadedDef and the function passed would call the executable.
-static LoadedDef* loadedDefs = NULL;
-
 Attr* newAttr() {
   Attr* a = malloc(sizeof(Attr));
   if (a == NULL) {
@@ -148,148 +114,6 @@ void freeFunc(Func* f) {
 }
 
 static void finish(int sig);
-
-#ifdef CURSES_MODE
-#include <ncurses.h>
-#else
-#include <SDL/SDL.h>
-#include <SDL/SDL_ttf.h>
-static SDL_Surface* screen = NULL;
-static TTF_Font* font = NULL;
-static SDL_Rect position;
-
-void move(int y, int x) {
-}
-
-void addch(char ch) {
-  int w, h;
-  if (ch == '\n' || ch == '\r') {
-    char str[] = {'w', '\0'};
-    TTF_SizeText(font, str, &w, &h);
-    position.y = position.y + h;
-    position.x = 0;
-  } else {
-    SDL_Surface* texte;
-    SDL_Color blanc = {255, 255, 255};
-    char str[] = {ch, '\0'};
-    texte = TTF_RenderText_Blended(font, str, blanc); // FIXME: WTF...
-    SDL_BlitSurface(texte, NULL, screen, &position);
-    int w, h;
-    TTF_SizeText(font, str, &w, &h);
-    position.x = position.x + w;
-  }
-}
-
-void refresh() {
-  SDL_Flip(screen);
-}
-
-int getch() {
-  int unicode;
-  SDL_Event event;     
-  while (1) {
-    SDL_WaitEvent(&event);
-    switch (event.type) {
-    case SDL_KEYDOWN:
-      unicode = event.key.keysym.unicode;
-      if ((unicode & 0xFF80) == 0) {
-          return unicode & 0x7F;
-      }// else {
-      //  printf("An International Character.\n");
-      //}
-      break;
-    case SDL_QUIT:
-      finish(0);
-      break;
-    }
-  }
-}
-
-void deleteln() {
-}
-
-void addstr(const char* str) {
-  while (*str != '\0') {
-    addch(*str);
-    ++str;
-  }
-}
-#endif
-
-int getLines() {
-#ifdef CURSES_MODE
-  return LINES;
-#else
-  return 30;
-#endif
-}
-
-int getX() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return x;
-#else
-  return 0;
-#endif
-}
-
-int getY() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return y;
-#else
-  return 0;
-#endif
-}
-
-void dellastch(char ch) {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  mvdelch(y, x-1);
-#else
-  int w, h;
-  char str[] = {ch, '\0'};
-  TTF_SizeText(font, str, &w, &h);
-  position.x = position.x - w;
-
-  SDL_Surface *s;
-  s = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
-  SDL_FillRect(s, NULL, SDL_MapRGB(s->format, 0, 0, 0));
-  SDL_BlitSurface(s, NULL, screen, &position);
-#endif
-}
-
-// HELPER
-
-// NCURSES HELPER
-
-// TODO: debug(), fatal(), error(), warn(), log()
-
-static int silent = 0;
-void output(const char* str) {
-  if (silent) return;
-
-  const char* c = str;
-  int l = getY();
-  int n = 0;
-  while (*c != '\0') {
-    if (*c == '\n') {
-      ++l;
-      if (l >= getLines()) {
-        move(0,0);
-        deleteln();
-        move(getLines()-(++n),0);
-        refresh();
-      }
-    }
-    ++c;
-  }
-  addstr(str);
-  refresh();
-}
 
 char* catCmdType(char* b, CmdType t) {
   if (t == VALUE) {
@@ -472,6 +296,31 @@ LoadedDef* loadedFuncByName(char* name) {
     d = d->nxt;
   }
   return NULL;
+}
+
+int isFloat(char* str) {
+  char* c;
+  int hasDecimal = 0;
+  for (c = str; *c != '\0'; ++c) {
+    if (*c == '.' || *c == ',') {
+      if (hasDecimal) {
+        return 0;
+      }
+      hasDecimal = 1;
+    } else if (*c < '0' || *c > '9') {
+      return 0;
+    }
+  }
+  return hasDecimal ? 1 : 0;
+}
+int isInteger(char* str) {
+  char* c;
+  for (c = str; *c != '\0'; ++c) {
+    if (*c < '0' || *c > '9') {
+      return 0;
+    }
+  }
+  return 1;
 }
 
 VarType parseVarType(char* str) { 

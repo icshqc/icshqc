@@ -82,5 +82,38 @@ char* trim(char* s) {
   return c;
 }
 
-// APP
+char* replace(char* str, char a, char b) {
+  char* s = str;
+  for (;*s != '\0'; ++s) {
+    if (*s == a) {
+      *s = b;
+    }
+  }
+  return str;
+}
+
+int isFloat(char* str) {
+  char* c;
+  int hasDecimal = 0;
+  for (c = str; *c != '\0'; ++c) {
+    if (*c == '.' || *c == ',') {
+      if (hasDecimal) {
+        return 0;
+      }
+      hasDecimal = 1;
+    } else if (*c < '0' || *c > '9') {
+      return 0;
+    }
+  }
+  return hasDecimal ? 1 : 0;
+}
+int isInteger(char* str) {
+  char* c;
+  for (c = str; *c != '\0'; ++c) {
+    if (*c < '0' || *c > '9') {
+      return 0;
+    }
+  }
+  return 1;
+}
 

@@ -11,5 +11,8 @@ void strinsertch(char* cursor, char c);
 char* trimCEnd(char* s);
 char* trimEnd(char* s);
 char* trim(char* s);
+char* replace(char* str, char a, char b);
+int isFloat(char* str);
+int isInteger(char* str);
 
 #endif // LIB_H

@@ -64,7 +64,6 @@ void main(int argc, char* argv[]) {
   strcat(cmd, " main.c");
   strcat(cmd, " -lncurses");
   strcat(cmd, " -lSDL");
-  strcat(cmd, " -lffi");
   strcat(cmd, " -lSDL_ttf");
   if (debug_mode) {
     strcat(cmd, " && gdb -q build/debug");
