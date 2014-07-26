@@ -1404,7 +1404,8 @@ Val* runCLine(CLine* l, char* current_filename) {
 }
 
 CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
-  CLine* line = newCLine();
+  CLine* lines = newCLine();
+  CLine* line = lines;
   char c;
   char p = EOF;
   int nestedP = 0;
@@ -1420,6 +1421,9 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
       if (nested == 0) {
         runCLine(line, current_filename);
         freeCLine(line); line = newCLine();
+      } else {
+        line->nxt = newCLine();
+        line = line->nxt;
       }
     } else if ((c == '\r' || c == '\n') && p != '\\') {
       if (nestedP == 0) {
@@ -1427,6 +1431,9 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
           if (nested == 0) {
             runCLine(line, current_filename);
             freeCLine(line); line = newCLine();
+          } else {
+            line->nxt = newCLine();
+            line = line->nxt;
           }
         }
       }
@@ -1440,6 +1447,9 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
           if (nested == 0) {
             runCLine(line, current_filename);
             freeCLine(line); line = newCLine();
+          } else {
+            line->nxt = newCLine();
+            line = line->nxt;
           }
         }
       }
