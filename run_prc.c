@@ -29,6 +29,7 @@ void main(int argc, char* argv[]) {
   }
 
   strcat(cmd, " src/lib.c");
+  strcat(cmd, " src/bind/glue.c");
   strcat(cmd, " prc.c");
   if (debug_mode) {
     strcat(cmd, " && gdb -q build/prc_debug");

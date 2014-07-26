@@ -905,10 +905,6 @@ int evalCmd(char* command, char* err) {
   return 1;
 }
 
-int insertInputCh(char ch, char* input, char* cursor, int *nested) {
-  return 1;
-}
-
 #ifndef KEY_BACKSPACE
 #define KEY_BACKSPACE 8
 #endif
@@ -971,14 +967,6 @@ char* getInput(char* input) {
   return input;
 }
 
-int isOperator(char* opName) {
-  if (strcmp(opName, "::") == 0 ||
-      strcmp(opName, "=") == 0) {
-    return 1; 
-  }
-  return 0;
-}
-
 void escapeName(char* str) {
   char buf[128] = "";
   int i;
@@ -1002,43 +990,6 @@ void escapeName(char* str) {
   }
   strcpy(str, buf);
 }
-
-/*void compileFunc(char* s, Func* f) {
-  char tmp[1024] = "";
-  Attr* ret;
-  Attr* arg;
-  Attr* arg2 = NULL;
-  int n;
-
-  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
-  }
-  ret = arg;
-
-  char escName[128] = "";
-  strcpy(escName, f->name);
-  escapeName(escName);
-  sprintf(tmp, "%s %s(", ret->val, escName);
-  strcat(s, tmp);
- 
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    if (f->lambda) {
-      arg2 = (arg2 == NULL) ? f->lambda->args : arg2->nxt;
-      sprintf(tmp, "%s %s", arg->val, arg2->val);
-    } else {
-      sprintf(tmp, "%s arg%d", arg->val, n);
-    }
-    strcat(s, tmp);
-    if (arg->nxt->nxt != NULL) {
-      strcat(s, ", ");
-    }
-  }
-
-  strcat(s, ") {\n");
-  if (f->lambda) {
-    strcat(s, f->lambda->body);
-  }
-  strcat(s, "\n}");
-}*/
 
 char* catCmdExe(char* b, Cmd* cmd, int nested) {
   if (cmd != NULL) {

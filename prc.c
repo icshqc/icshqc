@@ -8,6 +8,11 @@
 
 #include "src/lib.h"
 
+static Type* types = NULL;
+// Maybe vars by scope.
+static Var* vars = NULL;
+static Func* funcs = NULL;
+
 Attr* newAttr() {
   Attr* a = malloc(sizeof(Attr));
   if (a == NULL) {
@@ -287,42 +292,6 @@ Type* typeByName(char* name) {
   return NULL;
 }
 
-LoadedDef* loadedFuncByName(char* name) {
-  LoadedDef* d = loadedDefs;
-  while (d != NULL) {
-    if (strcmp(d->name, name) == 0) {
-      return d;
-    }
-    d = d->nxt;
-  }
-  return NULL;
-}
-
-int isFloat(char* str) {
-  char* c;
-  int hasDecimal = 0;
-  for (c = str; *c != '\0'; ++c) {
-    if (*c == '.' || *c == ',') {
-      if (hasDecimal) {
-        return 0;
-      }
-      hasDecimal = 1;
-    } else if (*c < '0' || *c > '9') {
-      return 0;
-    }
-  }
-  return hasDecimal ? 1 : 0;
-}
-int isInteger(char* str) {
-  char* c;
-  for (c = str; *c != '\0'; ++c) {
-    if (*c < '0' || *c > '9') {
-      return 0;
-    }
-  }
-  return 1;
-}
-
 VarType parseVarType(char* str) { 
   char* s = str;
   while (*s != '*' && *s != '\0') {
@@ -365,43 +334,6 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
   return b;
 }
 
-// doubler :: {|int x| x + x}
-// fArgs = x
-// cmdArgs = x, x
-// args = 10
-Val* runFunc(Val* args) {
-  Func* f = funcByName((char*)args->addr);
-  Val* cmd = (Val*)f->cmd->addr;
-  Attr* fArgs = f->args;
-  LoadedDef* d = loadedFuncByName((char*)cmd->addr);
-  Val* nArgs = cpyVal(args);
-  Val* cmdArgs = (Val*)cmd->nxt->addr;
-  Val* a;
-  Attr* b;
-  Val* c;
-  Val* n = nArgs;
-  for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {}
-  if (b != NULL || c != NULL) {
-    return errorStr("Invalid amount of args supplied.");
-  }
-  for (a = cmdArgs; a != NULL; a = a->nxt) {
-    int found = 0;
-    for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
-      if (strcmp((char*)a->addr, b->name) == 0) {
-        n->nxt = cpyVal(c);
-        n = n->nxt;
-        found = 1;
-        break;
-      }
-    }
-    if (found == 0) {
-      return errorStr("Missing args to runFunc");
-    }
-  }
-
-  return (d != NULL) ? d->ptr(nArgs) : NULL;
-}
-
 Cmd* typeCmd(Cmd* cmd) {
   Cmd* c;
   for (c = cmd; c != NULL; c = c->nxt) {
@@ -411,7 +343,7 @@ Cmd* typeCmd(Cmd* cmd) {
         c->type = NIL;
       } else {
         char* n = c->name;
-        LoadedDef* f = loadedFuncByName(n);
+        Func* f = funcByName(n);
         Var* v;
         if (f != NULL) {
           c->type = f->type;
@@ -712,122 +644,6 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
   return ret;
 }
 
-void eval(Cmd* cmd) {
-  if (cmd == NULL) return;
-
-  Val* garbage[10];
-  int i;
-  for (i = 0; i < 10; i++) {
-    garbage[i] = NULL;
-  }
-  Val* v = cmdVal(cmd, garbage);
-  if (v == NULL || v->type.type != ERR) {
-    output("\n=> ");
-  } else {
-    output("\nError: ");
-  }
-  char out[52] = "";
-  catVal(out, v);
-  output(out);
-  for (i = 0; i < 10; i++) {
-    freeVal(garbage[i]);
-  }
- 
-  eval(cmd->nxt);
-}
-
-
-int evalCmd(char* command, char* err) {
-  Cmd* cmd = parseCmdR(command).cmd;
-  if (cmd == NULL) {
-    strcat(err, "\nNull cmd.");
-    return 0;
-  }
-  if (cmd->type == UNKOWN) {
-    strcat(err, "\n");
-    strcat(err, cmd->name);
-    strcat(err, ": undefined variable or function");
-  } else {
-    eval(cmd);
-  }
-  freeCmd(cmd);
-  return 1;
-}
-
-int insertInputCh(char ch, char* input, char* cursor, int *nested) {
-  return 1;
-}
-
-#ifndef KEY_BACKSPACE
-#define KEY_BACKSPACE 8
-#endif
-
-#ifndef KEY_DL
-#define KEY_DL 127
-#endif
-
-char* getInput(char* input) {  
-  int nested = 0;
-  char *cursor = input;
-  while (1) {
-    int ch = getch();
-    if (ch == 8 || ch == 127 || ch == KEY_BACKSPACE || ch == KEY_DL) {
-      if (strlen(input) > 0) {
-        dellastch(input[strlen(input)-1]);
-        strdelch(input);
-        refresh();
-        --cursor;
-      }
-    } else if (ch == '\033') { // if the first value is esc
-      getch(); // skip the [
-      ch = getch(); // the real value
-      if (ch == 'A') { // code for arrow up. Last command.
-      } else if (ch == 'B') { // code for arrow down. Undo last command.
-      } else if (ch == 'C') { // code for arrow right
-      } else if (ch == 'D') { // code for arrow left
-        if (cursor > input) {
-          cursor--;
-        }
-      }
-    } else if (ch == '\n' || ch == '\r') {
-      if (nested > 0) {
-        straddch(input, ' '); // Treat as whitespace maybe???
-        output("\n");
-        int i;
-        for (i = 0; i < nested; i++) {
-          addch(' ');
-          addch(' ');
-        }
-      } else {
-        break;
-      }
-    } else if (ch >= ' ' && ch < '~') { // Only show printable characters.
-      if (ch == '{') {
-        nested++;
-      } else if (ch == '}') {
-        nested--;
-      }
-      addch(ch);
-      refresh();
-      strinsertch(cursor, ch);
-      cursor++;
-    }
-  }
-  if (nested != 0) {
-    //msg("Invalid block syntax.");
-    return NULL;
-  }
-  return input;
-}
-
-int isOperator(char* opName) {
-  if (strcmp(opName, "::") == 0 ||
-      strcmp(opName, "=") == 0) {
-    return 1; 
-  }
-  return 0;
-}
-
 void escapeName(char* str) {
   char buf[128] = "";
   int i;
@@ -851,43 +667,6 @@ void escapeName(char* str) {
   }
   strcpy(str, buf);
 }
-
-/*void compileFunc(char* s, Func* f) {
-  char tmp[1024] = "";
-  Attr* ret;
-  Attr* arg;
-  Attr* arg2 = NULL;
-  int n;
-
-  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
-  }
-  ret = arg;
-
-  char escName[128] = "";
-  strcpy(escName, f->name);
-  escapeName(escName);
-  sprintf(tmp, "%s %s(", ret->val, escName);
-  strcat(s, tmp);
- 
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    if (f->lambda) {
-      arg2 = (arg2 == NULL) ? f->lambda->args : arg2->nxt;
-      sprintf(tmp, "%s %s", arg->val, arg2->val);
-    } else {
-      sprintf(tmp, "%s arg%d", arg->val, n);
-    }
-    strcat(s, tmp);
-    if (arg->nxt->nxt != NULL) {
-      strcat(s, ", ");
-    }
-  }
-
-  strcat(s, ") {\n");
-  if (f->lambda) {
-    strcat(s, f->lambda->body);
-  }
-  strcat(s, "\n}");
-}*/
 
 char* catCmdExe(char* b, Cmd* cmd, int nested) {
   if (cmd != NULL) {
@@ -932,170 +711,6 @@ void save() { // .qc extension. Quick C, Quebec!!!
   fclose(s);
 }
 
-void bindCFunctionsHeader(char* fname, CFunc* fs) {
-  CFunc* f;
-
-  char filename[52] = "";
-  sprintf(filename, "src/bind/%s.h", fname);
-  FILE* s = fopen(filename, "w");
-
-  fprintf(s, "#ifndef BIND_H\n");
-  fprintf(s, "#define BIND_H\n\n");
-  fprintf(s, "#include <stdlib.h>\n"); // FIXME: Use include given
-  fprintf(s, "#include <stdio.h>\n");
-  fprintf(s, "#include <signal.h>\n");
-  fprintf(s, "#include <string.h>\n\n");
-  fprintf(s, "#include \"../../model.h\"\n");
-  fprintf(s, "#include \"glue.h\"\n\n");
-
-  fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
-
-  for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "Val* bind_%s(Val* args);\n", f->name);
-  }
-
-  fprintf(s, "#endif // BIND_H");
-  fclose(s);
-}
-
-char* catArgTypeGetter(char* b, Attr* a, int i) {
-  strcat(b, "  ");
-  catVarType(b, a->type);
-  strcat(b, " ");
-  strcat(b, a->name);
-  strcat(b, "_ = ");
-  if (a->type.ptr != 0) {
-    strcat(b, "GET_PTR(");
-  } else {
-    strcat(b, "GET_VAL(");
-  }
-  catVarType(b, a->type);
-  strcat(b, ", args);\n");
-  return b;
-}
-
-void bindCFunctionsSource(char* fname, CFunc* fs) {
-  CFunc* f;
-  Attr* a;
-
-  char filename[52] = "";
-  sprintf(filename, "src/bind/%s.c", fname);
-  FILE* s = fopen(filename, "w");
-
-  fprintf(s, "#include \"%s.h\"\n\n", fname);
-
-  fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
-  for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "  addLoadedDef(d, \"%s\", CFUNCTION, bind_%s);\n", f->name, f->name);
-  }
-  fprintf(s, "}\n\n");
-
-  // In case the header was not defined, that it was just
-  // a source file, define the prototype of the function.
-  for (f = fs; f != NULL; f = f->nxt) {
-    char fRetType[52] = "";
-    catVarType(fRetType, f->ret);
-    fprintf(s, "%s %s(", fRetType, f->name);
-    for (a = f->args; a != NULL; a = a->nxt) {
-      char aTypeT[52] = "";
-      catVarType(aTypeT, a->type);
-      fprintf(s, "%s %s", aTypeT, a->name);
-      if (a->nxt != NULL) {
-        fprintf(s, ", ");
-      }
-    }
-    fprintf(s, ");\n");
-  }
-  fprintf(s, "\n");
-
-  for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "Val* bind_%s(Val* args) {\n", f->name);
-    fprintf(s, "  Val* m; VarType t[] = {");
-    int nAttrs = 0;
-    for (nAttrs = 0, a = f->args; a != NULL; a = a->nxt, nAttrs++) {
-      char vType[52] = "";
-      catPrimVarTypeEnum(vType, a->type.type);
-      fprintf(s, "varType(%s, %d, %d)", vType, a->type.ptr, a->type.arraySize);
-      if (a->nxt != NULL) {
-        fprintf(s, ", ");
-      }
-    }
-    int i;
-    fprintf(s, "};\n");
-    fprintf(s, "  if ((m = checkSignature(args, t, %d)) != NULL) return m;\n", nAttrs);
-    for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
-      char argTypeG[124] = "";
-      catArgTypeGetter(argTypeG, a, i);
-      fprintf(s, "%s", argTypeG);
-    }
-    if (f->ret.type != VOID) {
-      char paType[52] = "";
-      catVarType(paType, f->ret);
-      fprintf(s, "  %s r = %s(", paType, f->name);
-    } else {
-      fprintf(s, "  %s(", f->name);
-    }
-    for (a = f->args; a != NULL; a = a->nxt) {
-      fprintf(s, "%s_", a->name);
-      if (a->nxt != NULL) {
-        fprintf(s, ", ");
-      }
-    }
-    if (f->ret.type != VOID) {
-      char paType[52] = "";
-      catPrimVarTypeEnum(paType, f->ret.type);
-      if (f->ret.ptr != 0) {
-        fprintf(s, ");\n  return initPtr(varType(%s, %d, %d), r);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize);
-      } else {
-        fprintf(s, ");\n  return initVal(varType(%s, %d, %d), &r);\n}\n\n", paType, f->ret.ptr, f->ret.arraySize);
-      }
-    } else {
-      fprintf(s, ");\n  return NULL;\n}\n\n");
-    }
-  }
-  fclose(s);
-}
-
-CFunc* parseCFunction(char* s0) {
-  char* s = s0;
-  CFunc* f = newCFunc();
-  char* lastSpace = NULL;
-  char* lastAttr = s0;
-  Attr* a = NULL;
-  int nested = 0;
-  while (*s != '\0') {
-    if (*s == ' ' && lastAttr == s) {
-      // discard trailing spaces;
-      ++lastAttr;
-    } else if (*s == ' ') {
-      lastSpace = s;
-    } else if (a == NULL && *s == '(') {
-      char ret[52] = "";
-      strncpy(ret, s0, lastSpace - s0);
-      f->ret = parseVarType(ret);
-      strncpy(f->name, lastSpace+1, s - (lastSpace+1));
-      lastAttr = s+1;
-    } else if (*s == ',' || (nested == 1 && *s == ')' && lastAttr != s && lastSpace > lastAttr)) {
-      if (a == NULL) {
-        f->args = newAttr();
-        a = f->args;
-      } else {
-        a->nxt = newAttr();
-        a = a->nxt;
-      }
-      char aType[52] = "";
-      strncpy(aType, lastAttr, lastSpace - lastAttr);
-      a->type = parseVarType(aType);
-      strncpy(a->name, lastSpace+1, s - (lastSpace+1));
-      lastAttr = s+1;
-    }
-    if (*s == '(') ++nested;
-    if (*s == ')') --nested;
-    ++s;
-  }
-  return f;
-}
-
 Val* construct(Val* args) {
   Type* t = typeByName((char*)args->addr + 1);
   if (t == NULL) {
@@ -1110,311 +725,11 @@ Val* construct(Val* args) {
   return NULL;
 }
 
-void typeConstructor(Type* type) {
-  if (type->attrs != NULL) {
-    char constructorName[52] = "#";
-    strcat(constructorName, type->name);
-    addLoadedDef(loadedDefs, constructorName, FUNCTION, construct);
-  }
-}
-
 void addType(Type* type) {
   Type* oldFirst = types;
   types = type;
   type->nxt = oldFirst;
   typeConstructor(type);
-}
-
-struct CLine {
-  char val[512];
-  struct CLine* nxt;
-  struct CLine* block;
-};
-typedef struct CLine CLine;
-
-CLine* newCLine() {
-  CLine* arg0 = malloc(sizeof(CLine));
-  if (arg0 == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(arg0->val, '\0', sizeof(arg0->val));
-  arg0->block = NULL;
-  arg0->nxt = NULL;
-  return arg0;
-}
-
-void freeCLine(CLine* s) {
-  if (s != NULL) {
-    freeCLine(s->nxt);
-    freeCLine(s->block);
-    free(s);
-  }
-}
-
-void appendChars(FILE* s, char* str, char* stopAt) {
-  char c;
-  char* at;
-  while ((c = getc(s)) != EOF) {
-    if (str != NULL) {
-      straddch(str, (c == '\t') ? ' ' : c);
-    }
-    if (c == '\\') {
-      c = getc(s);
-      if (str != NULL) {
-        straddch(str, (c == '\t') ? ' ' : c);
-      }
-      if (c == EOF) return;
-    } else {
-      for (at = stopAt; *at != '\0'; at++) {
-        if (c == *at) return;
-      }
-    }
-  }
-}
-
-int startsWith(char* mustEqual, char* str1) {
-  return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
-}
-
-Attr* parseAttr(char* val) {
-  char* space = strrchr(trimEnd(val), ' ');
-  if (space == NULL) return NULL;
-  char* bracket = strchr(val, '[');
-  Attr* a = newAttr();
-  char type[32] = "";
-  char array[12] = "";
-  int arraySize = 0;
-  char* star = strchr(val, '*');
-  strncpy(type, val, star == NULL ? space - val : star - val);
-  if (bracket) {
-    strncpy(array, bracket + 1, strlen(bracket) - 2);
-    char* num; // ???
-    arraySize = strtol(array, &num, 0);
-    strncpy(a->name, space + 1, bracket - space - 1);
-  } else {
-    strncpy(a->name, space + 1, strlen(space) - 2);
-  }
-  a->type.arraySize = arraySize;
-  a->type = parseVarType(type);
-  if (star != NULL) {
-    int nStar = 0;
-    while (*star == ' ' || *star == '*' || *star == '\t') {
-      if (*star == '*') {
-        nStar++;
-      }
-      star++;
-    }
-    a->type.ptr = nStar;
-  }
-  if (a->type.type == UNDEFINED) {
-    freeAttr(a);
-    return NULL;
-  }
-  return a;
-}
-
-Type* parseTypedef(CLine* l) {
-  Type* t = newType();
-  strcpy(t->name, trim(strrchr(trimCEnd(l->val), ' ')));
-  Type* oldFirst = types;
-  types = t;
-  t->nxt = oldFirst;
-  if (l->block != NULL) {
-  }
-  return t;
-}
-
-Type* parseEnum(CLine* l) {
-  Type* t = newType();
-  strcpy(t->name, trimCEnd(l->val));
-  Type* oldFirst = types;
-  types = t;
-  t->nxt = oldFirst;
-  if (l->block != NULL) {
-  }
-  return t;
-}
-
-Type* parseCStruct(CLine* l) {
-  Type* t = newType();
-  strcpy(t->name, trimCEnd(l->val));
-  Type* oldFirst = types;
-  types = t;
-  t->nxt = oldFirst;
-  if (l->block != NULL) {
-    t->attrs = parseAttr(l->block->val);
-    Attr* a = t->attrs;
-    CLine* li;
-    for (li = l->block->nxt; li != NULL; li = li->nxt) {
-      a->nxt = parseAttr(li->val);
-      a = a->nxt;
-    }
-    if (t->attrs == NULL) {
-      types = oldFirst;
-      freeType(t);
-      return NULL;
-    }
-  }
-  return t;
-}
-
-Val* parseCIncludeFile(char* current_dir, char* filename);
-Val* runCLine(CLine* l, char* current_filename) {
-  if (l->val[0] == '#') { // TODO: All preprocessor directives.
-    if (startsWith("#include", l->val)) {
-      char filename[64] = "";
-      strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
-      char* lastSlash = strrchr(current_filename, '/');
-      Val* secRet;
-      if (lastSlash == NULL) {
-        secRet = parseCIncludeFile(NULL, filename);
-      } else {
-        char curDir[64] = "";
-        strncpy(curDir, current_filename, lastSlash - current_filename + 1);
-          secRet = parseCIncludeFile(curDir, filename);
-      }
-      if (secRet != NULL && secRet->type.type == ERR) {
-        return secRet;
-      }
-    }
-  } else if (startsWith("typedef", l->val)) {
-    parseTypedef(l);
-  } else if (startsWith("enum", l->val)) {
-    parseEnum(l);
-  } else if (startsWith("struct", l->val)) {
-    if (parseCStruct(l) == NULL) {
-      return errorStr("Could not parse struct.");
-    }
-  } else if (strchr(l->val, '(') && (l->val[strlen(l->val-1)] == ';' || l->block != NULL)) { // It is a function.
-    if (cfuncs == NULL) {
-      cfuncs = parseCFunction(l->val);
-    } else {
-      CFunc* oldFirst = cfuncs;
-      cfuncs = parseCFunction(l->val);
-      if (cfuncs == NULL) {
-        cfuncs = oldFirst;
-      } else {
-        cfuncs->nxt = oldFirst;
-      }
-    }
-  }
-  return NULL;
-}
-
-CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
-  CLine* line = newCLine();
-  char c;
-  char p = EOF;
-  int nestedP = 0;
-  while ((c = getc(s)) != EOF) {
-    if (c == '}') {
-      if (nested <= 0) {
-        //printf("Unexpected end bracket.");
-        //return NULL;
-      }
-      return line;
-    } else if (c == '{') {
-      line->block = parseAndRunCLines(s, nested + 1, current_filename);
-      runCLine(line, current_filename);
-      freeCLine(line); line = newCLine();
-    } else if ((c == '\r' || c == '\n') && p != '\\') {
-      if (nestedP == 0) {
-        if (strlen(line->val) > 0) {
-          if (nested == 0) {
-            runCLine(line, current_filename);
-            freeCLine(line); line = newCLine();
-          }
-        }
-      }
-    } else if ((c == ' ' || c == '\t') && strlen(line->val) <= 0) { // Discard trailing whitespaces
-    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) { // Discard double whitespaces
-    } else if (p == '/' && c == '/') {
-      strdelch(line->val);
-      appendChars(s, NULL, "\r\n\0");
-      if (nestedP == 0) {
-        if (strlen(line->val) > 0) {
-          if (nested == 0) {
-            runCLine(line, current_filename);
-            freeCLine(line); line = newCLine();
-          }
-        }
-      }
-    } else if (p == '/' && c == '*') {
-      strdelch(line->val);
-      while ((c = getc(s)) != EOF) {
-        if (p == '*' && c == '/') break;
-        p = c;
-      }
-    } else {
-      straddch(line->val, (c == '\t') ? ' ' : c);
-      if (c == '(') {
-        ++nestedP;
-      } else if (c == ')') {
-        --nestedP;
-      } else if (p != '\\' && c == '\'') {
-        appendChars(s, line->val, "\'\0");
-      } else if (p != '\\' && c == '"') {
-        appendChars(s, line->val, "\"\0");
-      }
-    }
-    p = c;
-  }
-
-  if (nested > 0) {
-    //return errorStr("Missing end bracket.");
-  }
-  return line;
-}
-
-Val* parseCIncludeFile(char* current_dir, char* filename) {
-  FILE* s = NULL;
-  char buf2[64] = "";
-  char* current_filename = filename;
-  if (current_dir == NULL) {
-    s = fopen(filename, "r");
-  } else {
-    strcat(buf2, current_dir);
-    strcat(buf2, filename);
-    s = fopen(buf2, "r");
-    current_filename = buf2;
-  }
-  char buf[64] = "";
-  if (s == NULL) {
-    return NULL; // FIXME: Tmp because theses files are fucking hard to include;
-    strcat(buf, "/usr/include/");
-    strcat(buf, filename);
-    s = fopen(buf, "r");
-    current_filename = buf;
-  }
-  if (s == NULL) {
-    char msg[52] = "";
-    sprintf(msg, "Invalid include file %s.\n", filename);
-    return errorStr(msg);
-    //return NULL;
-  }
-
-
-  CLine* l = parseAndRunCLines(s, 0, current_filename);
-  freeCLine(l);
-  return NULL;
-}
-Val* parseCIncludeFileCmd(Val* args) {
-  char* filename = (char*)args->nxt->addr;
-  Val* v = parseCIncludeFile(NULL, filename);
-  if (cfuncs != NULL) {
-    char bind_filename[52] = "bind_";
-    strcat(bind_filename, filename);
-    char* ext;
-    if ((ext = strchr(bind_filename, '.')) != NULL) {
-      *ext = '\0';
-    }
-    replace(bind_filename, '/', '_');
-    bindCFunctionsHeader(bind_filename, cfuncs);
-    bindCFunctionsSource(bind_filename, cfuncs);
-  }
-  freeCFunc(cfuncs);
-  cfuncs = NULL;
-  return v;
 }
 
 void load() {
@@ -1425,11 +740,11 @@ void load() {
     while ((c = getc(s)) != EOF) {
       if (c == '\r' || c == '\n') {
         char err[52] = "";
-        if (evalCmd(input, err)) {
+        /*if (evalCmd(input, err)) {
           input[0] = '\0';
         } else {
           // FIXME: Throw error.
-        }
+        }*/
       } else {
         straddch(input, c);
       }
@@ -1439,17 +754,6 @@ void load() {
 }
 
 //void runCmd(char* retVal, Cmd* cmd);
-
-char* argVal(char* buf, Cmd* arg) {
-  if (arg->args) {
-    char argValue[128] = "";
-    //runCmd(argValue, arg);
-    strcat(buf, argValue);
-  } else {
-    strcat(buf, arg->name);
-  }
-  return buf;
-}
 
 Var* addNewVar(Type* type, char* name) {
   Var* var = malloc(sizeof(Var));
@@ -1492,13 +796,11 @@ Func* createFunc(Val* args) {
 }
 Val* define(Val* args) {
   Func* f = createFunc(args);
-  addLoadedDef(loadedDefs, f->name, FUNCTION, runFunc);
   return NULL;
 }
 Val* defineOp(Val* args) {
   Func* f = createFunc(args);
   f->isOperator = 1;
-  addLoadedDef(loadedDefs, f->name, OPERATOR, runFunc);
   return NULL;
 }
 Val* defineType(Val* args) { // Type #:: (type name) (type name)
@@ -1538,29 +840,6 @@ Val* assign(Val* args) {
   return cpyVal(v->val);
 }
 
-void listTypes(Cmd* cmd) {
-  Type* t;
-  char m[2056] = "";
-  for (t = types; t != NULL; t = t->nxt) {
-    strcat(m, t->name);
-    if (t->attrs != NULL) {
-      strcat(m, " #:: ");
-    }
-    Attr* a;
-    for (a = t->attrs; a != NULL; a = a->nxt) {
-      strcat(m, "(");
-      catVarType(m, a->type);
-      strcat(m, " ");
-      strcat(m, a->name);
-      strcat(m, ") ");
-    }
-    if (t->nxt != NULL) {
-      strcat(m, "\n");
-    }
-  }
-  output(m);
-}
-
 Val* listVars() {
   Var* v;
   char* m = malloc(sizeof(char) * 2056);
@@ -1573,100 +852,8 @@ Val* listVars() {
   return initPtr(varType(CHAR, 0, 2056), m);
 }
 
-Val* listDefs() {
-  LoadedDef* d;
-  char* m = malloc(sizeof(char) * 2056);
-  for (d = loadedDefs; d != NULL; d = d->nxt) {
-    strcat(m, d->name);
-    if (d->nxt != NULL) {
-      strcat(m, ", ");
-    }
-  }
-  return initPtr(varType(CHAR, 0, 2056), m);
-}
-
-void loop()
-{
-  int continuer = 1;
-  output(">> ");
-  while (continuer) {
-    char input[124] = "";
-    getInput(input);
-    if (input[0] == ':') {
-      char* name = input + 1;
-      if (strcmp(name, "exit") == 0 ||
-                 strcmp(name, "quit") == 0 ||
-                 strcmp(name, "q") == 0) {
-        return;
-      } else if (strcmp(name, "h") == 0 ||
-                 strcmp(name, "help") == 0) {
-        output("\n");
-        char b[] = ":h\t           This help message\n"
-                   ":l\t           Lists all the loaded functions\n"
-                   ":v\t           Lists all the variables\n"
-                   ":t\t           Lists all the types\n"
-                   ":d\t           Shows the prototype of a function\n";
-        output(b);
-      } else if (strcmp(name, "l") == 0 ||
-                 strcmp(name, "list") == 0) {
-        output("\n");
-        Val* v = listDefs();
-        output((char*)v->addr);
-        free(v);
-      } else if (strcmp(name, "v") == 0 ||
-                 strcmp(name, "vars") == 0) {
-        output("\n");
-        Val* v = listVars();
-        output((char*)v->addr);
-        free(v);
-      } else if (strcmp(name, "t") == 0 ||
-                 strcmp(name, "types") == 0) {
-        output("\n");
-        listTypes(NULL);
-      } else if (strcmp(name, "s") == 0 ||
-                 strcmp(name, "save") == 0) {
-        save();
-      } else {
-        char err[128] = "\n";
-        strcat(err, input);
-        strcat(err, ": unkown command");
-        output(err);
-      }
-    } else {
-      char err[128] = "";
-      if (evalCmd(input, err)) {
-        if (strlen(err) > 0) {
-          output(err);
-        }
-      } else {
-        return;
-      }
-    }
-    output("\n>> ");
-    refresh();
-  }
-}
-
-void initLoadedDefs() {
-  loadedDefs = createLoadedDef("=", MACRO_OP, assign); // Assigns a value to an existing variable.
-  addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "#::", MACRO_OP, defineType); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFileCmd);
-}
-
 static void finish(int sig)
 {
-#ifdef CURSES_MODE
-  endwin();
-#else
-  SDL_Quit();
-  TTF_CloseFont(font);
-  TTF_Quit();
-#endif
-
-  freeLoadedDef(loadedDefs);
-  loadedDefs = NULL;
   freeTypes(types);
   types = NULL;
   freeVar(vars);
@@ -1677,152 +864,12 @@ static void finish(int sig)
   exit(0);
 }
 
-void printCLine(CLine* lines, int nested) {
-  CLine* l;
-  int i;
-  for (l = lines; l != NULL; l = l->nxt) {
-    for (i = 0; i < nested; i++) {printf("  ");}
-    printf("%s\n", l->val);
-    if (l->block != NULL) {
-      for (i = 0; i < nested; i++) {printf("  ");}
-      printf("{");
-      printCLine(l->block, nested + 1);
-      printf("\n");
-      for (i = 0; i < nested; i++) {printf("  ");}
-      printf("}");
-    }
-    if (nested == 0) {
-      printf("\n");
-    }
-    //printf("    ---------------   \n");
-  }
-}
-
-#ifdef DEBUG_MODE
-int main(int argc, char* argv[])
-{
-  return 0;
-}
-#else
 int main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
-  initLoadedDefs();
-  initCFunctions(loadedDefs);
-
-  silent = 1;
   load();
-  silent = 0;
-
-#ifdef CURSES_MODE
-  initscr();
-  keypad(stdscr, TRUE);
-  nonl();         /* tell curses not to do NL->CR/NL on output */
-  cbreak();       /* take input chars one at a time, no wait for \n */
-  noecho();       /* dont echo the input char */
-#else
-  SDL_Init( SDL_INIT_EVERYTHING );
-  TTF_Init();
-  font = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 15);
-
-  if (font == NULL) {
-    finish(-1);
-  }
-
-  position.x = 0;
-  position.y = 0;
-
-  screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
-
-  SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-  SDL_EnableUNICODE(1);
-#endif
-
-  loop();
 
   finish(0);
   return 0;
 }
-#endif
-
-/*void runCmd(char* retVal, Cmd* cmd) { // FIXME: Fonction dependencies must be added too.
-  Func* f = funcByName(cmd->name);
-  if (f == NULL) return;
-  if (f->args == NULL) return; // Invalid function. Needs return type. FIXME: Better error handling
-
-  Cmd* c;
-  Attr* arg;
-  Attr* ret;
-  int n;
-  int i;
-
-  // TODO: Move this part to a function
-  char escName[128] = "";
-  strcpy(escName, cmd->name);
-  escapeName(escName);
-  char filename[64] = "";
-  sprintf(filename, "tmp/%s.c", escName);
-  FILE* s = fopen(filename, "w"); // FIXME: Check if valid file. Not NULL.
-  fprintf(s, "#include <stdlib.h>\n");
-  fprintf(s, "#include <stdio.h>\n\n");
-
-  for (arg = f->args; arg->nxt != NULL; arg = arg->nxt ) {
-  }
-  ret = arg;
-  
-  char fs[2056] = "";
-  compileFunc(fs, f);
-  fprintf(s, "%s", fs);
-
-  fprintf(s, "\n\nint main(int argc, char* argv[]) {\n");
-
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "  %s arg%d;\n", arg->val, n);
-  }
-
-  fprintf(s, "  if (argc != %d) {\n", n + 1);
-  fprintf(s, "    fprintf(stderr, \"Invalid amout of parameters.\\n\");\n");
-  fprintf(s, "    return -1;\n");
-  fprintf(s, "  }\n\n");
-  for (n = 0, arg = f->args; arg->nxt != NULL; arg = arg->nxt, n++ ) {
-    fprintf(s, "  sscanf(argv[%d],\"%%d\",&arg%d);\n", n+1, n);
-  }
-  if (strcmp(ret->val, "void") == 0) {
-    fprintf(s, "  %s(", escName);
-  } else {
-    fprintf(s, "  %s r = %s(", ret->val, escName);
-  }
-  for (i = 0; i < n; i++) {
-    fprintf(s, "arg%d", i);
-    if (i < n-1) {
-      fprintf(s, ", ");
-    }
-  }
-  fprintf(s, ");\n");
-  if (strcmp(ret->val, "void") != 0) {
-    fprintf(s, "  printf(\"%%d\", r);\n"); // FIXME: Not always interger.
-  }
-  fprintf(s, "  return 0;\n");
-  fprintf(s, "}\n");
-  fclose(s);
-
-  char exeFilename[64] = "";
-  sprintf(exeFilename, "tmp/%s", escName);
-  char cmds[256] = "";
-  strcat(cmds, "gcc -o ");
-  strcat(cmds, exeFilename);
-  strcat(cmds, " ");
-  strcat(cmds, filename);
-  strcat(cmds, " && ./");
-  strcat(cmds, exeFilename);
-  for (c = cmd->args; c != NULL; c = c->nxt) {
-    strcat(cmds, " "); 
-    argVal(cmds, c);
-  }
-  FILE *fp = popen(cmds, "r"); // TODO: Attrs
-
-  fscanf(fp, "%s", retVal);
-  pclose(fp);
-}*/
-
