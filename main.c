@@ -1234,10 +1234,6 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   }
   fprintf(s, "\n");
 
-  /*int r = add(x_, y_);
-  return initVal(varType(INT, 0, 0), &r);
-}*/
-
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Val* bind_%s(Val* args) {\n", f->name);
     fprintf(s, "  Val* m; VarType t[] = {");
@@ -1610,6 +1606,7 @@ Val* parseCIncludeFile(char* current_dir, char* filename) {
   }
   char buf[64] = "";
   if (s == NULL) {
+    return NULL; // FIXME: Tmp because theses files are fucking hard to include;
     strcat(buf, "/usr/include/");
     strcat(buf, filename);
     s = fopen(buf, "r");
