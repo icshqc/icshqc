@@ -16,6 +16,8 @@ void initCFunctions(LoadedDef* d);
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
+// TODO: Réécrire le fucking Cparser pour parsé typedef struct {...} blah;
+
 // TODO: :d => lists the function prototype
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
@@ -1317,12 +1319,12 @@ Attr* parseAttr(char* val) {
 
 Type* parseTypedef(CLine* l) {
   Type* t = newType();
-  strcpy(t->name, trim(strrchr(trimCEnd(l->val), ' ')));
+  char* tName = trim(strrchr(trimCEnd(l->val), ' '));
+  strcpy(t->name, tName);
+
   Type* oldFirst = types;
   types = t;
   t->nxt = oldFirst;
-  if (l->block != NULL) {
-  }
   return t;
 }
 
@@ -1403,7 +1405,7 @@ Val* runCLine(CLine* l, char* current_filename) {
   return NULL;
 }
 
-CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
+CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename, int run) {
   CLine* lines = newCLine();
   CLine* line = lines;
   char c;
@@ -1412,13 +1414,18 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
   while ((c = getc(s)) != EOF) {
     if (c == '}') {
       if (nested <= 0) {
+        abort();
         //printf("Unexpected end bracket.");
         //return NULL;
       }
       return line;
     } else if (c == '{') {
-      line->block = parseAndRunCLines(s, nested + 1, current_filename);
-      if (nested == 0) {
+      if (startsWith("extern \"C\"", line->val)) {
+        line->block = parseAndRunCLines(s, nested + 1, current_filename, 1);
+      } else {
+        line->block = parseAndRunCLines(s, nested + 1, current_filename, 0);
+      }
+      if (run) {
         runCLine(line, current_filename);
         freeCLine(line); line = newCLine();
       } else {
@@ -1428,7 +1435,7 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
     } else if ((c == '\r' || c == '\n') && p != '\\') {
       if (nestedP == 0) {
         if (strlen(line->val) > 0) {
-          if (nested == 0) {
+          if (run) {
             runCLine(line, current_filename);
             freeCLine(line); line = newCLine();
           } else {
@@ -1444,7 +1451,7 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
       appendChars(s, NULL, "\r\n\0");
       if (nestedP == 0) {
         if (strlen(line->val) > 0) {
-          if (nested == 0) {
+          if (run) {
             runCLine(line, current_filename);
             freeCLine(line); line = newCLine();
           } else {
@@ -1475,6 +1482,7 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
   }
 
   if (nested > 0) {
+    abort();
     //return errorStr("Missing end bracket.");
   }
   return line;
@@ -1508,7 +1516,7 @@ Val* parseCIncludeFile(char* current_dir, char* filename) {
   }
 
 
-  CLine* l = parseAndRunCLines(s, 0, current_filename);
+  CLine* l = parseAndRunCLines(s, 0, current_filename, 1);
   freeCLine(l);
   return NULL;
 }
