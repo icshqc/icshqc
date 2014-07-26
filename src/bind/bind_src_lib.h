@@ -11,6 +11,9 @@
 
 void initCFunctions(LoadedDef* d);
 
+Val* bind_isInteger(Val* args);
+Val* bind_isFloat(Val* args);
+Val* bind_replace(Val* args);
 Val* bind_trim(Val* args);
 Val* bind_trimEnd(Val* args);
 Val* bind_trimCEnd(Val* args);

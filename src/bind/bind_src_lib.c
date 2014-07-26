@@ -1,6 +1,9 @@
 #include "bind_src_lib.h"
 
 void initCFunctions(LoadedDef* d) {
+  addLoadedDef(d, "isInteger", CFUNCTION, bind_isInteger);
+  addLoadedDef(d, "isFloat", CFUNCTION, bind_isFloat);
+  addLoadedDef(d, "replace", CFUNCTION, bind_replace);
   addLoadedDef(d, "trim", CFUNCTION, bind_trim);
   addLoadedDef(d, "trimEnd", CFUNCTION, bind_trimEnd);
   addLoadedDef(d, "trimCEnd", CFUNCTION, bind_trimCEnd);
@@ -13,6 +16,9 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "add", CFUNCTION, bind_add);
 }
 
+int isInteger(char* str);
+int isFloat(char* str);
+char* replace(char* str, char a, char b);
 char* trim(char* s);
 char* trimEnd(char* s);
 char* trimCEnd(char* s);
@@ -23,6 +29,32 @@ int divide(int x, int y);
 int mult(int x, int y);
 int sus(int x, int y);
 int add(int x, int y);
+
+Val* bind_isInteger(Val* args) {
+  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
+  if ((m = checkSignature(args, t, 1)) != NULL) return m;
+  char* str_ = GET_PTR(char*, args);
+  int r = isInteger(str_);
+  return initVal(varType(INT, 0, 0), &r);
+}
+
+Val* bind_isFloat(Val* args) {
+  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
+  if ((m = checkSignature(args, t, 1)) != NULL) return m;
+  char* str_ = GET_PTR(char*, args);
+  int r = isFloat(str_);
+  return initVal(varType(INT, 0, 0), &r);
+}
+
+Val* bind_replace(Val* args) {
+  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0), varType(CHAR, 0, 0)};
+  if ((m = checkSignature(args, t, 3)) != NULL) return m;
+  char* str_ = GET_PTR(char*, args);
+  char a_ = GET_VAL(char, args);
+  char b_ = GET_VAL(char, args);
+  char* r = replace(str_, a_, b_);
+  return initPtr(varType(CHAR, 1, 0), r);
+}
 
 Val* bind_trim(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0)};

@@ -1363,7 +1363,7 @@ Type* parseCStruct(CLine* l) {
 Val* parseCIncludeFile(char* current_dir, char* filename);
 Val* runCLine(CLine* l, char* current_filename) {
   if (l->val[0] == '#') { // TODO: All preprocessor directives.
-    if (startsWith("#include", l->val)) {
+    /*if (startsWith("#include", l->val)) {
       char filename[64] = "";
       strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
       char* lastSlash = strrchr(current_filename, '/');
@@ -1378,7 +1378,7 @@ Val* runCLine(CLine* l, char* current_filename) {
       if (secRet != NULL && secRet->type.type == ERR) {
         return secRet;
       }
-    }
+    }*/
   } else if (startsWith("typedef", l->val)) {
     parseTypedef(l);
   } else if (startsWith("enum", l->val)) {
@@ -1417,8 +1417,10 @@ CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename) {
       return line;
     } else if (c == '{') {
       line->block = parseAndRunCLines(s, nested + 1, current_filename);
-      runCLine(line, current_filename);
-      freeCLine(line); line = newCLine();
+      if (nested == 0) {
+        runCLine(line, current_filename);
+        freeCLine(line); line = newCLine();
+      }
     } else if ((c == '\r' || c == '\n') && p != '\\') {
       if (nestedP == 0) {
         if (strlen(line->val) > 0) {
@@ -1482,7 +1484,7 @@ Val* parseCIncludeFile(char* current_dir, char* filename) {
   }
   char buf[64] = "";
   if (s == NULL) {
-    return NULL; // FIXME: Tmp because theses files are fucking hard to include;
+    //return NULL; // FIXME: Tmp because theses files are fucking hard to include;
     strcat(buf, "/usr/include/");
     strcat(buf, filename);
     s = fopen(buf, "r");
