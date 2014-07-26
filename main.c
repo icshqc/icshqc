@@ -490,20 +490,19 @@ VarType parseVarType(char* str) {
     }
     ++s;
   }
-  VarType v;
+  PrimVarType t;
   if (strcmp(typeName, "int") == 0) {
-    v.type = INT;
+    t = INT;
   } else if (strcmp(typeName, "char") == 0) {
-    v.type = CHAR;
+    t = CHAR;
   } else if (strcmp(typeName, "float") == 0) {
-    v.type = FLOAT;
+    t = FLOAT;
   } else if (strcmp(typeName, "void") == 0) {
-    v.type = VOID;
+    t = VOID;
   } else {
-    v.type = UNDEFINED;
+    t = UNDEFINED;
   }
-  v.ptr = ptr;
-  v.arraySize = 0;
+  VarType v = varType(t, ptr, 0);
   strcpy(v.raw_type, str);
   return v;
 }
@@ -1162,7 +1161,6 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
 }
 
 CFunc* parseCFunction(char* s0) {
-  printf("%s\n", s0);
   char* argStart = strchr(s0, '(');
   char* argEnd = strchr(s0, ')');
 
@@ -1176,20 +1174,23 @@ CFunc* parseCFunction(char* s0) {
   if (space == NULL) {
     return NULL;
   }
+  char* star = strrchr(retAndFname, '*');
+  if (star != NULL && star > space) space = star;
 
   CFunc* f = newCFunc();
 
   char ret[52] = "";
   strncpy(ret, retAndFname, space - retAndFname);
+  trimEnd(ret);
   f->ret = parseVarType(ret);
-  strcpy(f->name, space);
+  strcpy(f->name, space + 1);
 
   char* s = argStart + 1;
   char* lastAttr = s;
   Attr* a = NULL;
   char* lastSpace = NULL;
-  for (; s != argEnd; s++) {
-    if (*s == ',' || s+1 == argEnd) {
+  for (; s != (argEnd+1); s++) {
+    if (*s == ',' || s == argEnd) {
       if (a == NULL) {
         f->args = newAttr();
         a = f->args;
@@ -1426,6 +1427,7 @@ Val* parseCFile(char* filename, int nested) {
       //  if (parseCStruct(l) == NULL) {
       //    return errorStr("Could not parse struct.");
       //  }
+      } else if (startsWith("union", line)) {
       } else if (strchr(line, '(')) { // It is a function.
         if (cfuncs == NULL) {
           cfuncs = parseCFunction(line);
