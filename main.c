@@ -1371,18 +1371,20 @@ Type* parseEnum(CLine* l) {
 }
 
 Type* parseCStruct(char* l) {
-  /*Type* t = newType();
+  Type* t = newType();
   char* defStart = strchr(l, '{');
-  strncpy(t->name, l, defStart-l);
-  trimEnd(t->name);*/
+  if (defStart) {
+    strncpy(t->name, l, defStart-l);
+    t->attrs = parseAttrs2(defStart + 1, ';', '}');
+  } else {
+    strcpy(t->name, l);
+  }
+  trimEnd(t->name);
 
-//  t->attrs = parseAttrs(defStart + 1);
-
-  /*Type* oldFirst = types;
+  Type* oldFirst = types;
   types = t;
   t->nxt = oldFirst;
-  return t;*/
-  return NULL;
+  return t;
 }
 
 int debug(char* str) {
