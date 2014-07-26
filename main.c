@@ -504,6 +504,7 @@ VarType parseVarType(char* str) {
   }
   v.ptr = ptr;
   v.arraySize = 0;
+  strcpy(v.raw_type, str);
   return v;
 }
 
@@ -1161,25 +1162,34 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
 }
 
 CFunc* parseCFunction(char* s0) {
-  char* s = s0;
+  printf("%s\n", s0);
+  char* argStart = strchr(s0, '(');
+  char* argEnd = strchr(s0, ')');
+
+  if (argStart == NULL || argEnd == NULL) return NULL;
+  
+  char retAndFname[128] = "";
+  strncpy(retAndFname, s0, argStart - s0);
+  trimEnd(retAndFname);
+
+  char* space = strrchr(retAndFname, ' ');
+  if (space == NULL) {
+    return NULL;
+  }
+
   CFunc* f = newCFunc();
-  char* lastSpace = NULL;
-  char* lastAttr = s0;
+
+  char ret[52] = "";
+  strncpy(ret, retAndFname, space - retAndFname);
+  f->ret = parseVarType(ret);
+  strcpy(f->name, space);
+
+  char* s = argStart + 1;
+  char* lastAttr = s;
   Attr* a = NULL;
-  int nested = 0;
-  while (*s != '\0') {
-    if (*s == ' ' && lastAttr == s) {
-      // discard trailing spaces;
-      ++lastAttr;
-    } else if (*s == ' ') {
-      lastSpace = s;
-    } else if (a == NULL && *s == '(') {
-      char ret[52] = "";
-      strncpy(ret, s0, lastSpace - s0);
-      f->ret = parseVarType(ret);
-      strncpy(f->name, lastSpace+1, s - (lastSpace+1));
-      lastAttr = s+1;
-    } else if (*s == ',' || (nested == 1 && *s == ')' && lastAttr != s && lastSpace > lastAttr)) {
+  char* lastSpace = NULL;
+  for (; s != argEnd; s++) {
+    if (*s == ',' || s+1 == argEnd) {
       if (a == NULL) {
         f->args = newAttr();
         a = f->args;
@@ -1188,15 +1198,22 @@ CFunc* parseCFunction(char* s0) {
         a = a->nxt;
       }
       char aType[52] = "";
-      strncpy(aType, lastAttr, lastSpace - lastAttr);
-      a->type = parseVarType(aType);
-      strncpy(a->name, lastSpace+1, s - (lastSpace+1));
-      lastAttr = s+1;
+      if (lastSpace == NULL) { // f(int, int)
+        strncpy(aType, lastAttr, s - lastAttr);
+        a->type = parseVarType(aType);
+        lastAttr = trim(s+1);
+      } else {
+        strncpy(aType, lastAttr, lastSpace - lastAttr);
+        a->type = parseVarType(aType);
+        strncpy(a->name, lastSpace+1, s - (lastSpace+1));
+        lastAttr = trim(s+1);
+        lastSpace = NULL;
+      }
+    } else if (*s == ' ' && s >= lastAttr) {
+      lastSpace = s;
     }
-    if (*s == '(') ++nested;
-    if (*s == ')') --nested;
-    ++s;
   }
+
   return f;
 }
 
@@ -1362,167 +1379,104 @@ Type* parseCStruct(CLine* l) {
   return t;
 }
 
-Val* parseCIncludeFile(char* current_dir, char* filename);
-Val* runCLine(CLine* l, char* current_filename) {
-  if (l->val[0] == '#') { // TODO: All preprocessor directives.
-    /*if (startsWith("#include", l->val)) {
-      char filename[64] = "";
-      strncpy(filename, l->val + strlen("#include <"), strlen(l->val) - strlen("#include <") - 1);
-      char* lastSlash = strrchr(current_filename, '/');
-      Val* secRet;
-      if (lastSlash == NULL) {
-        secRet = parseCIncludeFile(NULL, filename);
-      } else {
-        char curDir[64] = "";
-        strncpy(curDir, current_filename, lastSlash - current_filename + 1);
-          secRet = parseCIncludeFile(curDir, filename);
-      }
-      if (secRet != NULL && secRet->type.type == ERR) {
-        return secRet;
-      }
-    }*/
-  } else if (startsWith("typedef", l->val)) {
-    parseTypedef(l);
-  } else if (startsWith("enum", l->val)) {
-    parseEnum(l);
-  } else if (startsWith("struct", l->val)) {
-    if (parseCStruct(l) == NULL) {
-      return errorStr("Could not parse struct.");
-    }
-  } else if (strchr(l->val, '(') && (l->val[strlen(l->val-1)] == ';' || l->block != NULL)) { // It is a function.
-    if (cfuncs == NULL) {
-      cfuncs = parseCFunction(l->val);
-    } else {
-      CFunc* oldFirst = cfuncs;
-      cfuncs = parseCFunction(l->val);
-      if (cfuncs == NULL) {
-        cfuncs = oldFirst;
-      } else {
-        cfuncs->nxt = oldFirst;
-      }
-    }
-  }
-  return NULL;
+int debug(char* str) {
+  int x = 0;
+  return x;
 }
 
-CLine* parseAndRunCLines(FILE* s, int nested, char* current_filename, int run) {
-  CLine* lines = newCLine();
-  CLine* line = lines;
+Val* parseCFile(char* filename, int nested) {
+  FILE* s = fopen(filename, "r");
+  if (s == NULL) {
+    char msg[52] = "";
+    sprintf(msg, "Invalid include file %s.\n", filename);
+    return errorStr(msg);
+  }
+
+  char line[10000] = "";
   char c;
-  char p = EOF;
-  int nestedP = 0;
+  char* lastSpace = line;
   while ((c = getc(s)) != EOF) {
-    if (c == '}') {
-      if (nested <= 0) {
-        abort();
-        //printf("Unexpected end bracket.");
-        //return NULL;
-      }
-      return line;
-    } else if (c == '{') {
-      if (startsWith("extern \"C\"", line->val)) {
-        line->block = parseAndRunCLines(s, nested + 1, current_filename, 1);
-      } else {
-        line->block = parseAndRunCLines(s, nested + 1, current_filename, 0);
-      }
-      if (run) {
-        runCLine(line, current_filename);
-        freeCLine(line); line = newCLine();
-      } else {
-        line->nxt = newCLine();
-        line = line->nxt;
-      }
-    } else if ((c == '\r' || c == '\n') && p != '\\') {
-      if (nestedP == 0) {
-        if (strlen(line->val) > 0) {
-          if (run) {
-            runCLine(line, current_filename);
-            freeCLine(line); line = newCLine();
-          } else {
-            line->nxt = newCLine();
-            line = line->nxt;
-          }
-        }
-      }
-    } else if ((c == ' ' || c == '\t') && strlen(line->val) <= 0) { // Discard trailing whitespaces
-    } else if ((p == ' ' || p == '\t') && (c == ' ' || c == '\t')) { // Discard double whitespaces
-    } else if (p == '/' && c == '/') {
-      strdelch(line->val);
-      appendChars(s, NULL, "\r\n\0");
-      if (nestedP == 0) {
-        if (strlen(line->val) > 0) {
-          if (run) {
-            runCLine(line, current_filename);
-            freeCLine(line); line = newCLine();
-          } else {
-            line->nxt = newCLine();
-            line = line->nxt;
-          }
-        }
-      }
-    } else if (p == '/' && c == '*') {
-      strdelch(line->val);
+    if (strlen(line) >= 10000) {
+      abort();
+    }
+    if (startsWith("__extension__", lastSpace)) {
+      *lastSpace = '\0';
+    } else if (startsWith("__attribute__", lastSpace)) {
+      int nestedP = 0;
       while ((c = getc(s)) != EOF) {
-        if (p == '*' && c == '/') break;
-        p = c;
+        if (c == '(') {
+          nestedP++;
+        } else if (c == ')') {
+          nestedP--;
+          if (nestedP == 0) {
+            break;
+          }
+        }
       }
+      *lastSpace = '\0';
+      if (c == EOF) break;
+    } else if ((c == ' ' || c == '\n' || c == '\t') && strlen(line) <= 0) {
+      // Discard trailing whitespaces
+    } else if (c == ';') {
+      if (startsWith("typedef", line)) {
+      //  parseTypedef(l);
+      } else if (startsWith("enum", line)) {
+      //  parseEnum(l);
+      } else if (startsWith("struct", line)) {
+      //  if (parseCStruct(l) == NULL) {
+      //    return errorStr("Could not parse struct.");
+      //  }
+      } else if (strchr(line, '(')) { // It is a function.
+        if (cfuncs == NULL) {
+          cfuncs = parseCFunction(line);
+        } else {
+          CFunc* oldFirst = cfuncs;
+          cfuncs = parseCFunction(line);
+          if (cfuncs == NULL) {
+            cfuncs = oldFirst;
+          } else {
+            cfuncs->nxt = oldFirst;
+          }
+        }
+      }
+      memset(line, '\0', sizeof(line));
+      lastSpace = line;
     } else {
-      straddch(line->val, (c == '\t') ? ' ' : c);
-      if (c == '(') {
-        ++nestedP;
-      } else if (c == ')') {
-        --nestedP;
-      } else if (p != '\\' && c == '\'') {
-        appendChars(s, line->val, "\'\0");
-      } else if (p != '\\' && c == '"') {
-        appendChars(s, line->val, "\"\0");
+      straddch(line, c);
+      if (c == ' ') {
+        lastSpace = line + strlen(line);
       }
     }
-    p = c;
   }
+  fclose(s);
 
   if (nested > 0) {
     abort();
     //return errorStr("Missing end bracket.");
   }
-  return line;
+  return NULL;
 }
 
-Val* parseCIncludeFile(char* current_dir, char* filename) {
-  FILE* s = NULL;
-  char buf2[64] = "";
-  char* current_filename = filename;
-  if (current_dir == NULL) {
-    s = fopen(filename, "r");
-  } else {
-    strcat(buf2, current_dir);
-    strcat(buf2, filename);
-    s = fopen(buf2, "r");
-    current_filename = buf2;
-  }
-  char buf[64] = "";
-  if (s == NULL) {
-    //return NULL; // FIXME: Tmp because theses files are fucking hard to include;
-    strcat(buf, "/usr/include/");
-    strcat(buf, filename);
-    s = fopen(buf, "r");
-    current_filename = buf;
-  }
-  if (s == NULL) {
-    char msg[52] = "";
-    sprintf(msg, "Invalid include file %s.\n", filename);
-    return errorStr(msg);
-    //return NULL;
-  }
+Val* parseCIncludeFile(char* filename) {
+  char fname[64] = "";
+  strcpy(fname, filename);
+  replace(fname, '/', '_');
+  char tmpFilename[64] = "";
+  sprintf(tmpFilename, "tmp/%s", fname);
+  char cmds[256] = "";
+  strcat(cmds, "gcc -P -E ");
+  strcat(cmds, filename);
+  strcat(cmds, " > ");
+  strcat(cmds, tmpFilename);
+  FILE *fp = popen(cmds, "r");
+  //fscanf(fp, "%s", retVal);
+  pclose(fp);
 
-
-  CLine* l = parseAndRunCLines(s, 0, current_filename, 1);
-  freeCLine(l);
-  return NULL;
+  return parseCFile(tmpFilename, 0);
 }
 Val* parseCIncludeFileCmd(Val* args) {
   char* filename = (char*)args->nxt->addr;
-  Val* v = parseCIncludeFile(NULL, filename);
+  Val* v = parseCIncludeFile(filename);
   if (cfuncs != NULL) {
     char bind_filename[52] = "bind_";
     strcat(bind_filename, filename);

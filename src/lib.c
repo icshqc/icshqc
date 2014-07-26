@@ -50,7 +50,7 @@ char* trimCEnd(char* s) {
   char* init = s;
   s = s + strlen(s) - 1;
   while (s != init) {
-    if (*s == ' ' || *s == '\t' || *s == ';') {
+    if (*s == ' ' || *s == '\t' || *s == ';' || *s == '\n' || *s == '\r') {
       *s = '\0';
     } else {
       break;
@@ -63,7 +63,7 @@ char* trimEnd(char* s) {
   char* init = s;
   s = s + strlen(s) - 1;
   while (s != init) {
-    if (*s == ' ' || *s == '\t') {
+    if (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r') {
       *s = '\0';
     } else {
       break;
@@ -76,7 +76,7 @@ char* trimEnd(char* s) {
 // Return a pointer to the first non whitespace char of the string.
 char* trim(char* s) {
   char* c = s;
-  while (*c != '\0' && (*c == ' ' || *c == '\n')) {
+  while (*c != '\0' && (*c == ' ' || *c == '\n' || *s == '\r')) {
     c++;
   }
   return c;

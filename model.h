@@ -23,6 +23,7 @@ struct VarType {
   PrimVarType type;
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
   unsigned int arraySize; // 0 if not array
+  char raw_type[52]; // to handle types like (fd_set *__restrict)
 };
 typedef struct VarType VarType;
 

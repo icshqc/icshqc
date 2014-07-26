@@ -9,6 +9,7 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   t.type = p;
   t.ptr = ptr;
   t.arraySize = arraySize;
+  memset(t.raw_type, '\0', sizeof(t.raw_type));
   return t;
 }
 
