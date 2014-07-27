@@ -167,6 +167,12 @@ int nPtr(VarType t) {
   return t.ptr + (isValArray(t) ? 1 : 0);
 }
 
+int canCast(VarType casted, VarType castee) {
+  // FIXME: This does not work
+  if (casted.type == castee.type) return 1;
+  return sizeofVarType(casted) <= sizeofVarType(castee) ? 1 : 0;
+}
+
 Val* checkSignature(Val* args, VarType* types, int nArgs) {
   VarType* t;
   Val* v;
@@ -174,7 +180,7 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
   for (i = 0, v = args->nxt, t = types; i < nArgs; i++, v = v->nxt, t++) {
     if (v == NULL) {
       return errorStr("Missing arg.");
-    } else if (v == NULL || (v->type.type != (*t).type || nPtr(v->type) != nPtr(*t))) {
+    } else if (v == NULL || (canCast(v->type, *t) == 0  || nPtr(v->type) != nPtr(*t))) {
       char m[52] = "";
       sprintf(m, "Invalid arg %d: Expected type ", i);
       catVarType(m, *t);
