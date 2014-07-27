@@ -34,6 +34,7 @@ static const int MSG_CONSOLE_SIZE = 10;
 static const char DEF_FILE_PATH[] = "defs";
 
 static Type* types = NULL;
+static TypeDef* typedefs = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
 static Func* funcs = NULL;
@@ -51,6 +52,17 @@ Attr* newAttr() {
   }
   a->type.type = UNDEFINED;
   memset(a->name, '\0', sizeof(a->name));
+  a->nxt = NULL;
+  return a;
+}
+
+TypeDef* newTypeDef() {
+  TypeDef* a = malloc(sizeof(TypeDef));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(a->name, '\0', sizeof(a->name));
+  a->type = varType(UNDEFINED, 0, 0);
   a->nxt = NULL;
   return a;
 }
@@ -102,6 +114,13 @@ void freeAttr(Attr* a) {
   if (a != NULL) {
     freeAttr(a->nxt);
     free(a);
+  }
+}
+
+void freeTypeDefs(TypeDef* t) {
+  if (t != NULL) {
+    freeTypeDefs(t->nxt);
+    free(t);
   }
 }
 
@@ -454,6 +473,17 @@ Var* varByName(char* name) {
   return NULL;
 }
 
+TypeDef* typeDefByName(char* name) {
+  TypeDef* t = typedefs;
+  while (t != NULL) {
+    if (strcmp(t->name, name) == 0) {
+      return t;
+    }
+    t = t->nxt;
+  }
+  return NULL;
+}
+
 Type* typeByName(char* name) {
   Type* t = types;
   while (t != NULL) {
@@ -477,9 +507,8 @@ LoadedDef* loadedFuncByName(char* name) {
 }
 
 VarType parseVarType(char* str) { 
-  unsigned char isConst = 0;
-  unsigned char isExtern = 0;
-  unsigned char isUnsigned = 0;
+  VarType v = varType(UNDEFINED, 0, 0);
+  strcpy(v.raw_type, str);
   char* s = trim(str);
   char* b = s;
   char typeName[52] = "";
@@ -489,81 +518,71 @@ VarType parseVarType(char* str) {
       char token[64] = "";
       strncpy(token, b, s - b);
       if (strcmp(token, "const") == 0) {
-        isConst = 1;
+        v.isConst = 1;
       } else if (strcmp(token, "__const") == 0) {
-        isConst = 1;
+        v.isConst = 1;
       } else if (strcmp(token, "extern") == 0) {
-        isExtern = 1;
       } else if (strcmp(token, "signed") == 0) {
-        isUnsigned = -1;
+        v.isUnsigned = -1;
       } else if (strcmp(token, "unsigned") == 0) {
-        isUnsigned = 1;
+        v.isUnsigned = 1;
       } else if (strlen(typeName) > 0) {
         abort();
       } else {
         strcpy(typeName, token);
-        break;
+        break; // FIXME: Should not break. This stops at "long" for "long unsigned int"
       }
       b = s+1;
     }
   } while (*s != '*' && *s != '\0');
-  int ptr = 0;
   while (*s != '\0') {
     if (*s == '*') {
-      ++ptr;
+      v.ptr++;
     }
     ++s;
   }
-  PrimVarType t;
   Type* ctype = NULL;
   if (strcmp(typeName, "int") == 0) {
-    t = INT;
+    v.type = INT;
   } else if (strcmp(typeName, "short") == 0) { // FIXME: tmp
-    t = INT;
+    v.type = INT;
+  } else if (strcmp(typeName, "long") == 0) { // FIXME: tmp
+    v.type = INT;
   } else if (strcmp(typeName, "short int") == 0) { // FIXME: tmp
-    t = INT;
+    v.type = INT;
   } else if (strcmp(typeName, "long int") == 0) { // FIXME: tmp
-    t = INT;
+    v.type = INT;
   } else if (strcmp(typeName, "long long") == 0) { // FIXME: tmp
-    t = INT;
+    v.type = INT;
   } else if (strcmp(typeName, "long long int") == 0) { // FIXME: tmp
-    t = INT;
+    v.type = INT;
   } else if (strcmp(typeName, "double") == 0) { // FIXME: tmp
-    t = FLOAT;
+    v.type = FLOAT;
   } else if (strcmp(typeName, "long double") == 0) { // FIXME: tmp
-    t = FLOAT;
+    v.type = FLOAT;
   } else if (strcmp(typeName, "char") == 0) {
-    t = CHAR;
+    v.type = CHAR;
   } else if (strcmp(typeName, "float") == 0) {
-    t = FLOAT;
+    v.type = FLOAT;
   } else if (strcmp(typeName, "void") == 0) {
-    t = VOID;
+    v.type = VOID;
   } else {
-    ctype = typeByName(typeName);
+    v.typeStruct = typeByName(typeName);
     if (ctype != NULL) {
-      t = STRUCT;
+      v.type = STRUCT;
     } else {
-      t = UNDEFINED;
+      TypeDef* def = typeDefByName(typeName);
+      if (def != NULL) {
+        v.type = def->type.type;
+        v.ptr += def->type.ptr;
+        v.typeStruct = def->type.typeStruct;
+        // FIXME: What to do about the other fields???
+      } else {
+        v.type = UNDEFINED;
+      }
     }
   }
-  VarType v = varType(t, ptr, 0);
-  strcpy(v.raw_type, str);
-  v.isConst = isConst;
-  v.isExtern = isExtern;
-  v.typeStruct = ctype;
-  v.isUnsigned = isUnsigned;
   return v;
-}
-
-char* catPrimVarTypeEnum(char* b, PrimVarType t) {
-  if (t == INT) {
-    strcat(b, "INT");
-  } else if (t == FLOAT) {
-    strcat(b, "FLOAT");
-  } else if (t == CHAR) {
-    strcat(b, "CHAR");
-  }
-  return b;
 }
 
 // doubler :: {|int x| x + x}
@@ -1367,30 +1386,6 @@ int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
 }
 
-Type* parseTypedef(char* line) {
-  Type* t = newType();
-  char* tName = trim(lastSpaceOrStar(trimCEnd(line)) + 1);
-  strcpy(t->name, tName);
-
-  // TODO: Type attributes.
-
-  Type* oldFirst = types;
-  types = t;
-  t->nxt = oldFirst;
-  return t;
-}
-
-Type* parseEnum(CLine* l) {
-  Type* t = newType();
-  strcpy(t->name, trimCEnd(l->val));
-  Type* oldFirst = types;
-  types = t;
-  t->nxt = oldFirst;
-  if (l->block != NULL) {
-  }
-  return t;
-}
-
 Type* parseCStruct(char* l) {
   // Because the arithmetic of array size can be complicated
   if (strchr(l, '[') != NULL) return NULL; 
@@ -1407,6 +1402,40 @@ Type* parseCStruct(char* l) {
   Type* oldFirst = types;
   types = t;
   t->nxt = oldFirst;
+  return t;
+}
+
+TypeDef* parseTypedef(char* line) {
+  TypeDef* t = newTypeDef();
+  char* tName = trim(lastSpaceOrStar(trimCEnd(line)) + 1);
+  strcpy(t->name, tName);
+
+  char* space = strchr(line, ' ') + 1; // skip the "typedef " part
+  if (startsWith("struct", space)) {
+    parseCStruct(space);
+    t->type = varType(STRUCT, 0, 0);
+  } else {
+    char type[64] = "";
+    strncpy(type, space, tName - space);
+    trimEnd(type);
+    t->type = parseVarType(type);
+  }
+  // TODO: Type attributes.
+
+  TypeDef* oldFirst = typedefs;
+  typedefs = t;
+  t->nxt = oldFirst;
+  return t;
+}
+
+Type* parseEnum(CLine* l) {
+  Type* t = newType();
+  strcpy(t->name, trimCEnd(l->val));
+  Type* oldFirst = types;
+  types = t;
+  t->nxt = oldFirst;
+  if (l->block != NULL) {
+  }
   return t;
 }
 
@@ -1777,6 +1806,8 @@ static void finish(int sig)
   TTF_Quit();
 #endif
 
+  freeTypeDefs(typedefs);
+  typedefs = NULL;
   freeLoadedDef(loadedDefs);
   loadedDefs = NULL;
   freeTypes(types);

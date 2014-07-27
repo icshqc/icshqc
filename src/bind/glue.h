@@ -16,6 +16,7 @@ char* cat_argchar(char* b, char s);
 char* cat_argint(char* b, int s);
 char* cat_argptr(char* b, char* s);
 
+char* catPrimVarTypeEnum(char* b, PrimVarType t);
 char* catPrimVarType(char* b, PrimVarType t);
 char* catVarType(char* b, VarType t);
 

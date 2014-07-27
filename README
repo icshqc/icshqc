@@ -1,6 +1,6 @@
 Fuck avoir un autre language et un convertisseur de code. En gros,
 je veux de plus: lambda, operators(=>syntaxic sugar for arrays),
-partial applied functions.
+partial applied functions, typeclasses.
 
 Raisons pour finir ce projet:
 

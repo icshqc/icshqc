@@ -26,7 +26,6 @@ struct VarType {
   PrimVarType type;
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
   unsigned char isConst;
-  unsigned char isExtern;
   unsigned char isUnsigned; // -1 = signed, 0 not specified, 1 = unsigned
   unsigned int arraySize; // 0 if not array
 };
@@ -45,6 +44,13 @@ struct Attr {
   struct Attr* nxt;
 };
 typedef struct Attr Attr;
+
+struct TypeDef {
+  char name[64];
+  VarType type;
+  struct TypeDef* nxt;
+};
+typedef struct TypeDef TypeDef;
 
 struct Type {
   char name[64];

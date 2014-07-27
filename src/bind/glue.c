@@ -9,7 +9,6 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   t.type = p;
   t.ptr = ptr;
   t.isConst = 0;
-  t.isExtern = 0;
   t.isUnsigned = 0;
   t.arraySize = arraySize;
   t.typeStruct = NULL;
@@ -28,6 +27,27 @@ char* catPrimVarType(char* b, PrimVarType t) {
     strcat(b, "void");
   } else if (t == UNDEFINED) {
     strcat(b, "undefined");
+  } else if (t == STRUCT) {
+    strcat(b, "STRUCT");
+  } else {
+    abort();
+  }
+  return b;
+}
+
+char* catPrimVarTypeEnum(char* b, PrimVarType t) {
+  if (t == INT) {
+    strcat(b, "INT");
+  } else if (t == FLOAT) {
+    strcat(b, "FLOAT");
+  } else if (t == CHAR) {
+    strcat(b, "CHAR");
+  } else if (t == VOID) {
+    strcat(b, "VOID");
+  } else if (t == UNDEFINED) {
+    strcat(b, "UNDEFINED");
+  } else if (t == STRUCT) {
+    strcat(b, "STRUCT");
   } else {
     abort();
   }
@@ -35,7 +55,7 @@ char* catPrimVarType(char* b, PrimVarType t) {
 }
 
 char* catVarType(char* b, VarType t) {
-  if (t.type == STRUCT) {
+  if (t.type == STRUCT && t.typeStruct != NULL) {
     strcat(b, t.typeStruct->name);
   } else {
     catPrimVarType(b, t.type);
