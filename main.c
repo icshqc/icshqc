@@ -1369,7 +1369,7 @@ int startsWith(char* mustEqual, char* str1) {
 
 Type* parseTypedef(char* line) {
   Type* t = newType();
-  char* tName = trim(strrchr(trimCEnd(line), ' '));
+  char* tName = trim(lastSpaceOrStar(trimCEnd(line)) + 1);
   strcpy(t->name, tName);
 
   // TODO: Type attributes.
