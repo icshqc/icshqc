@@ -490,6 +490,8 @@ VarType parseVarType(char* str) {
       strncpy(token, b, s - b);
       if (strcmp(token, "const") == 0) {
         isConst = 1;
+      } else if (strcmp(token, "__const") == 0) {
+        isConst = 1;
       } else if (strcmp(token, "extern") == 0) {
         isExtern = 1;
       } else if (strcmp(token, "signed") == 0) {
@@ -1086,7 +1088,7 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   CFunc* f;
 
   char filename[52] = "";
-  sprintf(filename, "src/bind/%s.h", fname);
+  sprintf(filename, "src/bind/bind.h");
   FILE* s = fopen(filename, "w");
 
   fprintf(s, "#ifndef BIND_H\n");
@@ -1129,10 +1131,10 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
   Attr* a;
 
   char filename[52] = "";
-  sprintf(filename, "src/bind/%s.c", fname);
+  sprintf(filename, "src/bind/bind.c");
   FILE* s = fopen(filename, "w");
 
-  fprintf(s, "#include \"%s.h\"\n\n", fname);
+  fprintf(s, "#include \"bind.h\"\n\n");
 
   fprintf(s, "#include \"%s\"\n\n", originalName);
 
@@ -1144,15 +1146,13 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
 
   // In case the header was not defined, that it was just
   // a source file, define the prototype of the function.
-  /*for (f = fs; f != NULL; f = f->nxt) {
+  for (f = fs; f != NULL; f = f->nxt) {
     char fRetType[52] = "";
-    //catVarType(fRetType, f->ret);
-    strcpy(fRetType, f->ret.raw_type);
+    catVarType(fRetType, f->ret);
     fprintf(s, "%s %s(", fRetType, f->name);
     for (a = f->args; a != NULL; a = a->nxt) {
       char aTypeT[52] = "";
-      //catVarType(aTypeT, a->type);
-      strcpy(aTypeT, a->type.raw_type);
+      catVarType(aTypeT, a->type);
       fprintf(s, "%s %s", aTypeT, a->name);
       if (a->nxt != NULL) {
         fprintf(s, ", ");
@@ -1160,7 +1160,7 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
     }
     fprintf(s, ");\n");
   }
-  fprintf(s, "\n");*/
+  fprintf(s, "\n");
 
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Val* bind_%s(Val* args) {\n", f->name);
