@@ -8,7 +8,11 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   VarType t;
   t.type = p;
   t.ptr = ptr;
+  t.isConst = 0;
+  t.isExtern = 0;
+  t.isUnsigned = 0;
   t.arraySize = arraySize;
+  t.typeStruct = NULL;
   memset(t.raw_type, '\0', sizeof(t.raw_type));
   return t;
 }
@@ -31,7 +35,11 @@ char* catPrimVarType(char* b, PrimVarType t) {
 }
 
 char* catVarType(char* b, VarType t) {
-  catPrimVarType(b, t.type);
+  if (t.type == STRUCT) {
+    strcat(b, t.typeStruct->name);
+  } else {
+    catPrimVarType(b, t.type);
+  }
   int i;
   for (i = 0; i < t.ptr; i++) {
     strcat(b, "*");

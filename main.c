@@ -477,12 +477,34 @@ LoadedDef* loadedFuncByName(char* name) {
 }
 
 VarType parseVarType(char* str) { 
-  char* s = str;
-  while (*s != '*' && *s != '\0') {
-    ++s;
-  }
+  unsigned char isConst = 0;
+  unsigned char isExtern = 0;
+  unsigned char isUnsigned = 0;
+  char* s = trim(str);
+  char* b = s;
   char typeName[52] = "";
-  strncpy(typeName, str, s - str);
+  do {
+    ++s;
+    if (*s == ' ' || *s == '*' || *s == '\0') {
+      char token[64] = "";
+      strncpy(token, b, s - b);
+      if (strcmp(token, "const") == 0) {
+        isConst = 1;
+      } else if (strcmp(token, "extern") == 0) {
+        isExtern = 1;
+      } else if (strcmp(token, "signed") == 0) {
+        isUnsigned = -1;
+      } else if (strcmp(token, "unsigned") == 0) {
+        isUnsigned = 1;
+      } else if (strlen(typeName) > 0) {
+        abort();
+      } else {
+        strcpy(typeName, token);
+        break;
+      }
+      b = s+1;
+    }
+  } while (*s != '*' && *s != '\0');
   int ptr = 0;
   while (*s != '\0') {
     if (*s == '*') {
@@ -491,8 +513,23 @@ VarType parseVarType(char* str) {
     ++s;
   }
   PrimVarType t;
+  Type* ctype = NULL;
   if (strcmp(typeName, "int") == 0) {
     t = INT;
+  } else if (strcmp(typeName, "short") == 0) { // FIXME: tmp
+    t = INT;
+  } else if (strcmp(typeName, "short int") == 0) { // FIXME: tmp
+    t = INT;
+  } else if (strcmp(typeName, "long int") == 0) { // FIXME: tmp
+    t = INT;
+  } else if (strcmp(typeName, "long long") == 0) { // FIXME: tmp
+    t = INT;
+  } else if (strcmp(typeName, "long long int") == 0) { // FIXME: tmp
+    t = INT;
+  } else if (strcmp(typeName, "double") == 0) { // FIXME: tmp
+    t = FLOAT;
+  } else if (strcmp(typeName, "long double") == 0) { // FIXME: tmp
+    t = FLOAT;
   } else if (strcmp(typeName, "char") == 0) {
     t = CHAR;
   } else if (strcmp(typeName, "float") == 0) {
@@ -500,10 +537,19 @@ VarType parseVarType(char* str) {
   } else if (strcmp(typeName, "void") == 0) {
     t = VOID;
   } else {
-    t = UNDEFINED;
+    ctype = typeByName(typeName);
+    if (ctype != NULL) {
+      t = STRUCT;
+    } else {
+      t = UNDEFINED;
+    }
   }
   VarType v = varType(t, ptr, 0);
   strcpy(v.raw_type, str);
+  v.isConst = isConst;
+  v.isExtern = isExtern;
+  v.typeStruct = ctype;
+  v.isUnsigned = isUnsigned;
   return v;
 }
 
@@ -1078,7 +1124,7 @@ char* catArgTypeGetter(char* b, Attr* a, int i) {
   return b;
 }
 
-void bindCFunctionsSource(char* fname, CFunc* fs) {
+void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
   CFunc* f;
   Attr* a;
 
@@ -1088,6 +1134,8 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
 
   fprintf(s, "#include \"%s.h\"\n\n", fname);
 
+  fprintf(s, "#include \"%s\"\n\n", originalName);
+
   fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "  addLoadedDef(d, \"%s\", CFUNCTION, bind_%s);\n", f->name, f->name);
@@ -1096,13 +1144,15 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
 
   // In case the header was not defined, that it was just
   // a source file, define the prototype of the function.
-  for (f = fs; f != NULL; f = f->nxt) {
+  /*for (f = fs; f != NULL; f = f->nxt) {
     char fRetType[52] = "";
-    catVarType(fRetType, f->ret);
+    //catVarType(fRetType, f->ret);
+    strcpy(fRetType, f->ret.raw_type);
     fprintf(s, "%s %s(", fRetType, f->name);
     for (a = f->args; a != NULL; a = a->nxt) {
       char aTypeT[52] = "";
-      catVarType(aTypeT, a->type);
+      //catVarType(aTypeT, a->type);
+      strcpy(aTypeT, a->type.raw_type);
       fprintf(s, "%s %s", aTypeT, a->name);
       if (a->nxt != NULL) {
         fprintf(s, ", ");
@@ -1110,7 +1160,7 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
     }
     fprintf(s, ");\n");
   }
-  fprintf(s, "\n");
+  fprintf(s, "\n");*/
 
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Val* bind_%s(Val* args) {\n", f->name);
@@ -1160,15 +1210,23 @@ void bindCFunctionsSource(char* fname, CFunc* fs) {
   fclose(s);
 }
 
-Attr* parseAttrs2(char* l, char seperator, char delimiter) {
+Attr* parseAttrs(char* l, char seperator, char delimiter_opposite, char delimiter) {
   char* s = l;
   char* lastAttr = s;
   Attr* attrs = NULL;
   Attr* a = NULL;
   char* lastSpace = NULL;
+  int delimiter_count = 1;
   for (; *s != '\0'; s++) {
-    if (*(s-1) == delimiter) return attrs;
-    if (*s == seperator || *s == delimiter) {
+    if (*(s-1) == delimiter && delimiter_count == 0) return attrs;
+
+    if (*s == delimiter) {
+      delimiter_count--;
+    } else if (*s == delimiter_opposite) {
+      delimiter_count++;
+    }
+
+    if (*s == seperator || (*s == delimiter && delimiter_count == 0)) {
       if (a == NULL) {
         attrs = newAttr();
         a = attrs;
@@ -1182,45 +1240,49 @@ Attr* parseAttrs2(char* l, char seperator, char delimiter) {
         a->type = parseVarType(aType);
         lastAttr = trim(s+1);
       } else {
-        strncpy(aType, lastAttr, lastSpace - lastAttr);
+        strncpy(aType, lastAttr, lastSpace - lastAttr + 1);
+        trimEnd(aType);
         a->type = parseVarType(aType);
         strncpy(a->name, lastSpace+1, s - (lastSpace+1));
         lastAttr = trim(s+1);
         lastSpace = NULL;
       }
-    } else if (*s == ' ' && s >= lastAttr) {
+    } else if ((*s == ' ' || *s == '*') && s >= lastAttr) {
       lastSpace = s;
     }
   }
   return attrs;
 }
 
+char* lastSpaceOrStar(char* str) {
+  char* space = strrchr(str, ' ');
+  char* star = strrchr(str, '*');
+  return space == NULL ? star : (star > space ? star : space);
+}
+
 CFunc* parseCFunction(char* s0) {
   char* argStart = strchr(s0, '(');
-  char* argEnd = strchr(s0, ')');
-
-  if (argStart == NULL || argEnd == NULL) return NULL;
+  if (argStart == NULL) return NULL;
   
   char retAndFname[128] = "";
   strncpy(retAndFname, s0, argStart - s0);
   trimEnd(retAndFname);
 
-  char* space = strrchr(retAndFname, ' ');
+  // TODO: use lastSpaceOrStar when it's working again.
+  char* space = lastSpaceOrStar(retAndFname);
   if (space == NULL) {
     return NULL;
   }
-  char* star = strrchr(retAndFname, '*');
-  if (star != NULL && star > space) space = star;
 
   CFunc* f = newCFunc();
 
   char ret[52] = "";
-  strncpy(ret, retAndFname, space - retAndFname);
+  strncpy(ret, retAndFname, space - retAndFname + 1);
   trimEnd(ret);
   f->ret = parseVarType(ret);
   strcpy(f->name, space + 1);
 
-  f->args = parseAttrs2(argStart + 1, ',', ')');
+  f->args = parseAttrs(argStart + 1, ',', '(', ')');
 
   return f;
 }
@@ -1305,53 +1367,12 @@ int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
 }
 
-/*Attr* parseAttrs(char* vals) {
-  char* start = vals;
-  char* eol;
-  while ((eol = strchr(start, ';')) != NULL) {
-    char val[128] = "";
-    strncpy(val, start, eol - start);
-  }
-  char* space = strrchr(trimEnd(val), ' ');
-  if (space == NULL) return NULL;
-  char* bracket = strchr(val, '[');
-  Attr* a = newAttr();
-  char type[32] = "";
-  char array[12] = "";
-  int arraySize = 0;
-  char* star = strchr(val, '*');
-  strncpy(type, val, star == NULL ? space - val : star - val);
-  if (bracket) {
-    strncpy(array, bracket + 1, strlen(bracket) - 2);
-    char* num; // ???
-    arraySize = strtol(array, &num, 0);
-    strncpy(a->name, space + 1, bracket - space - 1);
-  } else {
-    strncpy(a->name, space + 1, strlen(space) - 2);
-  }
-  a->type.arraySize = arraySize;
-  a->type = parseVarType(type);
-  if (star != NULL) {
-    int nStar = 0;
-    while (*star == ' ' || *star == '*' || *star == '\t') {
-      if (*star == '*') {
-        nStar++;
-      }
-      star++;
-    }
-    a->type.ptr = nStar;
-  }
-  if (a->type.type == UNDEFINED) {
-    freeAttr(a);
-    return NULL;
-  }
-  return a;
-}*/
-
-Type* parseTypedef(CLine* l) {
+Type* parseTypedef(char* line) {
   Type* t = newType();
-  char* tName = trim(strrchr(trimCEnd(l->val), ' '));
+  char* tName = trim(strrchr(trimCEnd(line), ' '));
   strcpy(t->name, tName);
+
+  // TODO: Type attributes.
 
   Type* oldFirst = types;
   types = t;
@@ -1371,11 +1392,13 @@ Type* parseEnum(CLine* l) {
 }
 
 Type* parseCStruct(char* l) {
+  // Because the arithmetic of array size can be complicated
+  if (strchr(l, '[') != NULL) return NULL; 
   Type* t = newType();
   char* defStart = strchr(l, '{');
   if (defStart) {
     strncpy(t->name, l, defStart-l);
-    t->attrs = parseAttrs2(defStart + 1, ';', '}');
+    t->attrs = parseAttrs(defStart + 1, ';', '{', '}');
   } else {
     strcpy(t->name, l);
   }
@@ -1392,7 +1415,7 @@ int debug(char* str) {
   return x;
 }
 
-Val* parseCFile(char* filename, int nested) {
+Val* parseCFile(char* filename) {
   FILE* s = fopen(filename, "r");
   if (s == NULL) {
     char msg[52] = "";
@@ -1403,8 +1426,9 @@ Val* parseCFile(char* filename, int nested) {
   char line[10000] = "";
   char c;
   char* lastSpace = line;
+  int nested = 0;
   while ((c = getc(s)) != EOF) {
-    if (strlen(line) >= 10000) {
+    if (strlen(line) >= 9980) {
       abort();
     }
     if (startsWith("__extension__", lastSpace)) {
@@ -1425,9 +1449,9 @@ Val* parseCFile(char* filename, int nested) {
       if (c == EOF) break;
     } else if ((c == ' ' || c == '\n' || c == '\t') && strlen(line) <= 0) {
       // Discard trailing whitespaces
-    } else if (c == ';') {
+    } else if (c == ';' && nested == 0) {
       if (startsWith("typedef", line)) {
-      //  parseTypedef(l);
+        parseTypedef(line);
       } else if (startsWith("enum", line)) {
       //  parseEnum(l);
       } else if (startsWith("struct", line)) {
@@ -1449,6 +1473,11 @@ Val* parseCFile(char* filename, int nested) {
       memset(line, '\0', sizeof(line));
       lastSpace = line;
     } else {
+      if (c == '{') {
+        nested++;
+      } else if (c == '}') {
+        nested--;
+      }
       straddch(line, c);
       if (c == ' ') {
         lastSpace = line + strlen(line);
@@ -1479,7 +1508,7 @@ Val* parseCIncludeFile(char* filename) {
   //fscanf(fp, "%s", retVal);
   pclose(fp);
 
-  return parseCFile(tmpFilename, 0);
+  return parseCFile(tmpFilename);
 }
 Val* parseCIncludeFileCmd(Val* args) {
   char* filename = (char*)args->nxt->addr;
@@ -1493,7 +1522,7 @@ Val* parseCIncludeFileCmd(Val* args) {
     }
     replace(bind_filename, '/', '_');
     bindCFunctionsHeader(bind_filename, cfuncs);
-    bindCFunctionsSource(bind_filename, cfuncs);
+    bindCFunctionsSource(filename, bind_filename, cfuncs);
   }
   freeCFunc(cfuncs);
   cfuncs = NULL;

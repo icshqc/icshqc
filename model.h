@@ -15,15 +15,20 @@ struct Type;
 
 // When it is a tuple, the addr contains a linked list of Val.
 enum PrimVarType {
-  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR, TUPLE
+  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR, TUPLE, STRUCT
 };
 typedef enum PrimVarType PrimVarType;
 
+// Probablement devrait etre une union au lieu d'une struct.
 struct VarType {
+  char raw_type[64]; // to handle types like (fd_set *__restrict)
+  struct Type* typeStruct;
   PrimVarType type;
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
+  unsigned char isConst;
+  unsigned char isExtern;
+  unsigned char isUnsigned; // -1 = signed, 0 not specified, 1 = unsigned
   unsigned int arraySize; // 0 if not array
-  char raw_type[52]; // to handle types like (fd_set *__restrict)
 };
 typedef struct VarType VarType;
 
@@ -35,14 +40,14 @@ struct Val {
 typedef struct Val Val;
 
 struct Attr {
-  char name[32];
+  char name[64];
   struct VarType type;
   struct Attr* nxt;
 };
 typedef struct Attr Attr;
 
 struct Type {
-  char name[32];
+  char name[64];
   Attr* attrs;
   struct Type* nxt;
 };
