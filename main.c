@@ -16,7 +16,7 @@ void initCFunctions(LoadedDef* d);
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
-// TODO: Réécrire le fucking Cparser pour parsé typedef struct {...} blah;
+// FIXME 2 + 2 ne fonctionne plus et les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
 
 // TODO: :d => lists the function prototype
 
@@ -917,6 +917,7 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
       n->nxt = cmdToVal(arg);
+      // n->nxt = initArray(varType(CHAR, 0, 52), arg->name); FIXME
       if (n->nxt != NULL) {
         n = n->nxt;
       }
