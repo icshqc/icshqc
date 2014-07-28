@@ -1,3 +1,11 @@
+Bon, mon idee pour les macros est que ce sont un type de variable et ca
+fait juste donner le contenu en string ex: macro (x + 2) == macro "x + 2"
+
+L'avantage est que x = (2 + 2) => `=` "x" 4
+Ca marche pour des types aussi: foo (void*) blah => foo "void*" blah
+
+---
+
 Fuck avoir un autre language et un convertisseur de code. En gros,
 je veux de plus: lambda, operators(=>syntaxic sugar for arrays),
 partial applied functions, typeclasses.

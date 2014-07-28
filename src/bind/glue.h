@@ -39,7 +39,12 @@ Val* checkSignature(Val* args, VarType* types, int nArgs);
 int validArg(Cmd* cmd, CmdType type);
 
 LoadedDef* lastLoadedDef();
-LoadedDef* createLoadedDef(char* name, CmdType type, Val* (*ptr)(Val* cmd));
-LoadedDef* addLoadedDef(LoadedDef* def, char* name, CmdType type, Val* (*ptr)(Val* cmd));
+LoadedDef* createLoadedDef(Func* func, CmdType type, Val* (*ptr)(Val* cmd));
+LoadedDef* addLoadedDef(LoadedDef* def, Func* func, CmdType type, Val* (*ptr)(Val* cmd));
+
+Func* createFunc(char* name, Attr* attrs);
+Attr* createAttr(char* name, VarType t, Attr* nxt);
+Func* newFunc();
+Attr* newAttr();
 
 #endif // GLUE_H

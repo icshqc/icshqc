@@ -3,7 +3,8 @@
 #include "/usr/include/string.h"
 
 void initCFunctions(LoadedDef* d) {
-  addLoadedDef(d, "stpncpy", CFUNCTION, bind_stpncpy);
+  addLoadedDef(d, createFunc("strlen", createAttr("__s", varType(CHAR, 1, 0), NULL)), CFUNCTION, bind_strlen);
+/*  addLoadedDef(d, "stpncpy", CFUNCTION, bind_stpncpy);
   addLoadedDef(d, "__stpncpy", CFUNCTION, bind___stpncpy);
   addLoadedDef(d, "stpcpy", CFUNCTION, bind_stpcpy);
   addLoadedDef(d, "__stpcpy", CFUNCTION, bind___stpcpy);
@@ -21,7 +22,6 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "strerror_r", CFUNCTION, bind_strerror_r);
   addLoadedDef(d, "strerror", CFUNCTION, bind_strerror);
   addLoadedDef(d, "strnlen", CFUNCTION, bind_strnlen);
-  addLoadedDef(d, "strlen", CFUNCTION, bind_strlen);
   addLoadedDef(d, "strtok_r", CFUNCTION, bind_strtok_r);
   addLoadedDef(d, "__strtok_r", CFUNCTION, bind___strtok_r);
   addLoadedDef(d, "strtok", CFUNCTION, bind_strtok);
@@ -48,7 +48,9 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, "memmove", CFUNCTION, bind_memmove);
   addLoadedDef(d, "memcpy", CFUNCTION, bind_memcpy);
 }
-
+*/
+}
+/*
 Val* bind_stpncpy(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 1, 0), varType(INT, 0, 0)};
   if ((m = checkSignature(args, t, 3)) != NULL) return m;
@@ -213,7 +215,7 @@ Val* bind_strnlen(Val* args) {
   int r = strnlen(__string_, __maxlen_);
   return initVal(varType(INT, 0, 0), &r);
 }
-
+*/
 Val* bind_strlen(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0)};
   if ((m = checkSignature(args, t, 1)) != NULL) return m;
@@ -221,7 +223,7 @@ Val* bind_strlen(Val* args) {
   int r = strlen(__s_);
   return initVal(varType(INT, 0, 0), &r);
 }
-
+/*
 Val* bind_strtok_r(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 1, 0), varType(CHAR, 2, 0)};
   if ((m = checkSignature(args, t, 3)) != NULL) return m;
@@ -457,5 +459,6 @@ Val* bind_memcpy(Val* args) {
   int __n_ = GET_VAL(int, args);
   memcpy(__dest_, __src_, __n_);
   return NULL;
-}
+}*/
+
 

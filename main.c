@@ -16,6 +16,8 @@ void initCFunctions(LoadedDef* d);
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
+// Osti que je suis cave. C sur que 2 + 2 peux pas marcher quand j'ai enlever src/lib.c qui definissait add...
+
 // FIXME 2 + 2 ne fonctionne plus et les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
 
 // TODO: :d => lists the function prototype
@@ -37,24 +39,12 @@ static Type* types = NULL;
 static TypeDef* typedefs = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
-static Func* funcs = NULL;
 
 static CFunc* cfuncs = NULL;
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
-
-Attr* newAttr() {
-  Attr* a = malloc(sizeof(Attr));
-  if (a == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  a->type.type = UNDEFINED;
-  memset(a->name, '\0', sizeof(a->name));
-  a->nxt = NULL;
-  return a;
-}
 
 TypeDef* newTypeDef() {
   TypeDef* a = malloc(sizeof(TypeDef));
@@ -88,19 +78,6 @@ CFunc* newCFunc() {
   arg0->args = NULL;
   arg0->nxt = NULL;
   return arg0;
-}
-
-Func* newFunc() {
-  Func* f = malloc(sizeof(Func));
-  if (f == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(f->name, '\0', sizeof(f->name));
-  f->cmd = NULL;
-  f->args = NULL;
-  f->isOperator = 0;
-  f->nxt = NULL;
-  return f;
 }
 
 void freeVar(Var* t) {
@@ -137,8 +114,18 @@ void freeTypes(Type* t) {
   }
 }
 
+void freeFunc(Func* f) {
+  if (f != NULL) {
+    freeVal(f->cmd);
+    freeAttr(f->args);
+    freeFunc(f->nxt);
+    free(f);
+  }
+}
+
 void freeLoadedDef(LoadedDef* d) {
   if (d != NULL) {
+    freeFunc(d->func);
     freeLoadedDef(d->nxt);
     free(d);
   }
@@ -156,15 +143,6 @@ void freeCmd(Cmd* arg) {
   if (arg != NULL) {
     freeCmd(arg->nxt);
     freeCmd(arg->args);
-  }
-}
-
-void freeFunc(Func* f) {
-  if (f != NULL) {
-    freeVal(f->cmd);
-    freeAttr(f->args);
-    freeFunc(f->nxt);
-    free(f);
   }
 }
 
@@ -451,17 +429,6 @@ void catVar(char* m, Var* v) {
   }
 }
 
-Func* funcByName(char* name) {
-  Func* f = funcs;
-  while (f != NULL) {
-    if (strcmp(f->name, name) == 0) {
-      return f;
-    }
-    f = f->nxt;
-  }
-  return NULL;
-}
-
 Var* varByName(char* name) {
   Var* t = vars;
   while (t != NULL) {
@@ -498,7 +465,7 @@ Type* typeByName(char* name) {
 LoadedDef* loadedFuncByName(char* name) {
   LoadedDef* d = loadedDefs;
   while (d != NULL) {
-    if (strcmp(d->name, name) == 0) {
+    if (strcmp(d->func->name, name) == 0) {
       return d;
     }
     d = d->nxt;
@@ -590,7 +557,7 @@ VarType parseVarType(char* str) {
 // cmdArgs = x, x
 // args = 10
 Val* runFunc(Val* args) {
-  Func* f = funcByName((char*)args->addr);
+  Func* f = loadedFuncByName((char*)args->addr)->func;
   Val* cmd = (Val*)f->cmd->addr;
   Attr* fArgs = f->args;
   LoadedDef* d = loadedFuncByName((char*)cmd->addr);
@@ -1081,8 +1048,9 @@ char* catCmdExe(char* b, Cmd* cmd, int nested) {
 
 void save() { // .qc extension. Quick C, Quebec!!!
   FILE* s = fopen("app.qc", "w"); // FIXME: Check if valid file. Not NULL.
-  Func* f;
-  for (f = funcs; f != NULL; f = f->nxt) {
+  LoadedDef* d;
+  for (d = loadedDefs; d != NULL; d = d->nxt) {
+    Func* f = d->func;
     fprintf(s, "%s %s {", f->name, f->isOperator ? ":::" : "::");
     if (f->args != NULL) {
       fprintf(s, "|");
@@ -1325,7 +1293,7 @@ void typeConstructor(Type* type) {
   if (type->attrs != NULL) {
     char constructorName[52] = "#";
     strcat(constructorName, type->name);
-    addLoadedDef(loadedDefs, constructorName, FUNCTION, construct);
+    addLoadedDef(loadedDefs, createFunc(constructorName, NULL), FUNCTION, construct); // FIXME: Construct attrs???
   }
 }
 
@@ -1606,7 +1574,7 @@ Var* addNewVar(Type* type, char* name) {
   return var;
 }
 
-Func* createFunc(Val* args) {
+void defineFunc(Val* args, CmdType type) {
   Func* f = newFunc();
   strcpy(f->name, (char*)args->nxt->addr);
   Val* block = (Val*)args->nxt->nxt->addr;
@@ -1627,20 +1595,14 @@ Func* createFunc(Val* args) {
     arg = arg->nxt;
   }
   f->cmd = cpyVal(arg);
-  Func* oldFirst = funcs;
-  funcs = f;
-  f->nxt = oldFirst;
-  return f;
+  addLoadedDef(loadedDefs, f, type, runFunc);
 }
 Val* define(Val* args) {
-  Func* f = createFunc(args);
-  addLoadedDef(loadedDefs, f->name, FUNCTION, runFunc);
+  defineFunc(args, FUNCTION);
   return NULL;
 }
 Val* defineOp(Val* args) {
-  Func* f = createFunc(args);
-  f->isOperator = 1;
-  addLoadedDef(loadedDefs, f->name, OPERATOR, runFunc);
+  defineFunc(args, OPERATOR);
   return NULL;
 }
 Val* defineType(Val* args) { // Type #:: (type name) (type name)
@@ -1719,7 +1681,7 @@ Val* listDefs() {
   LoadedDef* d;
   char* m = malloc(sizeof(char) * 2056);
   for (d = loadedDefs; d != NULL; d = d->nxt) {
-    strcat(m, d->name);
+    strcat(m, d->func->name);
     if (d->nxt != NULL) {
       strcat(m, ", ");
     }
@@ -1790,11 +1752,23 @@ void loop()
 }
 
 void initLoadedDefs() {
-  loadedDefs = createLoadedDef("=", MACRO_OP, assign); // Assigns a value to an existing variable.
-  addLoadedDef(loadedDefs, "::", MACRO_OP, define); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, ":::", MACRO_OP, defineOp); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "#::", MACRO_OP, defineType); // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, "include", FUNCTION, parseCIncludeFileCmd);
+  // FIXME: Those types are not right.
+
+  // Assigns a value to an existing variable.
+  loadedDefs = createLoadedDef(createFunc("=", createAttr("name", varType(CHAR, 0, 52),
+                                               createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, assign); 
+  // Assigns a function to a new variable.
+  addLoadedDef(loadedDefs, createFunc("::", createAttr("name", varType(CHAR, 0, 52),
+                                            createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, define); 
+
+  addLoadedDef(loadedDefs, createFunc(":::", createAttr("name", varType(CHAR, 0, 52),
+                                             createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, defineOp); 
+
+  addLoadedDef(loadedDefs, createFunc("#::", createAttr("name", varType(CHAR, 0, 52),
+                                             createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, defineType); 
+
+  addLoadedDef(loadedDefs, createFunc("include", createAttr("includeFile", varType(CHAR, 0, 52), NULL)),
+                                      FUNCTION, parseCIncludeFileCmd);
 }
 
 static void finish(int sig)
@@ -1815,8 +1789,6 @@ static void finish(int sig)
   types = NULL;
   freeVar(vars);
   vars = NULL;
-  freeFunc(funcs);
-  funcs = NULL;
 
   exit(0);
 }

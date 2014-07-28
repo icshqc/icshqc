@@ -76,10 +76,19 @@ struct Cmd {
 };
 typedef struct Cmd Cmd;
 
-struct LoadedDef {
+struct Func {
   char name[52];
+  int isOperator;
+  Attr* args;
+  Val* cmd;
+  struct Func* nxt;
+};
+typedef struct Func Func;
+
+struct LoadedDef {
   CmdType type; // FUNCTION || OPERATOR || CFUNCTION || MACRO || MACRO_OP
   Val* (*ptr)(Val* args);
+  Func* func;
   struct LoadedDef* nxt;
 };
 typedef struct LoadedDef LoadedDef;
@@ -91,14 +100,5 @@ struct Var {
   struct Var* nxt;
 };
 typedef struct Var Var;
-
-struct Func {
-  char name[52];
-  int isOperator;
-  Attr* args;
-  Val* cmd;
-  struct Func* nxt;
-};
-typedef struct Func Func;
 
 #endif // MODEL.h

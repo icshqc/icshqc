@@ -243,8 +243,8 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
   return c;
 }
 
-LoadedDef* addLoadedDef(LoadedDef* p, char* name, CmdType type, Val* (*ptr)(Val* cmd)) {
-  LoadedDef* f = createLoadedDef(name, type, ptr);
+LoadedDef* addLoadedDef(LoadedDef* p, Func* fc, CmdType type, Val* (*ptr)(Val* cmd)) {
+  LoadedDef* f = createLoadedDef(fc, type, ptr);
   lastLoadedDef(p)->nxt = f;
   return p;
 }
@@ -257,12 +257,51 @@ LoadedDef* lastLoadedDef(LoadedDef* d) {
   return f;
 }
 
-LoadedDef* createLoadedDef(char* name, CmdType type, Val* (*ptr)(Val* cmd)) {
+LoadedDef* createLoadedDef(Func* f, CmdType type, Val* (*ptr)(Val* cmd)) {
   LoadedDef* d = malloc(sizeof(LoadedDef));
-  strcpy(d->name, name);
+  d->func = f;
   d->type = type;
   d->ptr = ptr;
   d->nxt = NULL;
   return d;
+}
+
+Attr* newAttr() {
+  Attr* a = malloc(sizeof(Attr));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  a->type.type = UNDEFINED;
+  memset(a->name, '\0', sizeof(a->name));
+  a->nxt = NULL;
+  return a;
+}
+
+Func* newFunc() {
+  Func* f = malloc(sizeof(Func));
+  if (f == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(f->name, '\0', sizeof(f->name));
+  f->cmd = NULL;
+  f->args = NULL;
+  f->isOperator = 0;
+  f->nxt = NULL;
+  return f;
+}
+
+Attr* createAttr(char* name, VarType t, Attr* nxt) {
+  Attr* a = newAttr();
+  strcpy(a->name, name);
+  a->type = t;
+  a->nxt = nxt;
+  return a;
+}
+
+Func* createFunc(char* name, Attr* attrs) {
+  Func* f = newFunc();
+  strcpy(f->name, name);
+  f->args = attrs;
+  return f;
 }
 
