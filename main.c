@@ -17,6 +17,7 @@ void initCFunctions(LoadedDef* d);
 //#define DEBUG_MODE
 
 // Osti que je suis cave. C sur que 2 + 2 peux pas marcher quand j'ai enlever src/lib.c qui definissait add...
+// TODO Error message qui me dit que je suis con que la fonctino n'existe pas.
 
 // FIXME 2 + 2 ne fonctionne plus et les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
 
@@ -1114,6 +1115,22 @@ char* catArgTypeGetter(char* b, Attr* a, int i) {
   return b;
 }
 
+void catCreateFuncAttr(char* b, Attr* a) {
+  if (a == NULL) {
+    strcat(b, "NULL");
+  } else {
+    strcat(b, "createAttr(\"");
+    strcat(b, a->name);
+    strcat(b, "\", varType(");
+    catPrimVarTypeEnum(b, a->type.type);
+    char varType[52] = "";
+    sprintf(varType, ", %d, %d), ", a->type.ptr, a->type.arraySize);
+    strcat(b, varType);
+    catCreateFuncAttr(b, a->nxt);
+    strcat(b, ")");
+  }
+}
+
 void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
   CFunc* f;
   Attr* a;
@@ -1128,7 +1145,9 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
 
   fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
-    fprintf(s, "  addLoadedDef(d, \"%s\", CFUNCTION, bind_%s);\n", f->name, f->name);
+    char attrs[248] = "";
+    catCreateFuncAttr(attrs, f->args);
+    fprintf(s, "  addLoadedDef(d, createFunc(\"%s\", %s), CFUNCTION, bind_%s);\n", f->name, attrs, f->name);
   }
   fprintf(s, "}\n\n");
 
