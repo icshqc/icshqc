@@ -4,6 +4,9 @@ fait juste donner le contenu en string ex: macro (x + 2) == macro "x + 2"
 L'avantage est que x = (2 + 2) => `=` "x" 4
 Ca marche pour des types aussi: foo (void*) blah => foo "void*" blah
 
+Mais peut-etre qu'un feature et avantage possible est que le token doit etre valide.
+Tu peux pas mettre n'importe quel string, ca doit etre le nom d'une func, var, etc.
+
 ---
 
 Fuck avoir un autre language et un convertisseur de code. En gros,

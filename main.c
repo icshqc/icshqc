@@ -1696,6 +1696,27 @@ Val* listVars() {
   return initPtr(varType(CHAR, 0, 2056), m);
 }
 
+Val* descFunc(Val* args) {
+  LoadedDef* d = loadedFuncByName((char*)args->nxt->addr);
+  if (d == NULL) return errorStr("It is not a valid func.");
+  char* m = malloc(sizeof(char) * 512);
+  //catVarType(d->func->ret);
+  //strcat(m, " ");
+  strcat(m, d->func->name);
+  strcat(m, "(");
+  Attr* a;
+  for (a = d->func->args; a != NULL; a = a ->nxt) {
+    catVarType(m, a->type);
+    strcat(m, " ");
+    strcat(m, a->name);
+    if (a->nxt != NULL) {
+      strcat(m, ", ");
+    }
+  }
+  strcat(m, ")");
+  return initPtr(varType(CHAR, 0, 512), m);
+}
+
 Val* listDefs() {
   LoadedDef* d;
   char* m = malloc(sizeof(char) * 2056);
@@ -1788,6 +1809,8 @@ void initLoadedDefs() {
 
   addLoadedDef(loadedDefs, createFunc("include", createAttr("includeFile", varType(CHAR, 0, 52), NULL)),
                                       FUNCTION, parseCIncludeFileCmd);
+  
+  addLoadedDef(loadedDefs, createFunc("desc", createAttr("fname", varType(CHAR, 0, 52), NULL)), FUNCTION, descFunc);
 }
 
 static void finish(int sig)
