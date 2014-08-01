@@ -1,3 +1,7 @@
+Static aka global variable commence p-e par $ comme bash.
+
+---
+
 Bon, mon idee pour les macros est que ce sont un type de variable et ca
 fait juste donner le contenu en string ex: macro (x + 2) == macro "x + 2"
 

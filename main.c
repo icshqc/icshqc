@@ -1843,12 +1843,9 @@ void loop()
       }
     } else {
       char err[128] = "";
-      if (evalCmd(input, err)) {
-        if (strlen(err) > 0) {
-          output(err);
-        }
-      } else {
-        return;
+      evalCmd(input, err);
+      if (strlen(err) > 0) {
+        output(err);
       }
     }
     output("\n>> ");
