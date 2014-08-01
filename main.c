@@ -19,9 +19,7 @@ void initCFunctions(LoadedDef* d);
 // Osti que je suis cave. C sur que 2 + 2 peux pas marcher quand j'ai enlever src/lib.c qui definissait add...
 // TODO Error message qui me dit que je suis con que la fonctino n'existe pas.
 
-// FIXME 2 + 2 ne fonctionne plus et les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
-
-// TODO: :d => lists the function prototype
+// FIXME les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 
@@ -33,9 +31,6 @@ void initCFunctions(LoadedDef* d);
 
 // MODEL
 
-static const int MSG_CONSOLE_SIZE = 10;
-static const char DEF_FILE_PATH[] = "defs";
-
 static Type* types = NULL;
 static TypeDef* typedefs = NULL;
 // Maybe vars by scope.
@@ -46,6 +41,9 @@ static CFunc* cfuncs = NULL;
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
+
+static int cursorX = 0;
+static int cursorY = 0;
 
 TypeDef* newTypeDef() {
   TypeDef* a = malloc(sizeof(TypeDef));
@@ -208,13 +206,15 @@ int getch() {
 void deleteln() {
 }
 
-void addstr(const char* str) {
-  while (*str != '\0') {
-    addch(*str);
-    ++str;
-  }
-}
 #endif
+
+int getCols() {
+#ifdef CURSES_MODE
+  return COLS;
+#else
+  return 30;
+#endif
+}
 
 int getLines() {
 #ifdef CURSES_MODE
@@ -225,23 +225,32 @@ int getLines() {
 }
 
 int getX() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return x;
-#else
-  return 0;
-#endif
+  return cursorX;
 }
 
 int getY() {
-#ifdef CURSES_MODE
-  int y, x;
-  getyx(curscr, y, x);
-  return y;
-#else
-  return 0;
-#endif
+  return cursorY;
+}
+
+void printch(char ch) {
+  /*if (getX() >= getCols() - 1) {
+    refresh();
+    addch('\n');
+  }*/
+  addch(ch);
+  /*if (ch == '\n') {
+    cursorX = 0;
+    cursorY++;
+  } else {
+    cursorX++;
+  }*/
+}
+
+void printstr(const char* str) {
+  while (*str != '\0') {
+    printch(*str);
+    ++str;
+  }
 }
 
 void dellastch(char ch) {
@@ -273,21 +282,21 @@ void output(const char* str) {
   if (silent) return;
 
   const char* c = str;
+  int x = getX();
   int l = getY();
-  int n = 0;
   while (*c != '\0') {
-    if (*c == '\n') {
+    if (*c == '\n' || x >= getCols()) {
       ++l;
       if (l >= getLines()) {
         move(0,0);
         deleteln();
-        move(getLines()-(++n),0);
+        move(getLines()-1,0);
         refresh();
       }
     }
-    ++c;
+    ++c; ++x;
   }
-  addstr(str);
+  printstr(str);
   refresh();
 }
 
@@ -980,8 +989,7 @@ char* getInput(char* input) {
         output("\n");
         int i;
         for (i = 0; i < nested; i++) {
-          addch(' ');
-          addch(' ');
+          output("  ");
         }
       } else {
         break;
@@ -992,7 +1000,8 @@ char* getInput(char* input) {
       } else if (ch == '}') {
         nested--;
       }
-      addch(ch);
+      char out[] = {ch, '\0'};
+      output(out);
       refresh();
       strinsertch(cursor, ch);
       cursor++;
@@ -1879,10 +1888,17 @@ int main()
   nonl();         /* tell curses not to do NL->CR/NL on output */
   cbreak();       /* take input chars one at a time, no wait for \n */
   noecho();       /* dont echo the input char */
+
+  // If idlok is called with TRUE as second argument, curses considers using the hardware insert/delete line feature of terminals so equipped. Calling idlok with FALSE as second argument disables use of line insertion and deletion. This option should be enabled only if the application needs insert/delete line, for example, for a screen editor. It is disabled by default because insert/delete line tends to be visually annoying when used in applications where it is not really needed. If insert/delete line cannot be used, curses redraws the changed portions of all lines.
+  idlok(curscr, 1);
+
+  scrollok(curscr, 1);
+  
+  // The setscrreg and wsetscrreg routines allow the application programmer to set a software scrolling region in a window. top and bot are the line numbers of the top and bottom margin of the scrolling region. (Line 0 is the top line of the window.) If this option and scrollok are enabled, an attempt to move off the bottom margin line causes all lines in the scrolling region to scroll one line in the direction of the first line. Only the text of the window is scrolled. (Note that this has nothing to do with the use of a physical scrolling region capability in the terminal, like that in the VT100. If idlok is enabled and the terminal has either a scrolling region or insert/delete line capability, they will probably be used by the output routines.)
 #else
   SDL_Init( SDL_INIT_EVERYTHING );
   TTF_Init();
-  font = TTF_OpenFont("fonts/OpenSans-Regular.ttf", 15);
+  font = TTF_OpenFont("fonts/DroidSansMono.ttf", 15);
 
   if (font == NULL) {
     finish(-1);
