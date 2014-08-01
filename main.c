@@ -42,8 +42,8 @@ static CFunc* cfuncs = NULL;
 // They should of type struct LoadedDef and the function passed would call the executable.
 static LoadedDef* loadedDefs = NULL;
 
-static int cursorX = 0;
-static int cursorY = 0;
+static unsigned int cursorX = 0;
+static unsigned int cursorY = 0;
 
 TypeDef* newTypeDef() {
   TypeDef* a = malloc(sizeof(TypeDef));
@@ -147,6 +147,28 @@ void freeCmd(Cmd* arg) {
 
 static void finish(int sig);
 
+int getX() {
+  return cursorX;
+}
+
+int getY() {
+  return cursorY;
+}
+
+void setX(int x) {
+#ifdef CURSES_MODE
+  move(getY(), x);
+#endif
+  cursorX = x;
+}
+
+void setY(int y) {
+#ifdef CURSES_MODE
+  move(y,getX());
+#endif
+  cursorY = y;
+}
+
 #ifdef CURSES_MODE
 #include <ncurses.h>
 #else
@@ -154,28 +176,38 @@ static void finish(int sig);
 #include <SDL/SDL_ttf.h>
 static SDL_Surface* screen = NULL;
 static TTF_Font* font = NULL;
-static SDL_Rect position;
+
+static int charWidth = 0;
+static int charHeight = 0;
+
+// A pointer to an array of array of chars.
+static char** screenChars = NULL;
+static unsigned int screenLines = 0;
+
+SDL_Rect cursorRect() {
+  SDL_Rect p;
+  p.x = getX() * charWidth;
+  p.y = getY() * charHeight;
+  return p;
+}
 
 void move(int y, int x) {
+  setY(y);
+  setX(x);
+}
+
+void drawch(char ch) {
+  SDL_Surface* texte;
+  SDL_Color blanc = {255, 255, 255};
+  char str[] = {ch, '\0'};
+  texte = TTF_RenderText_Blended(font, str, blanc);
+  SDL_Rect position = cursorRect();
+  SDL_BlitSurface(texte, NULL, screen, &position);
 }
 
 void addch(char ch) {
-  int w, h;
-  if (ch == '\n' || ch == '\r') {
-    char str[] = {'w', '\0'};
-    TTF_SizeText(font, str, &w, &h);
-    position.y = position.y + h;
-    position.x = 0;
-  } else {
-    SDL_Surface* texte;
-    SDL_Color blanc = {255, 255, 255};
-    char str[] = {ch, '\0'};
-    texte = TTF_RenderText_Blended(font, str, blanc); // FIXME: WTF...
-    SDL_BlitSurface(texte, NULL, screen, &position);
-    int w, h;
-    TTF_SizeText(font, str, &w, &h);
-    position.x = position.x + w;
-  }
+  drawch(ch);
+  screenChars[cursorY][cursorX] = ch;
 }
 
 void refresh() {
@@ -203,7 +235,41 @@ int getch() {
   }
 }
 
+void clearscreen() {
+  SDL_Surface *s = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, 0, 0, 0, 0);
+  SDL_FillRect(s, NULL, SDL_MapRGB(s->format, 0, 0, 0));
+  SDL_Rect position;
+  position.x = 0;
+  position.y = 0;
+  SDL_BlitSurface(s, NULL, screen, &position);
+}
+
+void redraw() {
+  clearscreen();
+  int i, j;
+  char* s;
+  int cX = getX();
+  int cY = getY();
+  for (i = 0; i < screenLines; i++) {
+    setY(i);
+    for (s = screenChars[i], j = 0; *s != '\0'; s++, j++) {
+      setX(j);
+      drawch(*s);
+    }
+  }
+  setX(cX);
+  setY(cY);
+}
+
 void deleteln() {
+  int i;
+  char* first = screenChars[0];
+  for (i = 0; i < screenLines - 1; i++) {
+    screenChars[i] = screenChars[i+1];
+  }
+  screenChars[screenLines-1] = first;
+  first[0] = '\0';
+  redraw();
 }
 
 #endif
@@ -212,7 +278,7 @@ int getCols() {
 #ifdef CURSES_MODE
   return COLS;
 #else
-  return 30;
+  return screen->w / charWidth;
 #endif
 }
 
@@ -220,30 +286,26 @@ int getLines() {
 #ifdef CURSES_MODE
   return LINES;
 #else
-  return 30;
+  return screenLines;
 #endif
 }
 
-int getX() {
-  return cursorX;
-}
-
-int getY() {
-  return cursorY;
-}
-
 void printch(char ch) {
-  /*if (getX() >= getCols() - 1) {
-    refresh();
-    addch('\n');
-  }*/
-  addch(ch);
-  /*if (ch == '\n') {
-    cursorX = 0;
-    cursorY++;
-  } else {
-    cursorX++;
-  }*/
+  if (ch == '\n' || getX() >= getCols()) {
+    setX(0);
+    if (getY() >= getLines() - 1){
+      move(0,0);
+      deleteln();
+      move(getLines()-1,0);
+      refresh();
+    } else {
+      setY(getY()+1);
+    }
+  }
+  if (ch != '\n') {
+    addch(ch);
+    setX(getX()+1);
+  }
 }
 
 void printstr(const char* str) {
@@ -254,19 +316,15 @@ void printstr(const char* str) {
 }
 
 void dellastch(char ch) {
+  if (getX() > 0) setX(getX()-1);
 #ifdef CURSES_MODE
   int y, x;
   getyx(curscr, y, x);
   mvdelch(y, x-1);
 #else
-  int w, h;
-  char str[] = {ch, '\0'};
-  TTF_SizeText(font, str, &w, &h);
-  position.x = position.x - w;
-
-  SDL_Surface *s;
-  s = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+  SDL_Surface *s = SDL_CreateRGBSurface(0, charWidth, charHeight, 32, 0, 0, 0, 0);
   SDL_FillRect(s, NULL, SDL_MapRGB(s->format, 0, 0, 0));
+  SDL_Rect position = cursorRect();
   SDL_BlitSurface(s, NULL, screen, &position);
 #endif
 }
@@ -281,21 +339,6 @@ static int silent = 0;
 void output(const char* str) {
   if (silent) return;
 
-  const char* c = str;
-  int x = getX();
-  int l = getY();
-  while (*c != '\0') {
-    if (*c == '\n' || x >= getCols()) {
-      ++l;
-      if (l >= getLines()) {
-        move(0,0);
-        deleteln();
-        move(getLines()-1,0);
-        refresh();
-      }
-    }
-    ++c; ++x;
-  }
   printstr(str);
   refresh();
 }
@@ -1830,6 +1873,13 @@ static void finish(int sig)
   SDL_Quit();
   TTF_CloseFont(font);
   TTF_Quit();
+ 
+  int i;
+  for(i = 0; i < screenLines; i++) {
+    free(screenChars[i]);
+  }
+  free(screenChars);
+  screenChars = NULL;
 #endif
 
   freeTypeDefs(typedefs);
@@ -1890,27 +1940,38 @@ int main()
   noecho();       /* dont echo the input char */
 
   // If idlok is called with TRUE as second argument, curses considers using the hardware insert/delete line feature of terminals so equipped. Calling idlok with FALSE as second argument disables use of line insertion and deletion. This option should be enabled only if the application needs insert/delete line, for example, for a screen editor. It is disabled by default because insert/delete line tends to be visually annoying when used in applications where it is not really needed. If insert/delete line cannot be used, curses redraws the changed portions of all lines.
-  idlok(curscr, 1);
+  //idlok(curscr, 1);
 
-  scrollok(curscr, 1);
+  //scrollok(curscr, 1);
   
   // The setscrreg and wsetscrreg routines allow the application programmer to set a software scrolling region in a window. top and bot are the line numbers of the top and bottom margin of the scrolling region. (Line 0 is the top line of the window.) If this option and scrollok are enabled, an attempt to move off the bottom margin line causes all lines in the scrolling region to scroll one line in the direction of the first line. Only the text of the window is scrolled. (Note that this has nothing to do with the use of a physical scrolling region capability in the terminal, like that in the VT100. If idlok is enabled and the terminal has either a scrolling region or insert/delete line capability, they will probably be used by the output routines.)
 #else
   SDL_Init( SDL_INIT_EVERYTHING );
   TTF_Init();
+
+  // Only monospaced fonts are supported for now.
   font = TTF_OpenFont("fonts/DroidSansMono.ttf", 15);
 
   if (font == NULL) {
     finish(-1);
   }
 
-  position.x = 0;
-  position.y = 0;
+  char str[] = {'w', '\0'};
+  TTF_SizeText(font, str, &charWidth, &charHeight);
 
   screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
 
   SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
   SDL_EnableUNICODE(1);
+
+  screenLines = screen->h / charHeight;
+  screenChars = malloc(sizeof(char*)*screenLines);
+  int i;
+  for (i = 0; i < screenLines; i++) {
+    size_t lineSize = sizeof(char)*((screen->w / charWidth) + 1);
+    screenChars[i] = malloc(lineSize);
+    memset(screenChars[i], '\0', lineSize);
+  }
 #endif
 
   loop();
