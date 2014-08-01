@@ -23,6 +23,8 @@ void initCFunctions(LoadedDef* d);
 #include <SDL/SDL_ttf.h>
 #endif
 
+// x = []
+
 // FIXME les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
@@ -48,16 +50,6 @@ static LoadedDef* loadedDefs = NULL;
 
 static unsigned int cursorX = 0;
 static unsigned int cursorY = 0;
-
-Macro* newMacro() {
-  Macro* a = malloc(sizeof(Macro));
-  if (a == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  a->cmdType = UNKOWN;
-  a->val = NULL;
-  return a;
-}
 
 TypeDef* newTypeDef() {
   TypeDef* a = malloc(sizeof(TypeDef));
@@ -156,13 +148,6 @@ void freeCmd(Cmd* arg) {
   if (arg != NULL) {
     freeCmd(arg->nxt);
     freeCmd(arg->args);
-  }
-}
-
-void freeMacro(Macro* m) {
-  if (m != NULL) {
-    freeVal(m->val);
-    free(m);
   }
 }
 
@@ -540,7 +525,6 @@ LoadedDef* loadedFuncByName(char* name) {
 
 VarType parseVarType(char* str) { 
   VarType v = varType(UNDEFINED, 0, 0);
-  strcpy(v.raw_type, str);
   char* s = trim(str);
   char* b = s;
   char typeName[52] = "";
@@ -914,7 +898,10 @@ Val* cmdToVal(Cmd* cmd) {
     }
   } else {
     Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
-    return initPtr(varType(MACRO, 0, 0), v);
+    Macro* m = newMacro();
+    m->val = v;
+    m->cmdType = cmd->type;
+    return initPtr(varType(MACRO, 0, 0), m);
   }
 }
 
@@ -1718,7 +1705,8 @@ Val* defineType(Val* args) { // Type #:: (type name) (type name)
 Val* assign(Val* args) {
   Var* v = varByName((char*)args->nxt->addr);
   if (v == NULL) {
-    v = addNewVar(NULL, (char*)args->nxt->addr); // FIXME hardcoded type, but maybe var type is useless anyway.
+    Macro* m = (Macro*)args->nxt->addr;
+    v = addNewVar(NULL, (char*)m->val->addr); // FIXME hardcoded type, but maybe var type is useless anyway.
   } else if (v->val != NULL) {
     freeVal(v->val);
   }

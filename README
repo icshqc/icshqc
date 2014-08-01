@@ -1,3 +1,12 @@
+---
+
+Faire une convention des noms qui te donne facilement c'est quoi le type.
+Ex:
+Un operateur commence par un caractere special. :blah est un operateur.
+Une fonction est juste des lettre et underscore et des chiffres pas au debut.
+
+---
+
 Static aka global variable commence p-e par $ comme bash.
 
 ---

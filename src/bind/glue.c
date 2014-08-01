@@ -12,7 +12,6 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   t.isUnsigned = 0;
   t.arraySize = arraySize;
   t.typeStruct = NULL;
-  memset(t.raw_type, '\0', sizeof(t.raw_type));
   return t;
 }
 
@@ -119,8 +118,14 @@ Val* initVal(VarType t, void* addr) {
       char* vx = malloc(sizeof(char));
       *vx = *(char*)addr;
       v->addr = vx;
-    } else if (t.type == TUPLE || t.type == MACRO) {
+    } else if (t.type == TUPLE) {
       v->addr = cpyVals((Val*)addr);
+    } else if (t.type == MACRO) {
+      Macro* old = (Macro*)addr;
+      Macro* m = newMacro();
+      m->val = cpyVal(old->val);
+      m->cmdType = old->cmdType;
+      v->addr = m;
     } else {
       abort(); // FIXME: Better error message.
     }
@@ -143,10 +148,32 @@ Val* cpyVals(Val* v) {
 }
 void freeVal(Val* v) {
   if (v != NULL) {
-    if (v->addr != NULL && v->type.ptr == 0) {
-      free(v->addr);
+    if (v->type.type == MACRO) {
+      freeMacro((Macro*)v->addr);
+    } else {
+      // Wait, that doesnt free tuples correctly maybe...
+      if (v->addr != NULL && v->type.ptr == 0) {
+        free(v->addr);
+      }
+      free(v);
     }
-    free(v);
+  }
+}
+
+Macro* newMacro() {
+  Macro* a = malloc(sizeof(Macro));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  a->cmdType = UNKOWN;
+  a->val = NULL;
+  return a;
+}
+
+void freeMacro(Macro* m) {
+  if (m != NULL) {
+    freeVal(m->val);
+    free(m);
   }
 }
 

@@ -21,7 +21,6 @@ typedef enum PrimVarType PrimVarType;
 
 // Probablement devrait etre une union au lieu d'une struct.
 struct VarType {
-  char raw_type[64]; // to handle types like (fd_set *__restrict)
   struct Type* typeStruct;
   PrimVarType type;
   int ptr; // 1 for pointer, 2 for pointer of a pointer...
