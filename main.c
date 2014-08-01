@@ -994,7 +994,7 @@ void eval(Cmd* cmd) {
 int evalCmd(char* command, char* err) {
   Cmd* cmd = parseCmdR(command).cmd;
   if (cmd == NULL) {
-    strcat(err, "\nNull cmd.");
+    //strcat(err, "\nNull cmd.");
     return 0;
   }
   if (cmd->type == UNKOWN) {
