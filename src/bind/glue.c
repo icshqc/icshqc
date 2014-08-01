@@ -29,6 +29,8 @@ char* catPrimVarType(char* b, PrimVarType t) {
     strcat(b, "undefined");
   } else if (t == STRUCT) {
     strcat(b, "STRUCT");
+  } else if (t == MACRO) {
+    strcat(b, "MACRO");
   } else {
     abort();
   }
@@ -48,6 +50,8 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
     strcat(b, "UNDEFINED");
   } else if (t == STRUCT) {
     strcat(b, "STRUCT");
+  } else if (t == MACRO) {
+    strcat(b, "MACRO");
   } else {
     abort();
   }
@@ -115,7 +119,7 @@ Val* initVal(VarType t, void* addr) {
       char* vx = malloc(sizeof(char));
       *vx = *(char*)addr;
       v->addr = vx;
-    } else if (t.type == TUPLE) {
+    } else if (t.type == TUPLE || t.type == MACRO) {
       v->addr = cpyVals((Val*)addr);
     } else {
       abort(); // FIXME: Better error message.

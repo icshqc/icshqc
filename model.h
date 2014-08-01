@@ -7,7 +7,7 @@
 #include <string.h>
 
 enum CmdType {UNKOWN, VAR, OPERATOR, CFUNCTION, FUNCTION, VALUE, STRING, PAIR, VAR_NAME, NIL,
-              POINTER, ERROR, MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, OLD_TUPLE, OLD_INT,
+              POINTER, ERROR, OLD_MACRO, MACRO_OP, ARRAY, BLOCK_ARG, BLOCK, TYPE, OLD_TUPLE, OLD_INT,
               OLD_FLOAT, OLD_CHAR};
 typedef enum CmdType CmdType;
 
@@ -15,7 +15,7 @@ struct Type;
 
 // When it is a tuple, the addr contains a linked list of Val.
 enum PrimVarType {
-  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR, TUPLE, STRUCT
+  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR, TUPLE, STRUCT, MACRO
 };
 typedef enum PrimVarType PrimVarType;
 
@@ -75,6 +75,12 @@ struct Cmd {
   struct Cmd* args;
 };
 typedef struct Cmd Cmd;
+
+struct Macro {
+  CmdType cmdType;
+  Val* val;
+};
+typedef struct Macro Macro;
 
 struct Func {
   char name[52];

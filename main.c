@@ -23,9 +23,6 @@ void initCFunctions(LoadedDef* d);
 #include <SDL/SDL_ttf.h>
 #endif
 
-// Osti que je suis cave. C sur que 2 + 2 peux pas marcher quand j'ai enlever src/lib.c qui definissait add...
-// TODO Error message qui me dit que je suis con que la fonctino n'existe pas.
-
 // FIXME les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
@@ -51,6 +48,16 @@ static LoadedDef* loadedDefs = NULL;
 
 static unsigned int cursorX = 0;
 static unsigned int cursorY = 0;
+
+Macro* newMacro() {
+  Macro* a = malloc(sizeof(Macro));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  a->cmdType = UNKOWN;
+  a->val = NULL;
+  return a;
+}
 
 TypeDef* newTypeDef() {
   TypeDef* a = malloc(sizeof(TypeDef));
@@ -149,6 +156,13 @@ void freeCmd(Cmd* arg) {
   if (arg != NULL) {
     freeCmd(arg->nxt);
     freeCmd(arg->args);
+  }
+}
+
+void freeMacro(Macro* m) {
+  if (m != NULL) {
+    freeVal(m->val);
+    free(m);
   }
 }
 
@@ -362,8 +376,8 @@ char* catCmdType(char* b, CmdType t) {
     strcat(b, "CFUNCTION");
   } else if (t == VAR) {
     strcat(b, "VAR");
-  } else if (t == MACRO) {
-    strcat(b, "MACRO");
+  } else if (t == OLD_MACRO) {
+    strcat(b, "OLD_MACRO");
   } else if (t == MACRO_OP) {
     strcat(b, "MACRO_OP");
   } else if (t == OPERATOR) {
@@ -446,7 +460,7 @@ char* catVal(char* b, Val* v) {
     strcat(b, "NULL");
   } else if (v->type.type == ERR || (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0))) {
     strcat(b, (char*)v->addr);
-  } else if (v->type.type == TUPLE) {
+  } else if (v->type.type == TUPLE || v->type.type == MACRO) {
     Val* v2;
     strcat(b, "(");
     for (v2 = (Val*)v->addr; v2 != NULL; v2 = v2->nxt) {
@@ -848,7 +862,7 @@ ParsePair parseCmdR(char* command) {
     cmds->args = cmd;
     cmd->nxt = cmds->nxt;
     cmds->nxt = NULL;
-  } else if (cmds->type == FUNCTION || cmds->type == MACRO || cmds->type == CFUNCTION) {
+  } else if (cmds->type == FUNCTION || cmds->type == OLD_MACRO || cmds->type == CFUNCTION) {
     cmds->args = cmds->nxt;
     cmds->nxt = NULL;
   } else {
@@ -899,7 +913,8 @@ Val* cmdToVal(Cmd* cmd) {
       return cmdArgsToVal(cmd);
     }
   } else {
-    return initArray(varType(CHAR, 0, 52), cmd->name);
+    Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
+    return initPtr(varType(MACRO, 0, 0), v);
   }
 }
 
@@ -929,7 +944,7 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
     }
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
     addVal(garbage, ret);
-  } else if (cmd->type == MACRO || cmd->type == MACRO_OP) {
+  } else if (cmd->type == OLD_MACRO || cmd->type == MACRO_OP) {
     nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
     Cmd* arg;
