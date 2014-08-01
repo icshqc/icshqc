@@ -16,6 +16,13 @@ void initCFunctions(LoadedDef* d);
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
+#ifdef CURSES_MODE
+#include <ncurses.h>
+#else
+#include <SDL/SDL.h>
+#include <SDL/SDL_ttf.h>
+#endif
+
 // Osti que je suis cave. C sur que 2 + 2 peux pas marcher quand j'ai enlever src/lib.c qui definissait add...
 // TODO Error message qui me dit que je suis con que la fonctino n'existe pas.
 
@@ -148,32 +155,26 @@ void freeCmd(Cmd* arg) {
 static void finish(int sig);
 
 int getX() {
+#ifdef CURSES_MODE
+  int y, x;
+  getyx(curscr, y, x);
+  return x;
+#else
   return cursorX;
+#endif
 }
 
 int getY() {
-  return cursorY;
-}
-
-void setX(int x) {
 #ifdef CURSES_MODE
-  move(getY(), x);
-#endif
-  cursorX = x;
-}
-
-void setY(int y) {
-#ifdef CURSES_MODE
-  move(y,getX());
-#endif
-  cursorY = y;
-}
-
-#ifdef CURSES_MODE
-#include <ncurses.h>
+  int x,y;
+  getyx(curscr,y,x);
+  return y;
 #else
-#include <SDL/SDL.h>
-#include <SDL/SDL_ttf.h>
+  return cursorY;
+#endif
+}
+
+#ifndef CURSES_MODE
 static SDL_Surface* screen = NULL;
 static TTF_Font* font = NULL;
 
@@ -192,8 +193,8 @@ SDL_Rect cursorRect() {
 }
 
 void move(int y, int x) {
-  setY(y);
-  setX(x);
+  cursorY = y;
+  cursorX = x;
 }
 
 void drawch(char ch) {
@@ -251,14 +252,12 @@ void redraw() {
   int cX = getX();
   int cY = getY();
   for (i = 0; i < screenLines; i++) {
-    setY(i);
     for (s = screenChars[i], j = 0; *s != '\0'; s++, j++) {
-      setX(j);
+      move(i,j);
       drawch(*s);
     }
   }
-  setX(cX);
-  setY(cY);
+  move(cX, cY);
 }
 
 void deleteln() {
@@ -292,19 +291,18 @@ int getLines() {
 
 void printch(char ch) {
   if (ch == '\n' || getX() >= getCols()) {
-    setX(0);
     if (getY() >= getLines() - 1){
       move(0,0);
       deleteln();
       move(getLines()-1,0);
       refresh();
     } else {
-      setY(getY()+1);
+      move(getY()+1, 0);
     }
   }
   if (ch != '\n') {
     addch(ch);
-    setX(getX()+1);
+    move(getY(), getX()+1);
   }
 }
 
@@ -316,7 +314,7 @@ void printstr(const char* str) {
 }
 
 void dellastch(char ch) {
-  if (getX() > 0) setX(getX()-1);
+  if (getX() > 0) move(getY(), getX()-1);
 #ifdef CURSES_MODE
   int y, x;
   getyx(curscr, y, x);
@@ -1959,7 +1957,7 @@ int main()
   char str[] = {'w', '\0'};
   TTF_SizeText(font, str, &charWidth, &charHeight);
 
-  screen = SDL_SetVideoMode(1024, 768, 32, SDL_SWSURFACE);
+  screen = SDL_SetVideoMode(1024, 720, 32, SDL_SWSURFACE);
 
   SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
   SDL_EnableUNICODE(1);
