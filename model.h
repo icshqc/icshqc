@@ -23,7 +23,7 @@ typedef enum PrimVarType PrimVarType;
 struct VarType {
   struct Type* typeStruct;
   PrimVarType type;
-  int ptr; // 1 for pointer, 2 for pointer of a pointer...
+  unsigned int ptr; // 1 for pointer, 2 for pointer of a pointer...
   unsigned char isConst;
   unsigned char isUnsigned; // -1 = signed, 0 not specified, 1 = unsigned
   unsigned int arraySize; // 0 if not array
