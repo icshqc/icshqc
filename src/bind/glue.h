@@ -20,9 +20,6 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t);
 char* catPrimVarType(char* b, PrimVarType t);
 char* catVarType(char* b, VarType t);
 
-Macro* newMacro();
-void freeMacro(Macro* m);
-
 Cmd* newCmd();
 Cmd* initCmd(CmdType type, const char* val, Cmd* args);
 

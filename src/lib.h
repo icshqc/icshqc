@@ -1,6 +1,12 @@
 #ifndef LIB_H
 #define LIB_H
 
+typedef struct IntPair {
+  int x;
+  int y;
+} IntPair;
+
+//IntPair add2(IntPair p1, IntPair p2);
 int add(int x, int y);
 int sus(int x, int y);
 int mult(int x, int y);

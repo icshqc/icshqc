@@ -15,7 +15,7 @@ struct Type;
 
 // When it is a tuple, the addr contains a linked list of Val.
 enum PrimVarType {
-  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR, TUPLE, STRUCT, MACRO
+  INT, CHAR, FLOAT, UNDEFINED, VOID, ERR, TUPLE, STRUCT
 };
 typedef enum PrimVarType PrimVarType;
 
@@ -30,9 +30,22 @@ struct VarType {
 };
 typedef struct VarType VarType;
 
+enum ValOptions {
+  VAL_ERROR = 0x01,
+  VAL_UNKOWN = 0x02,
+  //OPT_C = 0x04,
+  //OPT_D = 0x08,
+  //OPT_E = 0x10,
+  //OPT_F = 0x20,
+
+  // Maybe one field for wheter the val needs to be freed or not.
+  // Like if it belongs to a var then no, else yes.
+};
+
 struct Val {
   VarType type;
   void* addr;
+  enum ValOptions options;
   struct Val* nxt;
 };
 typedef struct Val Val;
@@ -74,12 +87,6 @@ struct Cmd {
   struct Cmd* args;
 };
 typedef struct Cmd Cmd;
-
-struct Macro {
-  CmdType cmdType;
-  Val* val;
-};
-typedef struct Macro Macro;
 
 struct Func {
   char name[52];

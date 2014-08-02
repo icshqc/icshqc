@@ -445,7 +445,7 @@ char* catVal(char* b, Val* v) {
     strcat(b, "NULL");
   } else if (v->type.type == ERR || (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0))) {
     strcat(b, (char*)v->addr);
-  } else if (v->type.type == TUPLE || v->type.type == MACRO) {
+  } else if (v->type.type == TUPLE) {
     Val* v2;
     strcat(b, "(");
     for (v2 = (Val*)v->addr; v2 != NULL; v2 = v2->nxt) {
@@ -898,10 +898,8 @@ Val* cmdToVal(Cmd* cmd) {
     }
   } else {
     Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
-    Macro* m = newMacro();
-    m->val = v;
-    m->cmdType = cmd->type;
-    return initPtr(varType(MACRO, 0, 0), m);
+    v->options = VAL_UNKOWN;
+    return v;
   }
 }
 
@@ -1591,7 +1589,14 @@ Val* parseCIncludeFileCmd(Val* args) {
     }
     replace(bind_filename, '/', '_');
     bindCFunctionsHeader(bind_filename, cfuncs);
-    bindCFunctionsSource(filename, bind_filename, cfuncs);
+    char filepath[128] = "";
+    if (filename[0] == '/') {
+      strcpy(filepath, filename);
+    } else {
+      strcat(filepath, "../../");
+      strcat(filepath, filename);
+    }
+    bindCFunctionsSource(filepath, bind_filename, cfuncs);
   }
   freeCFunc(cfuncs);
   cfuncs = NULL;
@@ -1705,8 +1710,7 @@ Val* defineType(Val* args) { // Type #:: (type name) (type name)
 Val* assign(Val* args) {
   Var* v = varByName((char*)args->nxt->addr);
   if (v == NULL) {
-    Macro* m = (Macro*)args->nxt->addr;
-    v = addNewVar(NULL, (char*)m->val->addr); // FIXME hardcoded type, but maybe var type is useless anyway.
+    v = addNewVar(NULL, (char*)args->nxt->addr); // FIXME hardcoded type, but maybe var type is useless anyway.
   } else if (v->val != NULL) {
     freeVal(v->val);
   }

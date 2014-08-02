@@ -28,8 +28,6 @@ char* catPrimVarType(char* b, PrimVarType t) {
     strcat(b, "undefined");
   } else if (t == STRUCT) {
     strcat(b, "STRUCT");
-  } else if (t == MACRO) {
-    strcat(b, "MACRO");
   } else {
     abort();
   }
@@ -49,8 +47,6 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
     strcat(b, "UNDEFINED");
   } else if (t == STRUCT) {
     strcat(b, "STRUCT");
-  } else if (t == MACRO) {
-    strcat(b, "MACRO");
   } else {
     abort();
   }
@@ -120,12 +116,6 @@ Val* initVal(VarType t, void* addr) {
       v->addr = vx;
     } else if (t.type == TUPLE) {
       v->addr = cpyVals((Val*)addr);
-    } else if (t.type == MACRO) {
-      Macro* old = (Macro*)addr;
-      Macro* m = newMacro();
-      m->val = cpyVal(old->val);
-      m->cmdType = old->cmdType;
-      v->addr = m;
     } else {
       abort(); // FIXME: Better error message.
     }
@@ -148,32 +138,11 @@ Val* cpyVals(Val* v) {
 }
 void freeVal(Val* v) {
   if (v != NULL) {
-    if (v->type.type == MACRO) {
-      freeMacro((Macro*)v->addr);
-    } else {
-      // Wait, that doesnt free tuples correctly maybe...
-      if (v->addr != NULL && v->type.ptr == 0) {
-        free(v->addr);
-      }
-      free(v);
+    // Wait, that doesnt free tuples correctly maybe...
+    if (v->addr != NULL && v->type.ptr == 0) {
+      free(v->addr);
     }
-  }
-}
-
-Macro* newMacro() {
-  Macro* a = malloc(sizeof(Macro));
-  if (a == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  a->cmdType = UNKOWN;
-  a->val = NULL;
-  return a;
-}
-
-void freeMacro(Macro* m) {
-  if (m != NULL) {
-    freeVal(m->val);
-    free(m);
+    free(v);
   }
 }
 
