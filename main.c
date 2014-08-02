@@ -11,8 +11,6 @@
 //#include "bind.h"
 #include "src/bind/bind.h"
 
-void initCFunctions(LoadedDef* d);
-
 //#define CURSES_MODE
 //#define DEBUG_MODE
 
@@ -502,17 +500,6 @@ TypeDef* typeDefByName(char* name) {
   return NULL;
 }
 
-Type* typeByName(char* name) {
-  Type* t = types;
-  while (t != NULL) {
-    if (strcmp(t->name, name) == 0) {
-      return t;
-    }
-    t = t->nxt;
-  }
-  return NULL;
-}
-
 LoadedDef* loadedFuncByName(char* name) {
   LoadedDef* d = loadedDefs;
   while (d != NULL) {
@@ -584,7 +571,7 @@ VarType parseVarType(char* str) {
   } else if (strcmp(typeName, "void") == 0) {
     v.type = VOID;
   } else {
-    v.typeStruct = typeByName(typeName);
+    v.typeStruct = typeByName(types, typeName);
     if (ctype != NULL) {
       v.type = STRUCT;
     } else {
@@ -1342,7 +1329,7 @@ Val* construct(Val* args) {
   char fullname[64] = "";
   strcat(fullname, "struct ");
   strcat(fullname, (char*)args->addr + 1);
-  Type* t = typeByName(fullname);
+  Type* t = typeByName(typse, fullname);
   if (t == NULL) {
     return errorStr("Unkown constructor.");
   }
@@ -1686,7 +1673,7 @@ Val* defineType(Val* args) { // Type #:: (type name) (type name)
       a->nxt = newAttr();
       a = a->nxt;
     }
-    Type* t = typeByName((char*)v2->addr);
+    Type* t = typeByName(types, (char*)v2->addr);
     if (t == NULL) {
       freeType(type);
       return errorStr("Unkown arg type.\n");
@@ -1925,12 +1912,12 @@ int main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
 
-  initLoadedDefs();
-  initCFunctions(loadedDefs);
-
   silent = 1;
   load();
   silent = 0;
+  
+  initLoadedDefs();
+  initCFunctions(loadedDefs, types);
 
 #ifdef CURSES_MODE
   initscr();

@@ -25,6 +25,8 @@ Cmd* initCmd(CmdType type, const char* val, Cmd* args);
 
 Val* errorStr(char* str);
 
+Type* typeByName(Type* types, char* name);
+
 VarType varType(PrimVarType p, int ptr, int arraySize);
 
 Val* cpyVal(Val* v);

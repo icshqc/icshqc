@@ -15,6 +15,11 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   return t;
 }
 
+VarType typeStruct(Type* types, char* name, int ptr, int arraySize) {
+  VarType t = varType(STRUCT, ptr, arraySize);
+  t.typeStruct = typeByName(types, name);
+}
+
 char* catPrimVarType(char* b, PrimVarType t) {
   if (t == INT) {
     strcat(b, "int");
@@ -322,5 +327,16 @@ Func* createFunc(char* name, Attr* attrs) {
   strcpy(f->name, name);
   f->args = attrs;
   return f;
+}
+
+Type* typeByName(Type* types, char* name) {
+  Type* t = types;
+  while (t != NULL) {
+    if (strcmp(t->name, name) == 0) {
+      return t;
+    }
+    t = t->nxt;
+  }
+  return NULL;
 }
 

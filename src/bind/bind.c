@@ -2,7 +2,7 @@
 
 #include "../../src/lib.h"
 
-void initCFunctions(LoadedDef* d) {
+void initCFunctions(LoadedDef* d, Type* t) {
   addLoadedDef(d, createFunc("isInteger", createAttr("str", varType(CHAR, 1, 0), NULL)), CFUNCTION, bind_isInteger);
   addLoadedDef(d, createFunc("isFloat", createAttr("str", varType(CHAR, 1, 0), NULL)), CFUNCTION, bind_isFloat);
   addLoadedDef(d, createFunc("replace", createAttr("str", varType(CHAR, 1, 0), createAttr("a", varType(CHAR, 0, 0), createAttr("b", varType(CHAR, 0, 0), NULL)))), CFUNCTION, bind_replace);
