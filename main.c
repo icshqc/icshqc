@@ -21,7 +21,6 @@
 #include <SDL/SDL_ttf.h>
 #endif
 
-// check signature from LoadedDef, for CFUNCION only for now.
 // x = []
 
 // FIXME les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
@@ -1131,7 +1130,7 @@ void bindCFunctionsHeader(char* fname, CFunc* fs) {
   fprintf(s, "#include \"../../model.h\"\n");
   fprintf(s, "#include \"glue.h\"\n\n");
 
-  fprintf(s, "void initCFunctions(LoadedDef* d);\n\n");
+  fprintf(s, "void initCFunctions(LoadedDef* d, Type* t);\n\n");
 
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Val* bind_%s(Val* args);\n", f->name);
@@ -1185,7 +1184,7 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
 
   fprintf(s, "#include \"%s\"\n\n", originalName);
 
-  fprintf(s, "void initCFunctions(LoadedDef* d) {\n");
+  fprintf(s, "void initCFunctions(LoadedDef* d, Type* t) {\n");
   for (f = fs; f != NULL; f = f->nxt) {
     char attrs[248] = "";
     catCreateFuncAttr(attrs, f->args);
@@ -1329,7 +1328,7 @@ Val* construct(Val* args) {
   char fullname[64] = "";
   strcat(fullname, "struct ");
   strcat(fullname, (char*)args->addr + 1);
-  Type* t = typeByName(typse, fullname);
+  Type* t = typeByName(types, fullname);
   if (t == NULL) {
     return errorStr("Unkown constructor.");
   }

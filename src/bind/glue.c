@@ -18,6 +18,7 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
 VarType typeStruct(Type* types, char* name, int ptr, int arraySize) {
   VarType t = varType(STRUCT, ptr, arraySize);
   t.typeStruct = typeByName(types, name);
+  return t;
 }
 
 char* catPrimVarType(char* b, PrimVarType t) {

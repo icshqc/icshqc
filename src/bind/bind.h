@@ -9,7 +9,7 @@
 #include "../../model.h"
 #include "glue.h"
 
-void initCFunctions(LoadedDef* d, Type* types);
+void initCFunctions(LoadedDef* d, Type* t);
 
 Val* bind_isInteger(Val* args);
 Val* bind_isFloat(Val* args);
