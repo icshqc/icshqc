@@ -5,6 +5,8 @@ Ex:
 Un operateur commence par un caractere special. :blah est un operateur.
 Une fonction est juste des lettre et underscore et des chiffres pas au debut.
 
+Peut-etre que tous les macros ont :: dans leur noms.
+
 ---
 
 Static aka global variable commence p-e par $ comme bash.

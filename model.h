@@ -15,7 +15,7 @@ struct Type;
 
 // When it is a tuple, the addr contains a linked list of Val.
 enum PrimVarType {
-  INT, CHAR, FLOAT, UNDEFINED, VOID, TUPLE, STRUCT
+  INT, CHAR, FLOAT, VOID, TUPLE, STRUCT // Tuple and struct is the same thing right???
 };
 typedef enum PrimVarType PrimVarType;
 

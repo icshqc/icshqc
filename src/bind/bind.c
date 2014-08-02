@@ -16,6 +16,7 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, createFunc("mult", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_mult);
   addLoadedDef(d, createFunc("sus", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_sus);
   addLoadedDef(d, createFunc("add", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_add);
+  addLoadedDef(d, createFunc("startsWith", createAttr("mustEqual", varType(CHAR, 1, 0), createAttr("str1", varType(CHAR, 1, 0), NULL))), CFUNCTION, bind_startsWith);
 }
 
 int isInteger(char* str);
@@ -31,6 +32,7 @@ int divide(int x, int y);
 int mult(int x, int y);
 int sus(int x, int y);
 int add(int x, int y);
+int startsWith(char* mustEqual, char* str1);
 
 Val* bind_isInteger(Val* args) {
   Val* m; VarType t[] = {varType(CHAR, 1, 0)};
@@ -141,6 +143,15 @@ Val* bind_add(Val* args) {
   int x_ = GET_VAL(int, args);
   int y_ = GET_VAL(int, args);
   int r = add(x_, y_);
+  return initVal(varType(INT, 0, 0), &r);
+}
+
+Val* bind_startsWith(Val* args) {
+  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 1, 0)};
+  if ((m = checkSignature(args, t, 2)) != NULL) return m;
+  char* mustEqual_ = GET_PTR(char*, args);
+  char* str1_ = GET_PTR(char*, args);
+  int r = startsWith(mustEqual_, str1_);
   return initVal(varType(INT, 0, 0), &r);
 }
 

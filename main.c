@@ -57,7 +57,7 @@ TypeDef* newTypeDef() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(a->name, '\0', sizeof(a->name));
-  a->type = varType(UNDEFINED, 0, 0);
+  a->type = varType(0, 0, 0);
   a->nxt = NULL;
   return a;
 }
@@ -79,7 +79,7 @@ CFunc* newCFunc() {
     abort(); // FIXME: "Can't allocate memory"
   }
   memset(arg0->name, '\0', sizeof(arg0->name));
-  arg0->ret.type = UNDEFINED;
+  arg0->ret.type = 0;
   arg0->args = NULL;
   arg0->nxt = NULL;
   return arg0;
@@ -445,7 +445,7 @@ char* catVal(char* b, Val* v) {
     strcat(b, "NULL");
   } else if (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0)) {
     strcat(b, (char*)v->addr);
-  } else if (v->type.type == TUPLE) {
+  } else if (v->type.type == TUPLE || v->type.type == STRUCT) {
     Val* v2;
     strcat(b, "(");
     for (v2 = (Val*)v->addr; v2 != NULL; v2 = v2->nxt) {
@@ -524,7 +524,7 @@ LoadedDef* loadedFuncByName(char* name) {
 }
 
 VarType parseVarType(char* str) { 
-  VarType v = varType(UNDEFINED, 0, 0);
+  VarType v = varType(0, 0, 0);
   char* s = trim(str);
   char* b = s;
   char typeName[52] = "";
@@ -594,7 +594,7 @@ VarType parseVarType(char* str) {
         v.typeStruct = def->type.typeStruct;
         // FIXME: What to do about the other fields???
       } else {
-        v.type = UNDEFINED;
+        abort();
       }
     }
   }
@@ -1267,7 +1267,7 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
   fclose(s);
 }
 
-Attr* parseAttrs(char* l, char seperator, char delimiter_opposite, char delimiter) {
+Attr* parseAttrs(char* l, char seperator, char delimiter_opposite, char delimiter, unsigned int includeLast) {
   char* s = l;
   char* lastAttr = s;
   Attr* attrs = NULL;
@@ -1284,6 +1284,7 @@ Attr* parseAttrs(char* l, char seperator, char delimiter_opposite, char delimite
     }
 
     if (*s == seperator || (*s == delimiter && delimiter_count == 0)) {
+      if (*s == delimiter && includeLast == 0) return attrs;
       if (a == NULL) {
         attrs = newAttr();
         a = attrs;
@@ -1339,29 +1340,32 @@ CFunc* parseCFunction(char* s0) {
   f->ret = parseVarType(ret);
   strcpy(f->name, space + 1);
 
-  f->args = parseAttrs(argStart + 1, ',', '(', ')');
+  f->args = parseAttrs(argStart + 1, ',', '(', ')', 1);
 
   return f;
 }
 
 Val* construct(Val* args) {
-  Type* t = typeByName((char*)args->addr + 1);
+  char fullname[64] = "";
+  strcat(fullname, "struct ");
+  strcat(fullname, (char*)args->addr + 1);
+  Type* t = typeByName(fullname);
   if (t == NULL) {
     return errorStr("Unkown constructor.");
   }
-  /*Cmd* ret = initCmd(VALUE, NULL, NULL);
-  ret->valueType = t;
-  if (t->attrs != NULL) {
-    addCmd(&ret->args, cpyCmd(cmd->args));
-  }
-  return cmdToVal(ret); FIXME*/
-  return NULL;
+  Val* err = checkSignatureAttrs(args->nxt, t->attrs);
+  if (err != NULL) return err;
+  return initVal(varType(STRUCT, 0, 0), args->nxt);
 }
 
 void typeConstructor(Type* type) {
   if (type->attrs != NULL) {
     char constructorName[52] = "#";
-    strcat(constructorName, type->name);
+    if (startsWith("struct ", type->name)) {
+      strcat(constructorName, type->name+7);
+    } else {
+      strcat(constructorName, type->name);
+    }
     addLoadedDef(loadedDefs, createFunc(constructorName, NULL), FUNCTION, construct); // FIXME: Construct attrs???
   }
 }
@@ -1420,10 +1424,6 @@ void appendChars(FILE* s, char* str, char* stopAt) {
   }
 }
 
-int startsWith(char* mustEqual, char* str1) {
-  return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
-}
-
 Type* parseCStruct(char* l) {
   // Because the arithmetic of array size can be complicated
   if (strchr(l, '[') != NULL) return NULL; 
@@ -1431,15 +1431,13 @@ Type* parseCStruct(char* l) {
   char* defStart = strchr(l, '{');
   if (defStart) {
     strncpy(t->name, l, defStart-l);
-    t->attrs = parseAttrs(defStart + 1, ';', '{', '}');
+    t->attrs = parseAttrs(defStart + 1, ';', '{', '}', 0);
   } else {
     strcpy(t->name, l);
   }
   trimEnd(t->name);
 
-  Type* oldFirst = types;
-  types = t;
-  t->nxt = oldFirst;
+  addType(t);
   return t;
 }
 
@@ -1737,6 +1735,13 @@ void listTypes(Cmd* cmd) {
     if (t->nxt != NULL) {
       strcat(m, "\n");
     }
+  }
+  TypeDef* d;
+  for (d = typedefs; d != NULL; d = d->nxt) {
+    strcat(m, "\n");
+    strcat(m, d->name);
+    strcat(m, " ::== ");
+    catVarType(m, d->type);
   }
   output(m);
 }

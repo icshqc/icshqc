@@ -24,8 +24,6 @@ char* catPrimVarType(char* b, PrimVarType t) {
     strcat(b, "char");
   } else if (t == VOID) {
     strcat(b, "void");
-  } else if (t == UNDEFINED) {
-    strcat(b, "undefined");
   } else if (t == STRUCT) {
     strcat(b, "STRUCT");
   } else {
@@ -43,8 +41,6 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t) {
     strcat(b, "CHAR");
   } else if (t == VOID) {
     strcat(b, "VOID");
-  } else if (t == UNDEFINED) {
-    strcat(b, "UNDEFINED");
   } else if (t == STRUCT) {
     strcat(b, "STRUCT");
   } else {
@@ -115,7 +111,7 @@ Val* initVal(VarType t, void* addr) {
       char* vx = malloc(sizeof(char));
       *vx = *(char*)addr;
       v->addr = vx;
-    } else if (t.type == TUPLE) {
+    } else if (t.type == TUPLE || t.type == STRUCT) {
       v->addr = cpyVals((Val*)addr);
     } else {
       abort(); // FIXME: Better error message.
@@ -172,6 +168,26 @@ int canCast(VarType casted, VarType castee) {
   // FIXME: This does not work
   if (casted.type == castee.type) return 1;
   return sizeofVarType(casted) <= sizeofVarType(castee) ? 1 : 0;
+}
+
+Val* checkSignatureAttrs(Val* args, Attr* attrs) {
+  Attr* a;
+  Val* v;
+  int i;
+  for (i = 0, v = args, a = attrs; a != NULL; i++, v = v->nxt, a = a->nxt) {
+    if (v == NULL) {
+      return errorStr("Missing arg.");
+    } else if (v == NULL || (canCast(v->type, a->type) == 0  || nPtr(v->type) != nPtr(a->type))) {
+      char m[52] = "";
+      sprintf(m, "Invalid arg %d: Expected type ", i);
+      catVarType(m, a->type);
+      return errorStr(m);
+    }
+  }
+  if (v != NULL) {
+    return errorStr("Supplied too many args.");
+  }
+  return NULL;
 }
 
 Val* checkSignature(Val* args, VarType* types, int nArgs) {
@@ -274,7 +290,7 @@ Attr* newAttr() {
   if (a == NULL) {
     abort(); // FIXME: "Can't allocate memory"
   }
-  a->type.type = UNDEFINED;
+  a->type.type = 0;
   memset(a->name, '\0', sizeof(a->name));
   a->nxt = NULL;
   return a;

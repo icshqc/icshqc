@@ -10,6 +10,10 @@
   return p;
 }*/
 
+int startsWith(char* mustEqual, char* str1) {
+  return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;
+}
+
 int add(int x, int y) {
   return x + y;
 }
