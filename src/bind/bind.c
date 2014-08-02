@@ -19,40 +19,19 @@ void initCFunctions(LoadedDef* d) {
   addLoadedDef(d, createFunc("startsWith", createAttr("mustEqual", varType(CHAR, 1, 0), createAttr("str1", varType(CHAR, 1, 0), NULL))), CFUNCTION, bind_startsWith);
 }
 
-int isInteger(char* str);
-int isFloat(char* str);
-char* replace(char* str, char a, char b);
-char* trim(char* s);
-char* trimEnd(char* s);
-char* trimCEnd(char* s);
-void strinsertch(char* cursor, char c);
-char* strdelch(char* str);
-char* straddch(char* str, char c);
-int divide(int x, int y);
-int mult(int x, int y);
-int sus(int x, int y);
-int add(int x, int y);
-int startsWith(char* mustEqual, char* str1);
-
 Val* bind_isInteger(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   int r = isInteger(str_);
   return initVal(varType(INT, 0, 0), &r);
 }
 
 Val* bind_isFloat(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   int r = isFloat(str_);
   return initVal(varType(INT, 0, 0), &r);
 }
 
 Val* bind_replace(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0), varType(CHAR, 0, 0)};
-  if ((m = checkSignature(args, t, 3)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   char a_ = GET_VAL(char, args);
   char b_ = GET_VAL(char, args);
@@ -61,32 +40,24 @@ Val* bind_replace(Val* args) {
 }
 
 Val* bind_trim(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trim(s_);
   return initPtr(varType(CHAR, 1, 0), r);
 }
 
 Val* bind_trimEnd(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trimEnd(s_);
   return initPtr(varType(CHAR, 1, 0), r);
 }
 
 Val* bind_trimCEnd(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* s_ = GET_PTR(char*, args);
   char* r = trimCEnd(s_);
   return initPtr(varType(CHAR, 1, 0), r);
 }
 
 Val* bind_strinsertch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   char* cursor_ = GET_PTR(char*, args);
   char c_ = GET_VAL(char, args);
   strinsertch(cursor_, c_);
@@ -94,16 +65,12 @@ Val* bind_strinsertch(Val* args) {
 }
 
 Val* bind_strdelch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 1)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   char* r = strdelch(str_);
   return initPtr(varType(CHAR, 1, 0), r);
 }
 
 Val* bind_straddch(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 0, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   char* str_ = GET_PTR(char*, args);
   char c_ = GET_VAL(char, args);
   char* r = straddch(str_, c_);
@@ -111,8 +78,6 @@ Val* bind_straddch(Val* args) {
 }
 
 Val* bind_divide(Val* args) {
-  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   int x_ = GET_VAL(int, args);
   int y_ = GET_VAL(int, args);
   int r = divide(x_, y_);
@@ -120,8 +85,6 @@ Val* bind_divide(Val* args) {
 }
 
 Val* bind_mult(Val* args) {
-  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   int x_ = GET_VAL(int, args);
   int y_ = GET_VAL(int, args);
   int r = mult(x_, y_);
@@ -129,8 +92,6 @@ Val* bind_mult(Val* args) {
 }
 
 Val* bind_sus(Val* args) {
-  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   int x_ = GET_VAL(int, args);
   int y_ = GET_VAL(int, args);
   int r = sus(x_, y_);
@@ -138,8 +99,6 @@ Val* bind_sus(Val* args) {
 }
 
 Val* bind_add(Val* args) {
-  Val* m; VarType t[] = {varType(INT, 0, 0), varType(INT, 0, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   int x_ = GET_VAL(int, args);
   int y_ = GET_VAL(int, args);
   int r = add(x_, y_);
@@ -147,8 +106,6 @@ Val* bind_add(Val* args) {
 }
 
 Val* bind_startsWith(Val* args) {
-  Val* m; VarType t[] = {varType(CHAR, 1, 0), varType(CHAR, 1, 0)};
-  if ((m = checkSignature(args, t, 2)) != NULL) return m;
   char* mustEqual_ = GET_PTR(char*, args);
   char* str1_ = GET_PTR(char*, args);
   int r = startsWith(mustEqual_, str1_);

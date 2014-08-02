@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*IntPair add2(IntPair p1, IntPair p2) {
+IntPair add2(IntPair p1, IntPair p2) {
   IntPair p;
   p.x = p1.x + p2.x;
   p.y = p1.y + p2.y;
   return p;
-}*/
+}
 
 int startsWith(char* mustEqual, char* str1) {
   return strncmp(mustEqual, str1, strlen(mustEqual)) == 0;

@@ -23,6 +23,7 @@ void initCFunctions(LoadedDef* d);
 #include <SDL/SDL_ttf.h>
 #endif
 
+// check signature from LoadedDef, for CFUNCION only for now.
 // x = []
 
 // FIXME les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
@@ -927,7 +928,11 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
         n = n->nxt;
       }
     }
-    ret = loadedFuncByName(cmd->name)->ptr(nVal);
+    LoadedDef* func = loadedFuncByName(cmd->name);
+    if (cmd->type == CFUNCTION) {
+      ret = checkSignatureAttrs(nVal->nxt, func->func->args);
+    }
+    if (ret == NULL) ret = func->ptr(nVal);
     addVal(garbage, ret);
   } else if (cmd->type == OLD_MACRO || cmd->type == MACRO_OP) {
     nVal = initArray(varType(CHAR, 0, 52), cmd->name);
@@ -1203,7 +1208,7 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
 
   // In case the header was not defined, that it was just
   // a source file, define the prototype of the function.
-  for (f = fs; f != NULL; f = f->nxt) {
+  /*for (f = fs; f != NULL; f = f->nxt) {
     char fRetType[52] = "";
     catVarType(fRetType, f->ret);
     fprintf(s, "%s %s(", fRetType, f->name);
@@ -1217,23 +1222,11 @@ void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
     }
     fprintf(s, ");\n");
   }
-  fprintf(s, "\n");
+  fprintf(s, "\n");*/
 
   for (f = fs; f != NULL; f = f->nxt) {
     fprintf(s, "Val* bind_%s(Val* args) {\n", f->name);
-    fprintf(s, "  Val* m; VarType t[] = {");
-    int nAttrs = 0;
-    for (nAttrs = 0, a = f->args; a != NULL; a = a->nxt, nAttrs++) {
-      char vType[52] = "";
-      catPrimVarTypeEnum(vType, a->type.type);
-      fprintf(s, "varType(%s, %d, %d)", vType, a->type.ptr, a->type.arraySize);
-      if (a->nxt != NULL) {
-        fprintf(s, ", ");
-      }
-    }
     int i;
-    fprintf(s, "};\n");
-    fprintf(s, "  if ((m = checkSignature(args, t, %d)) != NULL) return m;\n", nAttrs);
     for (i = 0, a = f->args; a != NULL; a = a->nxt, i++) {
       char argTypeG[124] = "";
       catArgTypeGetter(argTypeG, a, i);
