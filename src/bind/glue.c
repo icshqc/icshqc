@@ -74,8 +74,6 @@ size_t sizeofVarType(VarType t) {
     s = sizeof(int);
   } else if (t.type == CHAR) {
     s = sizeof(char);
-  } else if (t.type == ERR) {
-    s = sizeof(char);
   } else if (t.type == FLOAT) {
     s = sizeof(float);
   }
@@ -84,6 +82,7 @@ size_t sizeofVarType(VarType t) {
 
 Val* initArray(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
+  v->options = 0;
   v->type = t;
   v->nxt = NULL;
   size_t s = sizeofVarType(t);
@@ -94,6 +93,7 @@ Val* initArray(VarType t, void* addr) {
 
 Val* initPtr(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
+  v->options = 0;
   v->type = t;
   v->nxt = NULL;
   v->addr = addr;
@@ -101,9 +101,10 @@ Val* initPtr(VarType t, void* addr) {
 }
 Val* initVal(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
+  v->options = 0;
   v->type = t;
   v->nxt = NULL;
-  if (t.ptr == 1 || t.type == ERR) {
+  if (t.ptr == 1) {
     abort(); // Should be using initPtr
   } else {
     if (t.type == INT) {
@@ -194,7 +195,9 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
 }
 
 Val* errorStr(char* str) {
-  return initArray(varType(ERR, 0, 124), str);
+  Val* v = initArray(varType(CHAR, 0, 124), str);
+  v->options = VAL_ERROR;
+  return v;
 }
 
 int validArg(Cmd* cmd, CmdType type) {

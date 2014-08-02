@@ -443,7 +443,7 @@ char* catCmd(char* b, Cmd* cmd) {
 char* catVal(char* b, Val* v) {
   if (v == NULL) {
     strcat(b, "NULL");
-  } else if (v->type.type == ERR || (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0))) {
+  } else if (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0)) {
     strcat(b, (char*)v->addr);
   } else if (v->type.type == TUPLE) {
     Val* v2;
@@ -960,10 +960,10 @@ void eval(Cmd* cmd) {
     garbage[i] = NULL;
   }
   Val* v = cmdVal(cmd, garbage);
-  if (v == NULL || v->type.type != ERR) {
-    output("\n=> ");
-  } else {
+  if (v != NULL && v->options & VAL_ERROR) {
     output("\nError: ");
+  } else {
+    output("\n=> ");
   }
   char out[52] = "";
   catVal(out, v);
