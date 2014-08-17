@@ -1121,7 +1121,7 @@ void save() { // .qc extension. Quick C, Quebec!!!
   fclose(s);
 }
 
-void bindCFunctionsHeader(char* fname, CFunc* fs) {
+void bindHeader(char* fname, CFunc* fs) {
   CFunc* f;
 
   char filename[52] = "";
@@ -1179,7 +1179,7 @@ void catCreateFuncAttr(char* b, Attr* a) {
   }
 }
 
-void bindCFunctionsSource(char* originalName, char* fname, CFunc* fs) {
+void bindSource(char* originalName, char* fname, CFunc* fs) {
   CFunc* f;
   Attr* a;
 
@@ -1561,7 +1561,10 @@ Val* parseCIncludeFile(char* filename) {
 
   return parseCFile(tmpFilename);
 }
-Val* parseCIncludeFileCmd(Val* args) {
+Val* includeFileCmd(Val* args) {
+  return parseCIncludeFile((char*)args->nxt->addr);
+}
+Val* bindFileCmd(Val* args) {
   char* filename = (char*)args->nxt->addr;
   Val* v = parseCIncludeFile(filename);
   if (cfuncs != NULL) {
@@ -1572,7 +1575,7 @@ Val* parseCIncludeFileCmd(Val* args) {
       *ext = '\0';
     }
     replace(bind_filename, '/', '_');
-    bindCFunctionsHeader(bind_filename, cfuncs);
+    bindHeader(bind_filename, cfuncs);
     char filepath[128] = "";
     if (filename[0] == '/') {
       strcpy(filepath, filename);
@@ -1580,7 +1583,7 @@ Val* parseCIncludeFileCmd(Val* args) {
       strcat(filepath, "../../");
       strcat(filepath, filename);
     }
-    bindCFunctionsSource(filepath, bind_filename, cfuncs);
+    bindSource(filepath, bind_filename, cfuncs);
   }
   freeCFunc(cfuncs);
   cfuncs = NULL;
@@ -1853,7 +1856,10 @@ void initLoadedDefs() {
                                              createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, defineType); 
 
   addLoadedDef(loadedDefs, createFunc("include", createAttr("includeFile", varType(CHAR, 0, 52), NULL)),
-                                      FUNCTION, parseCIncludeFileCmd);
+                                      FUNCTION, includeFileCmd);
+  
+  addLoadedDef(loadedDefs, createFunc("bind", createAttr("includeFile", varType(CHAR, 0, 52), NULL)),
+                                      FUNCTION, bindFileCmd);
   
   addLoadedDef(loadedDefs, createFunc("desc", createAttr("fname", varType(CHAR, 0, 52), NULL)), FUNCTION, descFunc);
 }
