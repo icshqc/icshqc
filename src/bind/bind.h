@@ -25,4 +25,5 @@ Val* bind_mult(Val* args);
 Val* bind_sus(Val* args);
 Val* bind_add(Val* args);
 Val* bind_startsWith(Val* args);
+Val* bind_add2(Val* args);
 #endif // BIND_H

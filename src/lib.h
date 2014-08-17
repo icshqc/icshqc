@@ -6,7 +6,7 @@ typedef struct IntPair {
   int y;
 } IntPair;
 
-//IntPair add2(IntPair p1, IntPair p2);
+IntPair add2(IntPair p1, IntPair p2);
 int startsWith(char* mustEqual, char* str1);
 int add(int x, int y);
 int sus(int x, int y);

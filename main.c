@@ -197,9 +197,16 @@ void move(int y, int x) {
 void drawch(char ch) {
   SDL_Surface* texte;
   SDL_Color blanc = {255, 255, 255};
-  char str[] = {ch, '\0'};
-  texte = TTF_RenderText_Blended(font, str, blanc);
   SDL_Rect position = cursorRect();
+  char str[10] = "";
+  if (ch == '\t') {
+    // TODO: Add the correct amount of spaces based on cursor position so it's square.
+    str[0] = ' ';
+    str[1] = ' ';
+  } else {
+    str[0] = ch;
+  }
+  texte = TTF_RenderText_Blended(font, str, blanc);
   SDL_BlitSurface(texte, NULL, screen, &position);
 }
 
@@ -1790,7 +1797,7 @@ void loop()
                    ":l\t           Lists all the loaded functions\n"
                    ":v\t           Lists all the variables\n"
                    ":t\t           Lists all the types\n"
-                   ":d\t           Shows the prototype of a function\n";
+                   ":d\t           Shows the prototype of a function";
         output(b);
       } else if (strcmp(name, "l") == 0 ||
                  strcmp(name, "list") == 0) {

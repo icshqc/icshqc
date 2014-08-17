@@ -17,6 +17,7 @@ void initCFunctions(LoadedDef* d, Type* t) {
   addLoadedDef(d, createFunc("sus", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_sus);
   addLoadedDef(d, createFunc("add", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_add);
   addLoadedDef(d, createFunc("startsWith", createAttr("mustEqual", varType(CHAR, 1, 0), createAttr("str1", varType(CHAR, 1, 0), NULL))), CFUNCTION, bind_startsWith);
+//  addLoadedDef(d, createFunc("add2", createAttr("p1", typeStruct(t, "struct IntPair", 0, 0), createAttr("p2", typeStruct(t, "struct IntPair", 0, 0), NULL))), CFUNCTION, bind_add2);
 }
 
 Val* bind_isInteger(Val* args) {
@@ -111,4 +112,11 @@ Val* bind_startsWith(Val* args) {
   int r = startsWith(mustEqual_, str1_);
   return initVal(varType(INT, 0, 0), &r);
 }
+
+/*Val* bind_add2(Val* args) {
+  STRUCT p1_ = GET_VAL(STRUCT, args);
+  STRUCT p2_ = GET_VAL(STRUCT, args);
+  STRUCT r = add2(p1_, p2_);
+  return initVal(varType(STRUCT, 0, 0), &r);
+}*/
 

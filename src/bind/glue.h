@@ -28,6 +28,7 @@ Val* errorStr(char* str);
 Type* typeByName(Type* types, char* name);
 
 VarType varType(PrimVarType p, int ptr, int arraySize);
+VarType typeStruct(Type* types, char* name, int ptr, int arraySize);
 
 Val* cpyVal(Val* v);
 Val* cpyVals(Val* v);
