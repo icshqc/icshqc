@@ -975,6 +975,7 @@ void eval(Cmd* cmd) {
 
 
 int evalCmd(char* command, char* err) {
+  if (strlen(command) <= 0) return 2;
   Cmd* cmd = parseCmdR(command).cmd;
   if (cmd == NULL) {
     //strcat(err, "\nNull cmd.");
@@ -1601,7 +1602,7 @@ void load() {
         if (evalCmd(input, err)) {
           input[0] = '\0';
         } else {
-          // FIXME: Throw error.
+          abort();
         }
       } else {
         straddch(input, c);
@@ -1923,13 +1924,13 @@ int main(int argc, char* argv[])
 int main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
+  
+  initLoadedDefs();
+  initCFunctions(loadedDefs, types);
 
   silent = 1;
   load();
   silent = 0;
-  
-  initLoadedDefs();
-  initCFunctions(loadedDefs, types);
 
 #ifdef CURSES_MODE
   initscr();
