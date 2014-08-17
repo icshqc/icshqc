@@ -1345,6 +1345,15 @@ Val* construct(Val* args) {
   return initVal(varType(STRUCT, 0, 0), args->nxt);
 }
 
+Attr* copyAttrs(Attr* attrs) {
+  if (attrs == NULL) return NULL;
+  Attr* a = newAttr();
+  strcpy(a->name, attrs->name);
+  a->type = attrs->type;
+  a->nxt = copyAttrs(attrs->nxt);
+  return a;
+}
+
 void typeConstructor(Type* type) {
   if (type->attrs != NULL) {
     char constructorName[52] = "#";
@@ -1353,7 +1362,8 @@ void typeConstructor(Type* type) {
     } else {
       strcat(constructorName, type->name);
     }
-    addLoadedDef(loadedDefs, createFunc(constructorName, NULL), FUNCTION, construct); // FIXME: Construct attrs???
+    Attr* attrs = copyAttrs(type->attrs);
+    addLoadedDef(loadedDefs, createFunc(constructorName, attrs), FUNCTION, construct);
   }
 }
 
@@ -1748,8 +1758,7 @@ Val* listVars() {
   return initPtr(varType(CHAR, 0, 2056), m);
 }
 
-Val* descFunc(Val* args) {
-  LoadedDef* d = loadedFuncByName((char*)args->nxt->addr);
+Val* descFunc(LoadedDef* d) {
   if (d == NULL) return errorStr("It is not a valid func.");
   char* m = malloc(sizeof(char) * 512);
   //catVarType(d->func->ret);
@@ -1790,13 +1799,13 @@ void loop()
     getInput(input);
     if (input[0] == ':') {
       char* name = input + 1;
+      output("\n");
       if (strcmp(name, "exit") == 0 ||
                  strcmp(name, "quit") == 0 ||
                  strcmp(name, "q") == 0) {
         return;
       } else if (strcmp(name, "h") == 0 ||
                  strcmp(name, "help") == 0) {
-        output("\n");
         char b[] = ":h\t           This help message\n"
                    ":l\t           Lists all the loaded functions\n"
                    ":v\t           Lists all the variables\n"
@@ -1805,25 +1814,34 @@ void loop()
         output(b);
       } else if (strcmp(name, "l") == 0 ||
                  strcmp(name, "list") == 0) {
-        output("\n");
         Val* v = listDefs();
         output((char*)v->addr);
         free(v);
       } else if (strcmp(name, "v") == 0 ||
                  strcmp(name, "vars") == 0) {
-        output("\n");
         Val* v = listVars();
         output((char*)v->addr);
         free(v);
       } else if (strcmp(name, "t") == 0 ||
                  strcmp(name, "types") == 0) {
-        output("\n");
         listTypes(NULL);
+      } else if (startsWith("d", name)) {
+        if (strlen(name) <= 2) {
+          output("You need to specify a function name.");
+        } else {
+          LoadedDef* d = loadedFuncByName(name + 2);
+          if (d == NULL) {
+            output("Unkown function.");
+          } else {
+            Val* v = descFunc(d);
+            output((char*)v->addr);
+          }
+        }
       } else if (strcmp(name, "s") == 0 ||
                  strcmp(name, "save") == 0) {
         save();
       } else {
-        char err[128] = "\n";
+        char err[128] = "";
         strcat(err, input);
         strcat(err, ": unkown command");
         output(err);
@@ -1861,8 +1879,6 @@ void initLoadedDefs() {
   
   addLoadedDef(loadedDefs, createFunc("bind", createAttr("includeFile", varType(CHAR, 0, 52), NULL)),
                                       FUNCTION, bindFileCmd);
-  
-  addLoadedDef(loadedDefs, createFunc("desc", createAttr("fname", varType(CHAR, 0, 52), NULL)), FUNCTION, descFunc);
 }
 
 static void finish(int sig)
