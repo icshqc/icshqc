@@ -23,8 +23,6 @@
 
 // x = []
 
-// FIXME les macros sont brokens (x = (2+2)) => tu veux "x", mais pas "2+2" -> 4 au lieu tu veux.
-
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 
 // TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
@@ -787,8 +785,21 @@ ParsePair parseArray(char* command) {
   }
   return parsePair(ary, s+1);
 }
+
+void removeComments(char* s) {
+  char* ptr = s;
+  for (; *s != '\0'; s++, ptr++) {
+    if (*s == '/' && *(s+1) == '/') {
+      *ptr = '\0';
+      return;
+    }
+    *ptr = *s;
+  }
+}
+
 ParsePair parseCmdR(char* command) {
   Cmd* cmds = NULL;
+  removeComments(command);
   char* s = trim(command);
   while (*s != '\0') {
     char* i = s;

@@ -4,7 +4,7 @@ double #::
 char #::
 Vector3 #:: (int x) (int y) (int z)
 
-doubler :: {|int x| add x x }
+doubler = {|int x| add x x }
 
 + ::: {|int x, int y| add x y }
 - ::: {|int x, int y| sus x y }
@@ -13,6 +13,7 @@ doubler :: {|int x| add x x }
 
 include "src/lib.h"
 
-foo :: {|int x, int y| (x + y) * 4}
+foo = {|int x, int y| (x + y) * 4}
 
 add5 = {|int x| x + 5}
+add10 = {|int x| (add5 (add5 x))}
