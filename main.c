@@ -1754,19 +1754,6 @@ Var* addNewVar(Type* type, char* name) {
   return var;
 }
 
-void defineFunc(Val* args, CmdType type) {
-  Func* f = initFunc(args, type);
-  addLoadedDef(loadedDefs, f, type, runFunc);
-}
-
-Val* define(Val* args) {
-  defineFunc(args, FUNCTION);
-  return NULL;
-}
-Val* defineOp(Val* args) {
-  defineFunc(args, OPERATOR);
-  return NULL;
-}
 Val* defineType(Val* args) { // Type #:: (type name) (type name)
   Type* type = newType();
   strcpy(type->name, (char*)args->nxt->addr);
@@ -1952,12 +1939,6 @@ void initLoadedDefs() {
   // Assigns a value to an existing variable.
   loadedDefs = createLoadedDef(createFunc("=", createAttr("name", varType(CHAR, 0, 52),
                                                createAttr("val", varType(CHAR, 0, 52), NULL))), OPERATOR, assign); 
-  // Assigns a function to a new variable.
-  addLoadedDef(loadedDefs, createFunc("::", createAttr("name", varType(CHAR, 0, 52),
-                                            createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, define); 
-
-  addLoadedDef(loadedDefs, createFunc(":::", createAttr("name", varType(CHAR, 0, 52),
-                                             createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, defineOp); 
 
   addLoadedDef(loadedDefs, createFunc("#::", createAttr("name", varType(CHAR, 0, 52),
                                              createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, defineType); 
