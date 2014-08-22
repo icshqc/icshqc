@@ -600,12 +600,11 @@ VarType parseVarType(char* str) {
 // fArgs = x
 // cmdArgs = x, x
 // args = 10
-Val* runFunc(Val* args) {
-  Func* f = loadedFuncByName((char*)args->addr)->func;
+Val* runLambda(Func* f, Val* args) {
   Val* cmd = (Val*)f->cmd->addr;
   Attr* fArgs = f->args;
   LoadedDef* d = loadedFuncByName((char*)cmd->addr);
-  Val* nArgs = cpyVal(args);
+  Val* nArgs = cpyVal(cmd);
   Val* cmdArgs = (Val*)cmd->nxt->addr;
   Val* a;
   Attr* b;
@@ -616,21 +615,30 @@ Val* runFunc(Val* args) {
     return errorStr("Invalid amount of args supplied.");
   }
   for (a = cmdArgs; a != NULL; a = a->nxt) {
-    int found = 0;
-    for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
-      if (strcmp((char*)a->addr, b->name) == 0) {
-        n->nxt = cpyVal(c);
-        n = n->nxt;
-        found = 1;
-        break;
+    if (a->options & VAL_VAR) {
+      int found = 0;
+      for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
+        if (strcmp((char*)a->addr, b->name) == 0) {
+          n->nxt = cpyVal(c);
+          n = n->nxt;
+          found = 1;
+          break;
+        }
       }
-    }
-    if (found == 0) {
-      return errorStr("Missing args to runFunc");
+      if (found == 0) {
+        return errorStr("Missing args to runFunc");
+      }
+    } else {
+      n->nxt = cpyVal(a);
+      n = n->nxt;
     }
   }
 
   return (d != NULL) ? d->ptr(nArgs) : NULL;
+}
+
+Val* runFunc(Val* args) {
+  return runLambda(loadedFuncByName((char*)args->addr)->func, args);
 }
 
 Cmd* typeCmd(Cmd* cmd) {
@@ -850,6 +858,11 @@ ParsePair parseCmdR(char* command) {
     cmds->nxt = NULL;
   } else {
     if (cmds->nxt != NULL) {
+      if (cmds->type == VAR) {
+        cmds->args = cmds->nxt;
+        cmds->nxt = NULL;
+        return parsePair(cmds, s);
+      }
       return parsePair(initCmd(OLD_TUPLE, NULL, cmds), s);
     } else {
       return parsePair(cmds, s);
@@ -898,8 +911,37 @@ Val* cmdToVal(Cmd* cmd) {
   } else {
     Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
     v->options = VAL_UNKOWN;
+    v->options = VAL_VAR;
     return v;
   }
+}
+
+Func* setFuncLambda(Func* f, Val* block) {
+  Val* arg = block;
+  Attr* a = NULL;
+  //while(arg != NULL && arg->type == PAIR) {
+  while(arg != NULL && arg->nxt != NULL) {
+    if (a == NULL) {
+      f->args = newAttr();
+      a = f->args;
+    } else {
+      a->nxt = newAttr();
+      a = a->nxt;
+    }
+    Val* pair = (Val*)arg->addr;
+    a->type = parseVarType((char*)pair->addr);
+    strcpy(a->name, (char*)pair->nxt->addr);
+    arg = arg->nxt;
+  }
+  f->cmd = cpyVal(arg);
+  return f;
+}
+
+Func* initFunc(Val* args, CmdType type) {
+  Func* f = newFunc();
+  strcpy(f->name, (char*)args->nxt->addr);
+  setFuncLambda(f, (Val*)args->nxt->nxt->addr);
+  return f;
 }
 
 void addVal(Val** list, Val* v) {
@@ -915,6 +957,25 @@ void addValOption(Val* v, enum ValOptions option) {
   }
 }
 
+Val* cmdVal(Cmd* cmd);
+Val* cmdVals(Cmd* cmd) {
+  Val* nVal = NULL;
+  nVal = initArray(varType(CHAR, 0, 52), cmd->name);
+  Val* n = nVal;
+  Cmd* arg;
+  for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
+    if (strcmp(cmd->name, "=") == 0 && n == nVal) {
+      n->nxt = cmdToVal(arg);
+    } else {
+    n->nxt = cmdVal(arg);
+    }
+    if (n->nxt != NULL) {
+      n = n->nxt;
+    }
+  }
+  return nVal;
+}
+
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
@@ -923,19 +984,7 @@ Val* cmdVal(Cmd* cmd) {
   Val* ret = NULL;
   Val* nVal = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
-    nVal = initArray(varType(CHAR, 0, 52), cmd->name);
-    Val* n = nVal;
-    Cmd* arg;
-    for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
-      if (strcmp(cmd->name, "=") == 0 && n == nVal) {
-        n->nxt = cmdToVal(arg);
-      } else {
-        n->nxt = cmdVal(arg);
-      }
-      if (n->nxt != NULL) {
-        n = n->nxt;
-      }
-    }
+    nVal = cmdVals(cmd);
     LoadedDef* func = loadedFuncByName(cmd->name);
     if (cmd->type == CFUNCTION) {
       ret = checkSignatureAttrs(nVal->nxt, func->func->args);
@@ -958,13 +1007,20 @@ Val* cmdVal(Cmd* cmd) {
   } else if (cmd->type == VAR) {
     ret = varByName(cmd->name)->val;
     if (ret->options & VAL_BLOCK) {
+      Val* args = cmdVals(cmd);
+      Func* f = setFuncLambda(newFunc(), (Val*)ret->addr);
+      ret = runLambda(f, args);
     }
+    addValOption(ret, VAL_VAR);
   } else if (cmd->type == BLOCK) {
     ret = cmdToVal(cmd);
     addValOption(ret, VAL_LOCAL);
     addValOption(ret, VAL_BLOCK);
   } else {
     ret = cmdToVal(cmd);
+    if (cmd->type == UNKOWN) {
+      addValOption(ret, VAL_VAR);
+    }
     addValOption(ret, VAL_LOCAL);
   }
   return ret;
@@ -1669,28 +1725,10 @@ Var* addNewVar(Type* type, char* name) {
 }
 
 void defineFunc(Val* args, CmdType type) {
-  Func* f = newFunc();
-  strcpy(f->name, (char*)args->nxt->addr);
-  Val* block = (Val*)args->nxt->nxt->addr;
-  Val* arg = block;
-  Attr* a = NULL;
-  //while(arg != NULL && arg->type == PAIR) {
-  while(arg != NULL && arg->nxt != NULL) {
-    if (a == NULL) {
-      f->args = newAttr();
-      a = f->args;
-    } else {
-      a->nxt = newAttr();
-      a = a->nxt;
-    }
-    Val* pair = (Val*)arg->addr;
-    a->type = parseVarType((char*)pair->addr);
-    strcpy(a->name, (char*)pair->nxt->addr);
-    arg = arg->nxt;
-  }
-  f->cmd = cpyVal(arg);
+  Func* f = initFunc(args, type);
   addLoadedDef(loadedDefs, f, type, runFunc);
 }
+
 Val* define(Val* args) {
   defineFunc(args, FUNCTION);
   return NULL;

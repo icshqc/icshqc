@@ -35,7 +35,7 @@ enum ValOptions {
   VAL_UNKOWN = 0x02,
   VAL_BLOCK = 0x04,
   VAL_LOCAL = 0x08, //  So it should be deleted when finished calculating.
-  //OPT_E = 0x10,
+  VAL_VAR = 0x10,
   //OPT_F = 0x20,
 };
 

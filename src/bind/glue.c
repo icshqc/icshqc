@@ -127,11 +127,14 @@ Val* initVal(VarType t, void* addr) {
 }
 Val* cpyVal(Val* v) {
   if (v == NULL) return NULL;
+  Val* v2;
   if (v->type.arraySize != 0) {
-    return initArray(v->type, v->addr);
+    v2 = initArray(v->type, v->addr);
   } else {
-    return initVal(v->type, v->addr);
+    v2 = initVal(v->type, v->addr);
   }
+  v2->options = v->options;
+  return v2;
 }
 Val* cpyVals(Val* v) {
   if (v == NULL) return NULL;

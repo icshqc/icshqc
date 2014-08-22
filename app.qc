@@ -14,3 +14,5 @@ doubler :: {|int x| add x x }
 include "src/lib.h"
 
 foo :: {|int x, int y| (x + y) * 4}
+
+add5 = {|int x| x + 5}
