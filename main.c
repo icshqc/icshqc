@@ -23,6 +23,8 @@
 
 // x = []
 
+// TODO: Juste garder =, pas ::: et autres. Un operateur est juste des symbols, comme dans haskell.
+
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 
 // TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
@@ -639,6 +641,16 @@ Val* runFunc(Val* args) {
   return runLambda(loadedFuncByName((char*)args->addr)->func, args);
 }
 
+int containsChars(char* str, char* chs) {
+  for(;*str != '\0'; str++) {
+    char* c;
+    for(c = chs; *c != '\0'; c++) {
+      if (*str == *c) return 1;
+    }
+  }
+  return 0;
+}
+
 Cmd* typeCmd(Cmd* cmd) {
   Cmd* c;
   for (c = cmd; c != NULL; c = c->nxt) {
@@ -653,7 +665,15 @@ Cmd* typeCmd(Cmd* cmd) {
         if (f != NULL) {
           c->type = f->type;
         } else if ((v = varByName(n)) != NULL) {
-          c->type = VAR;
+          if (v->val->options & VAL_BLOCK) {
+            if (containsChars(v->name, "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ")) {
+              c->type = FUNCTION;
+            } else {
+              c->type = OPERATOR;
+            }
+          } else {
+            c->type = VAR;
+          }
         } else if (strlen(n) == 3 && n[0] == '\'' && n[2] == '\'') { // FIXME: Does not work '\0'
           c->type = OLD_CHAR;
         } else if (strlen(n) >= 2 && n[0] == '\"' && n[strlen(n)-1] == '\"') {
@@ -997,11 +1017,18 @@ Val* cmdVal(Cmd* cmd) {
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
     nVal = cmdVals(cmd);
     LoadedDef* func = loadedFuncByName(cmd->name);
-    if (cmd->type == CFUNCTION) {
-      ret = checkSignatureAttrs(nVal->nxt, func->func->args);
+    if (func == NULL) {
+      ret = varByName(cmd->name)->val;
+      Val* args = cmdVals(cmd);
+      Func* f = setFuncLambda(newFunc(), (Val*)ret->addr);
+      ret = runLambda(f, args);
+    } else {
+      if (cmd->type == CFUNCTION) {
+        ret = checkSignatureAttrs(nVal->nxt, func->func->args);
+      }
+      if (ret == NULL) ret = func->ptr(nVal);
+      addValOption(ret, VAL_LOCAL);
     }
-    if (ret == NULL) ret = func->ptr(nVal);
-    addValOption(ret, VAL_LOCAL);
   } else if (cmd->type == OLD_MACRO || cmd->type == MACRO_OP) {
     nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
@@ -1017,11 +1044,6 @@ Val* cmdVal(Cmd* cmd) {
     addValOption(ret, VAL_LOCAL);
   } else if (cmd->type == VAR) {
     ret = varByName(cmd->name)->val;
-    if (ret->options & VAL_BLOCK) {
-      Val* args = cmdVals(cmd);
-      Func* f = setFuncLambda(newFunc(), (Val*)ret->addr);
-      ret = runLambda(f, args);
-    }
     addValOption(ret, VAL_VAR);
   } else if (cmd->type == BLOCK) {
     ret = cmdToVal(cmd);
