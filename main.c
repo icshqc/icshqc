@@ -36,6 +36,7 @@
 // MODEL
 
 static Type* types = NULL;
+
 static TypeDef* typedefs = NULL;
 // Maybe vars by scope.
 static Var* vars = NULL;
@@ -743,10 +744,14 @@ ParsePair parseBlock(char* command) {
     block->args = p.cmd;
     s = p.ptr;
   }
-  Cmd* arg;
-  for (arg = block->args; arg->nxt != NULL; arg = arg->nxt) {}
   p = parseCmdR(trim(s));
-  arg->nxt = p.cmd;
+  if (block->args == NULL) {
+    block->args = p.cmd;
+  } else {
+    Cmd* arg;
+    for (arg = block->args; arg->nxt != NULL; arg = arg->nxt) {}
+    arg->nxt = p.cmd;
+  }
   s = p.ptr;
   if (*s != '}') {
     //msg("Error parsing block. Missing end bracket.");
@@ -942,6 +947,10 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
     addVal(garbage, ret);
   } else if (cmd->type == VAR) {
     ret = varByName(cmd->name)->val;
+  } else if (cmd->type == BLOCK) {
+    ret = cmdToVal(cmd);
+    ret->options = ret->options | VAL_BLOCK;
+    addVal(garbage, ret);
   } else {
     ret = cmdToVal(cmd);
     addVal(garbage, ret);
@@ -1940,7 +1949,7 @@ int main(int argc, char* argv[])
 int main()
 {
   signal(SIGINT, finish);      /* arrange interrupts to terminate */
-  
+ 
   initLoadedDefs();
   initCFunctions(loadedDefs, types);
 

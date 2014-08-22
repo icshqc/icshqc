@@ -33,7 +33,7 @@ typedef struct VarType VarType;
 enum ValOptions {
   VAL_ERROR = 0x01,
   VAL_UNKOWN = 0x02,
-  //OPT_C = 0x04,
+  VAL_BLOCK = 0x04,
   //OPT_D = 0x08,
   //OPT_E = 0x10,
   //OPT_F = 0x20,

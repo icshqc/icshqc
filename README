@@ -1,11 +1,15 @@
 ---
 
+TODO: An helper/syntax sugar pour creer un model. L'editeur serait fucking utile a te montrer les fields de la struct.
+
+---
+
 Faire une convention des noms qui te donne facilement c'est quoi le type.
 Ex:
 Un operateur commence par un caractere special. :blah est un operateur.
 Une fonction est juste des lettre et underscore et des chiffres pas au debut.
 
-Peut-etre que tous les macros ont :: dans leur noms.
+Peut-etre que tous les macros ont :: dans leur noms. Non, = est une macro.
 
 ---
 
@@ -21,6 +25,11 @@ Ca marche pour des types aussi: foo (void*) blah => foo "void*" blah
 
 Mais peut-etre qu'un feature et avantage possible est que le token doit etre valide.
 Tu peux pas mettre n'importe quel string, ca doit etre le nom d'une func, var, etc.
+
+Ou bien.
+
+Fuck les macros. Il existe juste '='.
+
 
 ---
 
