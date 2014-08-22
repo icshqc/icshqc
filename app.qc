@@ -1,3 +1,5 @@
+// WORKING
+
 int #::
 float #::
 double #::
@@ -13,7 +15,10 @@ doubler = {|int x| add x x }
 
 include "src/lib.h"
 
-foo = {|int x, int y| (x + y) * 4}
-
 add5 = {|int x| x + 5}
+
+// NOT WORKING YET
+
 add10 = {|int x| (add5 (add5 x))}
+
+foo = {|int x, int y| (x + y) * 4}

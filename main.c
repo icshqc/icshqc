@@ -1696,11 +1696,8 @@ void load() {
     while ((c = getc(s)) != EOF) {
       if (c == '\r' || c == '\n') {
         char err[52] = "";
-        if (evalCmd(input, err)) {
-          input[0] = '\0';
-        } else {
-          abort();
-        }
+        evalCmd(input, err);
+        input[0] = '\0';
       } else {
         straddch(input, c);
       }
