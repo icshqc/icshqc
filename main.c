@@ -921,7 +921,11 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
-      n->nxt = cmdVal(arg, garbage);
+      if (strcmp(cmd->name, "=") == 0 && n == nVal) {
+        n->nxt = cmdToVal(arg);
+      } else {
+        n->nxt = cmdVal(arg, garbage);
+      }
       if (n->nxt != NULL) {
         n = n->nxt;
       }
@@ -947,6 +951,8 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
     addVal(garbage, ret);
   } else if (cmd->type == VAR) {
     ret = varByName(cmd->name)->val;
+    if (ret->options & VAL_BLOCK) {
+    }
   } else if (cmd->type == BLOCK) {
     ret = cmdToVal(cmd);
     ret->options = ret->options | VAL_BLOCK;
@@ -1872,7 +1878,7 @@ void initLoadedDefs() {
 
   // Assigns a value to an existing variable.
   loadedDefs = createLoadedDef(createFunc("=", createAttr("name", varType(CHAR, 0, 52),
-                                               createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, assign); 
+                                               createAttr("val", varType(CHAR, 0, 52), NULL))), OPERATOR, assign); 
   // Assigns a function to a new variable.
   addLoadedDef(loadedDefs, createFunc("::", createAttr("name", varType(CHAR, 0, 52),
                                             createAttr("val", varType(CHAR, 0, 52), NULL))), MACRO_OP, define); 
