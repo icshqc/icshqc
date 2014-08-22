@@ -34,12 +34,9 @@ enum ValOptions {
   VAL_ERROR = 0x01,
   VAL_UNKOWN = 0x02,
   VAL_BLOCK = 0x04,
-  //OPT_D = 0x08,
+  VAL_LOCAL = 0x08, //  So it should be deleted when finished calculating.
   //OPT_E = 0x10,
   //OPT_F = 0x20,
-
-  // Maybe one field for wheter the val needs to be freed or not.
-  // Like if it belongs to a var then no, else yes.
 };
 
 struct Val {

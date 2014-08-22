@@ -909,11 +909,17 @@ void addVal(Val** list, Val* v) {
   *list = v;
 }
 
+void addValOption(Val* v, enum ValOptions option) {
+  if (v != NULL) {
+    v->options = v->options | option;
+  }
+}
+
 // Reduces a Cmd down to a primitive type.
 // If cmd->type == CFUNCTION, call it and replace the cmd by it's result
 // If cmd->type == FUNCTION, call it and replace the cmd by it's result
 // If cmd->type == VAR, get it's value and replace the cmd by it's result
-Val* cmdVal(Cmd* cmd, Val** garbage) {
+Val* cmdVal(Cmd* cmd) {
   Val* ret = NULL;
   Val* nVal = NULL;
   if (cmd->type == FUNCTION || cmd->type == OPERATOR || cmd->type == CFUNCTION) {
@@ -924,7 +930,7 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
       if (strcmp(cmd->name, "=") == 0 && n == nVal) {
         n->nxt = cmdToVal(arg);
       } else {
-        n->nxt = cmdVal(arg, garbage);
+        n->nxt = cmdVal(arg);
       }
       if (n->nxt != NULL) {
         n = n->nxt;
@@ -935,7 +941,7 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
       ret = checkSignatureAttrs(nVal->nxt, func->func->args);
     }
     if (ret == NULL) ret = func->ptr(nVal);
-    addVal(garbage, ret);
+    addValOption(ret, VAL_LOCAL);
   } else if (cmd->type == OLD_MACRO || cmd->type == MACRO_OP) {
     nVal = initArray(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
@@ -948,18 +954,18 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
       }
     }
     ret = loadedFuncByName(cmd->name)->ptr(nVal);
-    addVal(garbage, ret);
+    addValOption(ret, VAL_LOCAL);
   } else if (cmd->type == VAR) {
     ret = varByName(cmd->name)->val;
     if (ret->options & VAL_BLOCK) {
     }
   } else if (cmd->type == BLOCK) {
     ret = cmdToVal(cmd);
-    ret->options = ret->options | VAL_BLOCK;
-    addVal(garbage, ret);
+    addValOption(ret, VAL_LOCAL);
+    addValOption(ret, VAL_BLOCK);
   } else {
     ret = cmdToVal(cmd);
-    addVal(garbage, ret);
+    addValOption(ret, VAL_LOCAL);
   }
   return ret;
 }
@@ -967,12 +973,7 @@ Val* cmdVal(Cmd* cmd, Val** garbage) {
 void eval(Cmd* cmd) {
   if (cmd == NULL) return;
 
-  Val* garbage[10];
-  int i;
-  for (i = 0; i < 10; i++) {
-    garbage[i] = NULL;
-  }
-  Val* v = cmdVal(cmd, garbage);
+  Val* v = cmdVal(cmd);
   if (v != NULL && v->options & VAL_ERROR) {
     output("\nError: ");
   } else {
@@ -981,8 +982,12 @@ void eval(Cmd* cmd) {
   char out[52] = "";
   catVal(out, v);
   output(out);
-  for (i = 0; i < 10; i++) {
-    freeVal(garbage[i]);
+  while (v != NULL) {
+    Val* n = v->nxt;
+    if (v->options & VAL_LOCAL) {
+      freeVal(v);
+    }
+    v = n;
   }
  
   eval(cmd->nxt);
