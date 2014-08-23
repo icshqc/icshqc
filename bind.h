@@ -6,8 +6,9 @@
 #include <signal.h>
 #include <string.h>
 
-#include "../../model.h"
-#include "glue.h"
+#include "model.h"
+#include "core.h"
+#include "lib.h"
 
 void initCFunctions(LoadedDef* d, Type* t);
 

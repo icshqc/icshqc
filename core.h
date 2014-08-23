@@ -1,10 +1,14 @@
 #ifndef GLUE_H
 #define GLUE_H
 
-#include "../../model.h"
+#include "model.h"
+#include "lib.h"
 
 #define GET_VAL(type_t, vals) (*((type_t*)(vals = vals->nxt)->addr))
 #define GET_PTR(type_t, vals) ((type_t)(vals = vals->nxt)->addr)
+
+extern Type* types;
+extern LoadedDef* loadedDefs;
 
 char* argstring(Cmd* cmd);
 char argchar(Cmd* cmd);
@@ -20,15 +24,20 @@ char* catPrimVarTypeEnum(char* b, PrimVarType t);
 char* catPrimVarType(char* b, PrimVarType t);
 char* catVarType(char* b, VarType t);
 
+void addType(Type* type);
+Type* createType(char* name, Attr* attrs);
+
 Cmd* newCmd();
 Cmd* initCmd(CmdType type, const char* val, Cmd* args);
+
+Type* newType();
 
 Val* errorStr(char* str);
 
 Type* typeByName(Type* types, char* name);
 
 VarType varType(PrimVarType p, int ptr, int arraySize);
-VarType typeStruct(Type* types, char* name, int ptr, int arraySize);
+VarType typeStruct(char* name, int ptr, int arraySize);
 
 Val* cpyVal(Val* v);
 Val* cpyVals(Val* v);

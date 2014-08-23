@@ -58,9 +58,9 @@ void main(int argc, char* argv[]) {
     strcat(cmd, "build/icsh ");
   }
 
-  // TODO: list src/bind and add all the source files there.
-  includeFilesR(cmd, "src");
-
+  strcat(cmd, " lib.c");
+  strcat(cmd, " core.c");
+  strcat(cmd, " bind.c");
   strcat(cmd, " main.c");
   strcat(cmd, " -lncurses");
   strcat(cmd, " -lSDL");

@@ -2,7 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "glue.h"
+#include "core.h"
+
+Type* newType() {
+  Type* a = malloc(sizeof(Type));
+  if (a == NULL) {
+    abort(); // FIXME: "Can't allocate memory"
+  }
+  memset(a->name, '\0', sizeof(a->name));
+  a->attrs = NULL;
+  a->nxt = NULL;
+  return a;
+}
 
 VarType varType(PrimVarType p, int ptr, int arraySize) {
   VarType t;
@@ -15,9 +26,12 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   return t;
 }
 
-VarType typeStruct(Type* types, char* name, int ptr, int arraySize) {
+VarType typeStruct(char* name, int ptr, int arraySize) {
   VarType t = varType(STRUCT, ptr, arraySize);
   t.typeStruct = typeByName(types, name);
+  if (t.typeStruct == NULL) {
+    abort();
+  }
   return t;
 }
 
@@ -179,6 +193,10 @@ int canCast(VarType casted, VarType castee) {
   return sizeofVarType(casted) <= sizeofVarType(castee) ? 1 : 0;
 }
 
+int sameCastType(VarType t1, VarType t2) {
+  return t1.typeStruct == t2.typeStruct && canCast(t1, t2) && nPtr(t1) == nPtr(t2) ? 1 : 0;
+}
+
 Val* checkSignatureAttrs(Val* args, Attr* attrs) {
   Attr* a;
   Val* v;
@@ -186,7 +204,7 @@ Val* checkSignatureAttrs(Val* args, Attr* attrs) {
   for (i = 0, v = args, a = attrs; a != NULL; i++, v = v->nxt, a = a->nxt) {
     if (v == NULL) {
       return errorStr("Missing arg.");
-    } else if (v == NULL || (canCast(v->type, a->type) == 0  || nPtr(v->type) != nPtr(a->type))) {
+    } else if (sameCastType(v->type, a->type) == 0) {
       char m[52] = "";
       sprintf(m, "Invalid arg %d: Expected type ", i);
       catVarType(m, a->type);
@@ -206,7 +224,7 @@ Val* checkSignature(Val* args, VarType* types, int nArgs) {
   for (i = 0, v = args->nxt, t = types; i < nArgs; i++, v = v->nxt, t++) {
     if (v == NULL) {
       return errorStr("Missing arg.");
-    } else if (v == NULL || (canCast(v->type, *t) == 0  || nPtr(v->type) != nPtr(*t))) {
+    } else if (sameCastType(v->type, *t) == 0) {
       char m[52] = "";
       sprintf(m, "Invalid arg %d: Expected type ", i);
       catVarType(m, *t);
@@ -261,6 +279,48 @@ int argint(Cmd* cmd) {
 }
 void* argptr(Cmd* cmd) {
   return NULL;
+}
+
+Attr* copyAttrs(Attr* attrs) {
+  if (attrs == NULL) return NULL;
+  Attr* a = newAttr();
+  strcpy(a->name, attrs->name);
+  a->type = attrs->type;
+  a->nxt = copyAttrs(attrs->nxt);
+  return a;
+}
+
+Val* construct(Val* args) {
+  char fullname[64] = "";
+  strcat(fullname, "struct ");
+  strcat(fullname, (char*)args->addr + 1);
+  Type* t = typeByName(types, fullname);
+  if (t == NULL) {
+    return errorStr("Unkown constructor.");
+  }
+  Val* err = checkSignatureAttrs(args->nxt, t->attrs);
+  if (err != NULL) return err;
+  return initVal(varType(STRUCT, 0, 0), args->nxt);
+}
+
+void typeConstructor(Type* type) {
+  if (type->attrs != NULL) {
+    char constructorName[52] = "#";
+    if (startsWith("struct ", type->name)) {
+      strcat(constructorName, type->name+7);
+    } else {
+      strcat(constructorName, type->name);
+    }
+    Attr* attrs = copyAttrs(type->attrs);
+    addLoadedDef(loadedDefs, createFunc(constructorName, attrs), FUNCTION, construct);
+  }
+}
+
+void addType(Type* type) {
+  Type* oldFirst = types;
+  types = type;
+  type->nxt = oldFirst;
+  typeConstructor(type);
 }
 
 Cmd* initCmd(CmdType type, const char* val, Cmd* args) {
@@ -342,5 +402,12 @@ Type* typeByName(Type* types, char* name) {
     t = t->nxt;
   }
   return NULL;
+}
+
+Type* createType(char* name, Attr* attrs) {
+  Type* type = newType();
+  strcpy(type->name, name);
+  type->attrs = attrs;
+  return type;
 }
 

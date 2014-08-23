@@ -13,7 +13,10 @@ doubler = {|int x| add x x }
 * = {|int x, int y| mult x y }
 / = {|int x, int y| divide x y }
 
-include "src/lib.h"
+//include "src/lib.h"
+
+p1 = (#IntPair 1 1)
+p2 = (#IntPair 2 2)
 
 add5 = {|int x| x + 5}
 

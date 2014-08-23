@@ -1,8 +1,8 @@
 #include "bind.h"
 
-#include "../../src/lib.h"
-
 void initCFunctions(LoadedDef* d, Type* t) {
+  addType(createType("struct IntPair", createAttr("x", varType(INT,0,0), createAttr("y", varType(INT,0,0), NULL))));
+
   addLoadedDef(d, createFunc("isInteger", createAttr("str", varType(CHAR, 1, 0), NULL)), CFUNCTION, bind_isInteger);
   addLoadedDef(d, createFunc("isFloat", createAttr("str", varType(CHAR, 1, 0), NULL)), CFUNCTION, bind_isFloat);
   addLoadedDef(d, createFunc("replace", createAttr("str", varType(CHAR, 1, 0), createAttr("a", varType(CHAR, 0, 0), createAttr("b", varType(CHAR, 0, 0), NULL)))), CFUNCTION, bind_replace);
@@ -17,7 +17,7 @@ void initCFunctions(LoadedDef* d, Type* t) {
   addLoadedDef(d, createFunc("sus", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_sus);
   addLoadedDef(d, createFunc("add", createAttr("x", varType(INT, 0, 0), createAttr("y", varType(INT, 0, 0), NULL))), CFUNCTION, bind_add);
   addLoadedDef(d, createFunc("startsWith", createAttr("mustEqual", varType(CHAR, 1, 0), createAttr("str1", varType(CHAR, 1, 0), NULL))), CFUNCTION, bind_startsWith);
-//  addLoadedDef(d, createFunc("add2", createAttr("p1", typeStruct(t, "struct IntPair", 0, 0), createAttr("p2", typeStruct(t, "struct IntPair", 0, 0), NULL))), CFUNCTION, bind_add2);
+  addLoadedDef(d, createFunc("add2", createAttr("p1", typeStruct("struct IntPair", 0, 0), createAttr("p2", typeStruct("struct IntPair", 0, 0), NULL))), CFUNCTION, bind_add2);
 }
 
 Val* bind_isInteger(Val* args) {
@@ -113,10 +113,11 @@ Val* bind_startsWith(Val* args) {
   return initVal(varType(INT, 0, 0), &r);
 }
 
-/*Val* bind_add2(Val* args) {
-  STRUCT p1_ = GET_VAL(STRUCT, args);
+Val* bind_add2(Val* args) {
+  /*STRUCT p1_ = GET_VAL(STRUCT, args);
   STRUCT p2_ = GET_VAL(STRUCT, args);
   STRUCT r = add2(p1_, p2_);
-  return initVal(varType(STRUCT, 0, 0), &r);
-}*/
+  return initVal(varType(STRUCT, 0, 0), &r);*/
+  return NULL;
+}
 

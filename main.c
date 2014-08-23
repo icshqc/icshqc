@@ -4,12 +4,11 @@
 #include <string.h>
 
 #include "model.h"
-#include "src/bind/glue.h"
+#include "core.h"
 
-#include "src/lib.h"
+#include "lib.h"
 
-//#include "bind.h"
-#include "src/bind/bind.h"
+#include "bind.h"
 
 //#define CURSES_MODE
 //#define DEBUG_MODE
@@ -35,7 +34,7 @@
 
 // MODEL
 
-static Type* types = NULL;
+Type* types = NULL;
 
 static TypeDef* typedefs = NULL;
 // Maybe vars by scope.
@@ -45,7 +44,7 @@ static CFunc* cfuncs = NULL;
 
 // TODO: Have a list that contains both the loaded defs and the runtime one.
 // They should of type struct LoadedDef and the function passed would call the executable.
-static LoadedDef* loadedDefs = NULL;
+LoadedDef* loadedDefs = NULL;
 
 static unsigned int cursorX = 0;
 static unsigned int cursorY = 0;
@@ -57,17 +56,6 @@ TypeDef* newTypeDef() {
   }
   memset(a->name, '\0', sizeof(a->name));
   a->type = varType(0, 0, 0);
-  a->nxt = NULL;
-  return a;
-}
-
-Type* newType() {
-  Type* a = malloc(sizeof(Type));
-  if (a == NULL) {
-    abort(); // FIXME: "Can't allocate memory"
-  }
-  memset(a->name, '\0', sizeof(a->name));
-  a->attrs = NULL;
   a->nxt = NULL;
   return a;
 }
@@ -1440,48 +1428,6 @@ CFunc* parseCFunction(char* s0) {
   f->args = parseAttrs(argStart + 1, ',', '(', ')', 1);
 
   return f;
-}
-
-Val* construct(Val* args) {
-  char fullname[64] = "";
-  strcat(fullname, "struct ");
-  strcat(fullname, (char*)args->addr + 1);
-  Type* t = typeByName(types, fullname);
-  if (t == NULL) {
-    return errorStr("Unkown constructor.");
-  }
-  Val* err = checkSignatureAttrs(args->nxt, t->attrs);
-  if (err != NULL) return err;
-  return initVal(varType(STRUCT, 0, 0), args->nxt);
-}
-
-Attr* copyAttrs(Attr* attrs) {
-  if (attrs == NULL) return NULL;
-  Attr* a = newAttr();
-  strcpy(a->name, attrs->name);
-  a->type = attrs->type;
-  a->nxt = copyAttrs(attrs->nxt);
-  return a;
-}
-
-void typeConstructor(Type* type) {
-  if (type->attrs != NULL) {
-    char constructorName[52] = "#";
-    if (startsWith("struct ", type->name)) {
-      strcat(constructorName, type->name+7);
-    } else {
-      strcat(constructorName, type->name);
-    }
-    Attr* attrs = copyAttrs(type->attrs);
-    addLoadedDef(loadedDefs, createFunc(constructorName, attrs), FUNCTION, construct);
-  }
-}
-
-void addType(Type* type) {
-  Type* oldFirst = types;
-  types = type;
-  type->nxt = oldFirst;
-  typeConstructor(type);
 }
 
 struct CLine {
