@@ -217,26 +217,6 @@ Val* checkSignatureAttrs(Val* args, Attr* attrs) {
   return NULL;
 }
 
-Val* checkSignature(Val* args, VarType* types, int nArgs) {
-  VarType* t;
-  Val* v;
-  int i;
-  for (i = 0, v = args->nxt, t = types; i < nArgs; i++, v = v->nxt, t++) {
-    if (v == NULL) {
-      return errorStr("Missing arg.");
-    } else if (sameCastType(v->type, *t) == 0) {
-      char m[52] = "";
-      sprintf(m, "Invalid arg %d: Expected type ", i);
-      catVarType(m, *t);
-      return errorStr(m);
-    }
-  }
-  if (v != NULL) {
-    return errorStr("Supplied too many args.");
-  }
-  return NULL;
-}
-
 Val* errorStr(char* str) {
   Val* v = initArray(varType(CHAR, 0, 124), str);
   v->options = VAL_ERROR;

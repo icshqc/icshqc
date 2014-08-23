@@ -46,7 +46,6 @@ Val* initPtr(VarType t, void* addr);
 Val* initArray(VarType t, void* addr);
 void freeVal(Val* v);
 
-Val* checkSignature(Val* args, VarType* types, int nArgs);
 Val* checkSignatureAttrs(Val* args, Attr* attrs);
 
 int validArg(Cmd* cmd, CmdType type);
