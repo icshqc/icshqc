@@ -10,6 +10,8 @@
 extern Type* types;
 extern LoadedDef* loadedDefs;
 
+size_t sizeofVarType(VarType t);
+
 char* argstring(Cmd* cmd);
 char argchar(Cmd* cmd);
 int argint(Cmd* cmd);

@@ -450,14 +450,20 @@ char* catVal(char* b, Val* v) {
     }
     strcat(b, ")");
   } else if (v->type.type == STRUCT) {
-    //Attr* a;
-    strcat(b, "( TODO CAT STRUCT ");
-    /*for (a = v->type.typeStruct->attrs; a != NULL; a = a->nxt) {
-      catVal(b, v2);
-      if (v2->nxt != NULL) {
+    strcat(b, "(");
+    Attr* a;
+    void* ptr = v->addr;
+    for (a = v->type.typeStruct->attrs; a != NULL; a = a->nxt) {
+      Val v2;
+      v2.type = a->type;
+      v2.addr = ptr;
+      catVal(b, &v2);
+      size_t s = sizeofVarType(a->type);
+      ptr += s;
+      if (a->nxt != NULL) {
         strcat(b, ", ");
       }
-    }*/
+    }
     strcat(b, ")");
   } else if (v->type.type == INT) {
     char buffer[52] = "";
