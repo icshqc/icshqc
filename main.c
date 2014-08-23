@@ -439,7 +439,7 @@ char* catVal(char* b, Val* v) {
     strcat(b, "NULL");
   } else if (v->type.type == CHAR && (v->type.ptr == 1 || v->type.arraySize != 0)) {
     strcat(b, (char*)v->addr);
-  } else if (v->type.type == TUPLE || v->type.type == STRUCT) {
+  } else if (v->type.type == TUPLE) {
     Val* v2;
     strcat(b, "(");
     for (v2 = (Val*)v->addr; v2 != NULL; v2 = v2->nxt) {
@@ -448,6 +448,16 @@ char* catVal(char* b, Val* v) {
         strcat(b, ", ");
       }
     }
+    strcat(b, ")");
+  } else if (v->type.type == STRUCT) {
+    //Attr* a;
+    strcat(b, "( TODO CAT STRUCT ");
+    /*for (a = v->type.typeStruct->attrs; a != NULL; a = a->nxt) {
+      catVal(b, v2);
+      if (v2->nxt != NULL) {
+        strcat(b, ", ");
+      }
+    }*/
     strcat(b, ")");
   } else if (v->type.type == INT) {
     char buffer[52] = "";

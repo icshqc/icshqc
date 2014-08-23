@@ -89,7 +89,7 @@ char* catVarType(char* b, VarType t) {
 }
 
 size_t sizeofVarType(VarType t) {
-  size_t s;
+  size_t s = 0;
   if (t.ptr != 0) {
     s = sizeof(void*);
   } else if (t.type == INT) {
@@ -98,6 +98,13 @@ size_t sizeofVarType(VarType t) {
     s = sizeof(char);
   } else if (t.type == FLOAT) {
     s = sizeof(float);
+  } else if (t.type == STRUCT) {
+    Attr* a;
+    for (a = t.typeStruct->attrs; a != NULL; a = a->nxt) {
+      s += sizeofVarType(a->type);
+    }
+  } else {
+    abort();
   }
   return t.arraySize == 0 ? s : s * t.arraySize;
 }
@@ -107,10 +114,15 @@ Val* initArray(VarType t, void* addr) {
   v->options = 0;
   v->type = t;
   v->nxt = NULL;
-  size_t s = sizeofVarType(t);
-  v->addr = malloc(s);
-  memcpy(v->addr, addr, s);
+  if (t.type == TUPLE) {
+    v->addr = cpyVals((Val*)addr);
+  } else {
+    size_t s = sizeofVarType(t);
+    v->addr = malloc(s);
+    memcpy(v->addr, addr, s);
+  }
   return v;
+  // TODO: return initPtr;
 }
 
 Val* initPtr(VarType t, void* addr) {
@@ -121,36 +133,21 @@ Val* initPtr(VarType t, void* addr) {
   v->addr = addr;
   return v;
 }
-// TODO: Au lieu de tous ces mallocs, juste en faire un avec le sizeof que j'ai deja
-// et pour copy vals juste memcpy.
 Val* initVal(VarType t, void* addr) {
-  Val* v = malloc(sizeof(Val));
-  v->options = 0;
-  v->type = t;
-  v->nxt = NULL;
-  if (t.ptr == 1) {
-    abort(); // Should be using initPtr
-  } else {
-    if (t.type == INT) {
-      int* vx = malloc(sizeof(int));
-      *vx = *(int*)addr;
-      v->addr = vx;
-    } else if (t.type == CHAR) {
-      char* vx = malloc(sizeof(char));
-      *vx = *(char*)addr;
-      v->addr = vx;
-    } else if (t.type == TUPLE || t.type == STRUCT) {
-      v->addr = cpyVals((Val*)addr);
-    } else {
-      abort(); // FIXME: Better error message.
-    }
-  }
-  return v;
+  return initArray(t, addr);
 }
 
-Val* initStruct() {
-  abort();
-  return NULL;
+// Converts tuple to struct.
+Val* initStruct(VarType t, Val* tuple) {
+  void* addr = malloc(sizeofVarType(t));
+  void* ptr = addr;
+  Val* v;
+  for (v = tuple; v != NULL; v = v->nxt) {
+    size_t s = sizeofVarType(v->type);
+    memcpy(ptr, v->addr, s);
+    ptr += s;
+  }
+  return initPtr(t, addr);
 }
 
 Val* cpyVal(Val* v) {
@@ -295,7 +292,7 @@ Val* construct(Val* args) {
   Val* err = checkSignatureAttrs(args->nxt, t->attrs);
   if (err != NULL) return err;
 
-  return initVal(typeStructType(t, 0, 0), args->nxt);
+  return initStruct(typeStructType(t, 0, 0), args->nxt);
 }
 
 void typeConstructor(Type* type) {
