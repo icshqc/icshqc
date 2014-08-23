@@ -20,9 +20,9 @@
 #include <SDL/SDL_ttf.h>
 #endif
 
-// x = []
+// FIXME: add2 p1 p1
 
-// TODO: Juste garder =, pas ::: et autres. Un operateur est juste des symbols, comme dans haskell.
+// x = []
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 

@@ -113,8 +113,6 @@ Val* bind_startsWith(Val* args) {
   return initVal(varType(INT, 0, 0), &r);
 }
 
-//#define GET_INTPAIR
-
 Val* bind_add2(Val* args) {
   IntPair p1_ = GET_VAL(IntPair, args);
   IntPair p2_ = GET_VAL(IntPair, args);
