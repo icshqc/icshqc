@@ -925,20 +925,20 @@ Val* cmdToVal(Cmd* cmd) {
   } else if (cmd->type == STRING) {
     char name[52] = "";
     strncpy(name, cmd->name, strlen(cmd->name));
-    return initArray(varType(CHAR, 0, 52), name);
+    return initVal(varType(CHAR, 0, 52), name);
   } else if (cmd->type == OLD_CHAR) {
     char c = cmd->name[1];
     return initVal(varType(CHAR, 0, 0), &c);
   } else if (cmd->args != NULL) {
     if (cmd->name != NULL && strlen(cmd->name) > 0) {
-      Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
+      Val* v = initVal(varType(CHAR, 0, 52), cmd->name);
       v->nxt = cmdArgsToVal(cmd);
       return initVal(varType(TUPLE, 0, 0), v);
     } else {
       return cmdArgsToVal(cmd);
     }
   } else {
-    Val* v = initArray(varType(CHAR, 0, 52), cmd->name);
+    Val* v = initVal(varType(CHAR, 0, 52), cmd->name);
     v->options = VAL_UNKOWN;
     v->options = VAL_VAR;
     return v;
@@ -989,7 +989,7 @@ void addValOption(Val* v, enum ValOptions option) {
 Val* cmdVal(Cmd* cmd);
 Val* cmdVals(Cmd* cmd) {
   Val* nVal = NULL;
-  nVal = initArray(varType(CHAR, 0, 52), cmd->name);
+  nVal = initVal(varType(CHAR, 0, 52), cmd->name);
   Val* n = nVal;
   Cmd* arg;
   for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
@@ -1029,12 +1029,12 @@ Val* cmdVal(Cmd* cmd) {
       addValOption(ret, VAL_LOCAL);
     }
   } else if (cmd->type == OLD_MACRO || cmd->type == MACRO_OP) {
-    nVal = initArray(varType(CHAR, 0, 52), cmd->name);
+    nVal = initVal(varType(CHAR, 0, 52), cmd->name);
     Val* n = nVal;
     Cmd* arg;
     for (arg = cmd->args; arg != NULL; arg = arg->nxt) {
       n->nxt = cmdToVal(arg);
-      // n->nxt = initArray(varType(CHAR, 0, 52), arg->name); FIXME
+      // n->nxt = initVal(varType(CHAR, 0, 52), arg->name); FIXME
       if (n->nxt != NULL) {
         n = n->nxt;
       }

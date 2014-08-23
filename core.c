@@ -109,20 +109,16 @@ size_t sizeofVarType(VarType t) {
   return t.arraySize == 0 ? s : s * t.arraySize;
 }
 
-Val* initArray(VarType t, void* addr) {
-  Val* v = malloc(sizeof(Val));
-  v->options = 0;
-  v->type = t;
-  v->nxt = NULL;
+Val* initVal(VarType t, void* addr) {
+  void* nval;
   if (t.type == TUPLE) {
-    v->addr = cpyVals((Val*)addr);
+    nval = cpyVals((Val*)addr);
   } else {
     size_t s = sizeofVarType(t);
-    v->addr = malloc(s);
-    memcpy(v->addr, addr, s);
+    nval = malloc(s);
+    memcpy(nval, addr, s);
   }
-  return v;
-  // TODO: return initPtr;
+  return initPtr(t, nval);
 }
 
 Val* initPtr(VarType t, void* addr) {
@@ -132,9 +128,6 @@ Val* initPtr(VarType t, void* addr) {
   v->nxt = NULL;
   v->addr = addr;
   return v;
-}
-Val* initVal(VarType t, void* addr) {
-  return initArray(t, addr);
 }
 
 // Converts tuple to struct.
@@ -154,7 +147,7 @@ Val* cpyVal(Val* v) {
   if (v == NULL) return NULL;
   Val* v2;
   if (v->type.arraySize != 0) {
-    v2 = initArray(v->type, v->addr);
+    v2 = initVal(v->type, v->addr);
   } else {
     v2 = initVal(v->type, v->addr);
   }
@@ -229,7 +222,7 @@ Val* checkSignatureAttrs(Val* args, Attr* attrs) {
 }
 
 Val* errorStr(char* str) {
-  Val* v = initArray(varType(CHAR, 0, 124), str);
+  Val* v = initVal(varType(CHAR, 0, 124), str);
   v->options = VAL_ERROR;
   return v;
 }
