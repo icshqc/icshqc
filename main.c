@@ -1022,6 +1022,7 @@ Val* cmdVal(Cmd* cmd) {
       Val* args = cmdVals(cmd);
       Func* f = setFuncLambda(newFunc(), (Val*)ret->addr);
       ret = runLambda(f, args);
+      freeFunc(f);
     } else {
       if (cmd->type == CFUNCTION) {
         ret = checkSignatureAttrs(nVal->nxt, func->func->args);
@@ -1788,6 +1789,7 @@ Val* assign(Val* args) {
     freeVal(v->val);
   }
   v->val = cpyVal(args->nxt->nxt);
+  v->val->options &= ~VAL_LOCAL;
   return cpyVal(v->val);
 }
 
