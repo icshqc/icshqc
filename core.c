@@ -145,12 +145,7 @@ Val* initStruct(VarType t, Val* tuple) {
 
 Val* cpyVal(Val* v) {
   if (v == NULL) return NULL;
-  Val* v2;
-  if (v->type.arraySize != 0) {
-    v2 = initVal(v->type, v->addr);
-  } else {
-    v2 = initVal(v->type, v->addr);
-  }
+  Val* v2 = initVal(v->type, v->addr);
   v2->options = v->options;
   return v2;
 }
