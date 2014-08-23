@@ -26,6 +26,12 @@ VarType varType(PrimVarType p, int ptr, int arraySize) {
   return t;
 }
 
+VarType typeStructType(Type* type, int ptr, int arraySize) {
+  VarType t = varType(STRUCT, ptr, arraySize);
+  t.typeStruct = type;
+  return t;
+}
+
 VarType typeStruct(char* name, int ptr, int arraySize) {
   VarType t = varType(STRUCT, ptr, arraySize);
   t.typeStruct = typeByName(types, name);
@@ -115,6 +121,8 @@ Val* initPtr(VarType t, void* addr) {
   v->addr = addr;
   return v;
 }
+// TODO: Au lieu de tous ces mallocs, juste en faire un avec le sizeof que j'ai deja
+// et pour copy vals juste memcpy.
 Val* initVal(VarType t, void* addr) {
   Val* v = malloc(sizeof(Val));
   v->options = 0;
@@ -139,6 +147,12 @@ Val* initVal(VarType t, void* addr) {
   }
   return v;
 }
+
+Val* initStruct() {
+  abort();
+  return NULL;
+}
+
 Val* cpyVal(Val* v) {
   if (v == NULL) return NULL;
   Val* v2;
@@ -280,7 +294,8 @@ Val* construct(Val* args) {
   }
   Val* err = checkSignatureAttrs(args->nxt, t->attrs);
   if (err != NULL) return err;
-  return initVal(varType(STRUCT, 0, 0), args->nxt);
+
+  return initVal(typeStructType(t, 0, 0), args->nxt);
 }
 
 void typeConstructor(Type* type) {

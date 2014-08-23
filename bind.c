@@ -113,11 +113,21 @@ Val* bind_startsWith(Val* args) {
   return initVal(varType(INT, 0, 0), &r);
 }
 
+//#define GET_INTPAIR
+
 Val* bind_add2(Val* args) {
-  /*STRUCT p1_ = GET_VAL(STRUCT, args);
-  STRUCT p2_ = GET_VAL(STRUCT, args);
-  STRUCT r = add2(p1_, p2_);
-  return initVal(varType(STRUCT, 0, 0), &r);*/
+  /*Val* p1_val_ = ((Val*)(args = args->nxt)->addr);
+  IntPair p1_;
+  p1_.x = *(int*)p1_val->addr;
+  p1_.y = *(int*)p1_val->nxt->addr;
+  Val* p2_val_ = ((Val*)(args = args->nxt)->addr);
+  IntPair p2_;
+  p2_.x = *(int*)p2_val->addr;
+  p2_.y = *(int*)p2_val->nxt->addr;
+  IntPair r = add2(p1_, p2_);
+  Val* r_x = initVal(varType(INT, 0, 0), &r.x
+  Val* r_y = newVal();
+  return initVal(typeStruct("struct IntPair", 0, 0), &r);*/
   return NULL;
 }
 
