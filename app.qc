@@ -25,3 +25,12 @@ add5 = {|int x| x + 5}
 add10 = {|int x| (add5 (add5 x))}
 
 foo = {|int x, int y| (x + y) * 4}
+
+// For the parser to be created
+
+cmd = "10"
+cmd2 = "p1"
+cmd3 = "2 + 2"
+cmd4 = "add 10 2"
+
+parse = {|char* cmd| cmd}

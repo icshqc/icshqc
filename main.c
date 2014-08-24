@@ -23,10 +23,14 @@
 // FIXME: add2 p1 p1
 
 // x = []
+// y = (+ 10)
+// y 4
 
 // TODO: Enlever les fonctions hardcoder comme assign, runFunc, etc... Les mettres dans lib au pire. Qu'il n'y ait plus de fonction qui prennent Cmd en param.
 
 // TODO: Enlever Cmd. Petit par petit en faisant tout dans ce qui est actuellement parseCmdR.
+
+// TODO: Version 0.01 == Etre capable de creer le parser dans le programme lui meme.
 
 // Version 0.1 == Etre capable de tout programmer le programme lui-meme dans celui-ci.
 // Version 0.2 == Deux screen. Une console et une qui affiche les variables et les fonctions.
@@ -600,45 +604,41 @@ VarType parseVarType(char* str) {
   return v;
 }
 
+// vals is the value of the function. args are the value to be replacing them
+Val* replaceVals(Attr* attrs, Val* vals, Val* args) {
+  if (vals == NULL) return NULL;
+  Val* v = NULL;
+  if (vals->type.type == TUPLE) {
+    Val* cmd = cpyVal((Val*)vals->addr);
+    LoadedDef* d = loadedFuncByName((char*)cmd->addr);
+    cmd->nxt = replaceVals(attrs, (Val*)(((Val*)vals->addr)->nxt)->addr, args);
+    return (d != NULL) ? d->ptr(cmd) : NULL;
+  } else {
+    if (vals->options & VAL_VAR) {
+      Attr* b; Val* c;
+      for (b = attrs, c = args; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
+        if (strcmp((char*)vals->addr, b->name) == 0) {
+          v = cpyVal(c);
+          break;
+        }
+      }
+    } else {
+      v = cpyVal(vals);
+    }
+  }
+  if (v == NULL) {
+    return errorStr("Missing args to runFunc");
+  }
+  v->nxt = replaceVals(attrs, vals->nxt, args);
+  return v;
+}
+
 // doubler :: {|int x| x + x}
 // fArgs = x
 // cmdArgs = x, x
 // args = 10
 Val* runLambda(Func* f, Val* args) {
-  Val* cmd = (Val*)f->cmd->addr;
-  Attr* fArgs = f->args;
-  LoadedDef* d = loadedFuncByName((char*)cmd->addr);
-  Val* nArgs = cpyVal(cmd);
-  Val* cmdArgs = (Val*)cmd->nxt->addr;
-  Val* a;
-  Attr* b;
-  Val* c;
-  Val* n = nArgs;
-  for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {}
-  if (b != NULL || c != NULL) {
-    return errorStr("Invalid amount of args supplied.");
-  }
-  for (a = cmdArgs; a != NULL; a = a->nxt) {
-    if (a->options & VAL_VAR) {
-      int found = 0;
-      for (b = fArgs, c = args->nxt; b != NULL && c != NULL; b = b->nxt, c = c->nxt) {
-        if (strcmp((char*)a->addr, b->name) == 0) {
-          n->nxt = cpyVal(c);
-          n = n->nxt;
-          found = 1;
-          break;
-        }
-      }
-      if (found == 0) {
-        return errorStr("Missing args to runFunc");
-      }
-    } else {
-      n->nxt = cpyVal(a);
-      n = n->nxt;
-    }
-  }
-
-  return (d != NULL) ? d->ptr(nArgs) : NULL;
+  return replaceVals(f->args, f->cmd, args->nxt);
 }
 
 Val* runFunc(Val* args) {
@@ -717,7 +717,7 @@ ParsePair parsePair(Cmd* cmd, char* ptr) {
   p.ptr = ptr;
   return p;
 }
-static char ALLOWED_NAME_CHARS[] = "abcdefghijklmnopqrstuvwxyz_0123456789";
+#define ALLOWED_NAME_CHARS "abcdefghijklmnopqrstuvwxyz_0123456789"
 ParsePair parse(char* command, char* allowedChars) {
   Cmd* cmd = newCmd();
   char* c;
@@ -739,7 +739,7 @@ ParsePair parse(char* command, char* allowedChars) {
 }
 ParsePair parseBlockAttr(char* command) {
   Cmd* cmd = initCmd(PAIR, NULL, NULL);
-  ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS);
+  ParsePair p = parse(trim(command), ALLOWED_NAME_CHARS "*");
   if (*(p.ptr) != ' ') {
     //msg("Error parsing block. Missing arg type.");
     freeCmd(cmd);
